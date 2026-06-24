@@ -20,6 +20,12 @@ const statQueuePendingEl = document.getElementById("stat-queue-pending");
 const statQueueProgressEl = document.getElementById("stat-queue-progress");
 const statWorkerCountEl = document.getElementById("stat-worker-count");
 const workersListEl = document.getElementById("workers-list");
+const processBadgeEl = document.getElementById("process-badge");
+const btnStartSolverEl = document.getElementById("btn-start-solver");
+const btnStopSolverEl = document.getElementById("btn-stop-solver");
+const controlsMessageEl = document.getElementById("controls-message");
+
+const PROCESS_POLL_MS = 3000;
 
 function formatDuration(seconds) {
   if (seconds == null || Number.isNaN(seconds)) return "—";
@@ -251,6 +257,67 @@ async function poll() {
     messageEl.textContent = `Impossible de joindre l'API locale : ${error.message}`;
   }
 }
+
+function renderProcessStatus(data) {
+  const running = Boolean(data?.running);
+  processBadgeEl.textContent = running ? "Solveur actif" : "Solveur arrêté";
+  processBadgeEl.className = `status-badge ${running ? "status-running" : "status-paused"}`;
+  btnStartSolverEl.disabled = running;
+  btnStopSolverEl.disabled = !running;
+}
+
+async function pollProcessStatus() {
+  try {
+    const response = await fetch("/api/local/process-status");
+    const data = await response.json();
+    if (response.ok && data.success) {
+      renderProcessStatus(data);
+    }
+  } catch {
+    processBadgeEl.textContent = "État indisponible";
+    processBadgeEl.className = "status-badge status-paused";
+    btnStartSolverEl.disabled = false;
+    btnStopSolverEl.disabled = true;
+  }
+}
+
+function setControlsMessage(text, isError = false) {
+  controlsMessageEl.textContent = text || "";
+  controlsMessageEl.classList.toggle("message", Boolean(isError));
+  controlsMessageEl.classList.toggle("muted", !isError);
+}
+
+async function postLocalAction(url, successFallback) {
+  setControlsMessage("");
+  btnStartSolverEl.disabled = true;
+  btnStopSolverEl.disabled = true;
+  try {
+    const response = await fetch(url, { method: "POST" });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
+    setControlsMessage(data.message || successFallback);
+    await pollProcessStatus();
+  } catch (error) {
+    setControlsMessage(error.message, true);
+    await pollProcessStatus();
+  }
+}
+
+btnStartSolverEl.addEventListener("click", () => {
+  postLocalAction("/api/local/start-solver", "Solveur lancé.");
+});
+
+btnStopSolverEl.addEventListener("click", () => {
+  if (!window.confirm("Arrêter le processus 4mation-local.exe ?")) {
+    return;
+  }
+  postLocalAction("/api/local/stop-solver", "Arrêt demandé.");
+});
+
+pollProcessStatus();
+setInterval(pollProcessStatus, PROCESS_POLL_MS);
 
 poll();
 pollWorkers();

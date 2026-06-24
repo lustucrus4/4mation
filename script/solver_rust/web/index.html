@@ -18,6 +18,20 @@
         </p>
       </header>
 
+      <section class="solver-panel controls-panel">
+        <h2>Contrôle solveur</h2>
+        <div class="controls-row">
+          <span id="process-badge" class="status-badge status-paused">—</span>
+          <div class="controls-buttons">
+            <button id="btn-start-solver" type="button" class="btn">Démarrer le solveur</button>
+            <button id="btn-stop-solver" type="button" class="btn btn-danger" disabled>
+              Arrêter le solveur
+            </button>
+          </div>
+        </div>
+        <p id="controls-message" class="controls-message muted"></p>
+      </section>
+
       <section class="solver-panel">
         <div class="progress-header">
           <span id="status-badge" class="status-badge status-paused">—</span>

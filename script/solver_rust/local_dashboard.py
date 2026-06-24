@@ -13,20 +13,88 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 WEB_DIR = Path(__file__).resolve().parent / "web"
+SCRIPTS_DIR = ROOT / "scripts"
 DEFAULT_DB = ROOT / "script" / "solver" / "data" / "tablebase.db"
 DEFAULT_PORT = 8765
+SOLVER_PROCESS_NAME = "4mation-local.exe"
+
+# Scripts autorisés — aucune commande arbitraire
+ALLOWED_LOCAL_SCRIPTS: dict[str, Path] = {
+    "solver": SCRIPTS_DIR / "run_local_solver_rust.bat",
+    "stack": SCRIPTS_DIR / "run_local_solver_stack.bat",
+}
+
+LOCALHOST_ADDRS = frozenset({"127.0.0.1", "::1"})
 
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "script"))
 
 
+def _is_localhost_request(remote_addr: str | None) -> bool:
+    return remote_addr in LOCALHOST_ADDRS
+
+
+def is_solver_running() -> bool:
+    """Indique si 4mation-local.exe tourne sur cette machine (Windows)."""
+    if sys.platform != "win32":
+        return False
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FI", f"IMAGENAME eq {SOLVER_PROCESS_NAME}", "/NH"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    output = (result.stdout or "").lower()
+    return SOLVER_PROCESS_NAME.lower() in output and "aucune tâche" not in output and "no tasks" not in output
+
+
+def launch_local_script(script_key: str, window_title: str) -> Path:
+    """Lance un .bat whitelisté dans une nouvelle fenêtre cmd /k."""
+    bat_path = ALLOWED_LOCAL_SCRIPTS.get(script_key)
+    if bat_path is None:
+        raise ValueError(f"Script inconnu : {script_key}")
+    resolved = bat_path.resolve()
+    if not resolved.is_file():
+        raise FileNotFoundError(f"Script introuvable : {resolved}")
+    # Vérifie que le chemin reste sous scripts/
+    try:
+        resolved.relative_to(SCRIPTS_DIR.resolve())
+    except ValueError as exc:
+        raise ValueError("Chemin de script non autorisé") from exc
+
+    subprocess.Popen(
+        ["cmd", "/c", "start", window_title, "cmd", "/k", str(resolved)],
+        cwd=str(ROOT),
+        shell=False,
+    )
+    return resolved
+
+
+def stop_solver_process() -> bool:
+    """Arrête 4mation-local.exe (Windows). Retourne True si une commande a été envoyée."""
+    if sys.platform != "win32" or not is_solver_running():
+        return False
+    subprocess.run(
+        ["taskkill", "/IM", SOLVER_PROCESS_NAME, "/F"],
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    return True
+
+
 def create_app(db_path: Path):
-    from flask import Flask, jsonify, send_from_directory
+    from flask import Flask, abort, jsonify, request, send_from_directory
     from flask_cors import CORS
 
     from api.services.solver_progress import SolverProgressService
@@ -39,6 +107,10 @@ def create_app(db_path: Path):
 
     progress = SolverProgressService(db_path=db_path)
     queue = WorkQueueService(db_path=db_path)
+
+    def _require_localhost():
+        if not _is_localhost_request(request.remote_addr):
+            abort(403, description="Endpoints locaux réservés à 127.0.0.1")
 
     @app.get("/")
     def index():
@@ -69,6 +141,77 @@ def create_app(db_path: Path):
                 "ok": True,
                 "db_path": str(db_path),
                 "db_exists": db_path.exists(),
+            }
+        )
+
+    @app.get("/api/local/process-status")
+    def local_process_status():
+        _require_localhost()
+        running = is_solver_running()
+        return jsonify(
+            {
+                "success": True,
+                "running": running,
+                "process_name": SOLVER_PROCESS_NAME,
+                "status_label": "actif" if running else "arrêté",
+            }
+        )
+
+    @app.post("/api/local/start-solver")
+    def local_start_solver():
+        _require_localhost()
+        if is_solver_running():
+            return jsonify(
+                {
+                    "success": False,
+                    "error": "Le solveur est déjà en cours d'exécution.",
+                    "running": True,
+                }
+            ), 409
+        try:
+            script_path = launch_local_script("solver", "4mation-solver")
+        except (ValueError, FileNotFoundError) as exc:
+            return jsonify({"success": False, "error": str(exc)}), 400
+        return jsonify(
+            {
+                "success": True,
+                "message": "Solveur lancé dans une nouvelle fenêtre.",
+                "script": str(script_path),
+            }
+        )
+
+    @app.post("/api/local/start-stack")
+    def local_start_stack():
+        _require_localhost()
+        try:
+            script_path = launch_local_script("stack", "4mation-stack")
+        except (ValueError, FileNotFoundError) as exc:
+            return jsonify({"success": False, "error": str(exc)}), 400
+        return jsonify(
+            {
+                "success": True,
+                "message": "Stack locale lancée (dashboard + solveur).",
+                "script": str(script_path),
+            }
+        )
+
+    @app.post("/api/local/stop-solver")
+    def local_stop_solver():
+        _require_localhost()
+        if not is_solver_running():
+            return jsonify(
+                {
+                    "success": False,
+                    "error": "Aucun solveur en cours d'exécution.",
+                    "running": False,
+                }
+            ), 404
+        stop_solver_process()
+        return jsonify(
+            {
+                "success": True,
+                "message": "Arrêt du solveur demandé.",
+                "running": False,
             }
         )
 

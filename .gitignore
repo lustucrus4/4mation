@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Modèles et logs
+models/
+logs/
+*.pkl
+*.h5
+*.ckpt
+
+# Données volumineuses
+script/game_tree/data/*.json
+!script/game_tree/data/.gitkeep
+script/game_tree/tree_visualization_*.html
+script/game_tree/tree_visualization_*.pdf
+
+# TensorBoard
+events.out.tfevents.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Vite
+node_modules/
+4mation_dashboard_dev/dist/
+
+# Secrets
+.env
+.env.local
+.env.*.local
+4mation_dashboard_dev/.env.production
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints

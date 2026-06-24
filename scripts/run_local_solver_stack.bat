@@ -11,16 +11,16 @@ if not defined SOLVER_THREADS set "SOLVER_THREADS=16"
 echo ========================================
 echo  4mation - Stack solveur LOCAL complet
 echo ========================================
-echo 1. Dashboard  : http://127.0.0.1:%SOLVER_DASHBOARD_PORT%/
-echo 2. Solveur    : 4mation-local --db %TABLEBASE_DB%
+echo Dashboard : http://127.0.0.1:%SOLVER_DASHBOARD_PORT%/  (cette fenetre)
+echo Solveur   : 4mation-local --db %TABLEBASE_DB%  (2e fenetre)
 echo.
 echo Le filler de file n'est plus necessaire avec 4mation-local (exploration integree).
 echo.
 
-start "4mation-dashboard" cmd /k "%~dp0run_local_dashboard.bat"
+start "" cmd /k "%~dp0run_local_solver_rust.bat" %*
 
 timeout /t 2 /nobreak >nul
 
-call "%~dp0run_local_solver_rust.bat" %*
+call "%~dp0run_local_dashboard.bat" %*
 
 endlocal

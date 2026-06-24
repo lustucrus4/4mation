@@ -73,10 +73,13 @@ def launch_local_script(script_key: str, window_title: str) -> Path:
     except ValueError as exc:
         raise ValueError("Chemin de script non autorisé") from exc
 
+    # CREATE_NEW_CONSOLE : évite start "titre" où Windows interprète le titre comme exe
+    if sys.platform != "win32":
+        raise OSError("Lancement de scripts locaux réservé à Windows")
     subprocess.Popen(
-        ["cmd", "/c", "start", window_title, "cmd", "/k", str(resolved)],
+        ["cmd.exe", "/k", f'title {window_title} & call "{resolved}"'],
         cwd=str(ROOT),
-        shell=False,
+        creationflags=subprocess.CREATE_NEW_CONSOLE,
     )
     return resolved
 

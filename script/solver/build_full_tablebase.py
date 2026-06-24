@@ -650,6 +650,10 @@ def main() -> None:
     parser.add_argument("--batch", type=int, default=25)
     parser.add_argument("--progress-interval", type=float, default=15.0)
     parser.add_argument("--position-timeout", type=float, default=30.0)
+    # Arguments hérités (ignorés — boucle continue intégrée)
+    parser.add_argument("--progress-every", type=int, default=1, help=argparse.SUPPRESS)
+    parser.add_argument("--continuous", action="store_true", default=True, help=argparse.SUPPRESS)
+    parser.add_argument("--refill-sleep", type=float, default=5.0, help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     run_full_solver(

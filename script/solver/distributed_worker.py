@@ -50,7 +50,7 @@ logging.basicConfig(
 logger = logging.getLogger("distributed_worker")
 
 DEFAULT_API = "https://api-4mation.lab211.fr"
-IDLE_SLEEP_SEC = 5.0
+IDLE_SLEEP_SEC = float(os.environ.get("SOLVER_IDLE_SLEEP", "2.0"))
 STATS_INTERVAL_SEC = 30.0
 API_TIMEOUT_SEC = float(os.environ.get("SOLVER_API_TIMEOUT", "120"))
 API_MAX_RETRIES = int(os.environ.get("SOLVER_API_RETRIES", "4"))

@@ -115,15 +115,12 @@ services:
         mkdir -p /app/data
 
         while true; do
-          rm -rf /tmp/repo
-          git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-          cp -a /tmp/repo/script /app/
           echo "Filler — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           python /app/script/solver/work_queue_filler.py \
-            --db /app/data/tablebase.db --max-empty 12 --batch 500 --sleep 1 \
-            --min-pending 800 \
-          || echo "Filler erreur — retry 15s"
-          sleep 15
+            --db /app/data/tablebase.db --max-empty 12 --batch 500 --sleep 0 \
+            --min-pending 500 \
+          || echo "Filler erreur — retry 3s"
+          sleep 3
         done
 
     restart: unless-stopped

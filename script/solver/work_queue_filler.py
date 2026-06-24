@@ -39,6 +39,11 @@ from solver.solver_status import board_to_list
 
 DEFAULT_DB = SCRIPT / "solver" / "data" / "tablebase.db"
 CHECKPOINT_FILE = "filler_checkpoint.json"
+DEFAULT_BATCH = 500
+DEFAULT_SLEEP_SEC = 0.0
+DEFAULT_MIN_PENDING = 500
+TURBO_BATCH_CAP = 1500
+CHECKPOINT_EVERY_TURBO = 5
 
 logging.basicConfig(
     level=logging.INFO,
@@ -102,12 +107,18 @@ def _resolve_level_index(max_empty: int, checkpoint: dict) -> int:
     return len(MAX_EMPTY_LEVELS) - 1
 
 
+def _effective_batch(batch_size: int, pending: int, min_pending: int) -> int:
+    if min_pending > 0 and pending < min_pending:
+        return min(batch_size * 2, TURBO_BATCH_CAP)
+    return batch_size
+
+
 def fill_queue(
     db_path: Path,
     max_empty_start: int = 12,
-    batch_size: int = 200,
-    sleep_sec: float = 2.0,
-    min_pending: int = 0,
+    batch_size: int = DEFAULT_BATCH,
+    sleep_sec: float = DEFAULT_SLEEP_SEC,
+    min_pending: int = DEFAULT_MIN_PENDING,
     once: bool = False,
 ) -> None:
     conn = init_db(db_path)
@@ -125,6 +136,7 @@ def fill_queue(
     exploration_mode = checkpoint.get("exploration_mode") or "retrograde"
     work_iter = None
     idle_rounds = 0
+    turbo_rounds = 0
 
     logger.info(
         "Filler démarré — max_empty=%d, known=%d, mode=%s, batch=%d, min_pending=%d",
@@ -137,6 +149,11 @@ def fill_queue(
 
     while True:
         inserted = 0
+        pending_now = conn.execute(
+            "SELECT COUNT(*) FROM work_queue WHERE status = 'pending'"
+        ).fetchone()[0]
+        turbo = min_pending > 0 and pending_now < min_pending
+        target_batch = _effective_batch(batch_size, pending_now, min_pending)
         if work_iter is None:
             if exploration_mode == "forward":
                 work_iter = forward_bfs_unsolved(advisor, max_empty, known, bfs_seen)
@@ -147,7 +164,7 @@ def fill_queue(
                 )
 
         try:
-            while inserted < batch_size:
+            while inserted < target_batch:
                 board, player, last_move = next(work_iter)
                 h = HASHER.hash_key(board, player, last_move)
                 if h in known:
@@ -192,7 +209,7 @@ def fill_queue(
                 known = _known_hashes(conn)
                 if once:
                     break
-                time.sleep(max(sleep_sec, 10))
+                time.sleep(max(sleep_sec, 1.0))
                 continue
 
         pending = conn.execute(
@@ -208,20 +225,23 @@ def fill_queue(
         )
         conn.commit()
 
-        _save_checkpoint(
-            db_path,
-            bfs_seen=bfs_seen,
-            retro_seen=retro_seen,
-            max_empty_level=level_idx,
-            exploration_mode=exploration_mode,
-        )
+        turbo_rounds = turbo_rounds + 1 if turbo else 0
+        if not turbo or turbo_rounds % CHECKPOINT_EVERY_TURBO == 0 or inserted == 0:
+            _save_checkpoint(
+                db_path,
+                bfs_seen=bfs_seen,
+                retro_seen=retro_seen,
+                max_empty_level=level_idx,
+                exploration_mode=exploration_mode,
+            )
 
         if inserted:
             idle_rounds = 0
-            logger.info("+%d positions en queue (pending=%d)", inserted, pending)
+            tag = " [turbo]" if turbo else ""
+            logger.info("+%d positions en queue (pending=%d)%s", inserted, pending, tag)
         else:
             idle_rounds += 1
-            if idle_rounds >= 5:
+            if idle_rounds >= 3:
                 logger.warning(
                     "Filler bloqué (%d tours sans insertion) — avance niveau ou reset exploration",
                     idle_rounds,
@@ -255,13 +275,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Alimente work_queue pour workers distribués")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--max-empty", type=int, default=12)
-    parser.add_argument("--batch", type=int, default=200)
-    parser.add_argument("--sleep", type=float, default=2.0)
+    parser.add_argument("--batch", type=int, default=DEFAULT_BATCH)
+    parser.add_argument("--sleep", type=float, default=DEFAULT_SLEEP_SEC)
     parser.add_argument(
         "--min-pending",
         type=int,
-        default=0,
-        help="Cible de tampon : pas de pause tant que pending < cette valeur",
+        default=DEFAULT_MIN_PENDING,
+        help="Cible de tampon : pas de pause tant que pending < cette valeur (batch x2 en turbo)",
     )
     parser.add_argument("--once", action="store_true", help="Un seul lot puis sortie")
     args = parser.parse_args()

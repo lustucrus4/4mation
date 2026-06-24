@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 from collections import OrderedDict
 import random
+import time
 
 # Ajouter le répertoire parent au path pour les imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -39,16 +40,19 @@ class OptimizedMinimaxAdvisor:
     # Poids pour les fenêtres de 4
     WINDOW_WEIGHTS = {0: 0, 1: 1, 2: 10, 3: 100, 4: 10000}
     
-    def __init__(self, depth: int = 8, cache_size: int = 50000, use_iterative_deepening: bool = True):
+    def __init__(self, depth: int = 8, cache_size: int = 50000, use_iterative_deepening: bool = True,
+                 time_budget_ms: Optional[int] = None):
         """
         Args:
             depth: Profondeur maximale de recherche
             cache_size: Taille maximale du cache (LRU)
             use_iterative_deepening: Utiliser iterative deepening
+            time_budget_ms: Budget temps max (ms) pour iterative deepening
         """
         self.max_depth = depth
         self.cache_size = cache_size
         self.use_iterative_deepening = use_iterative_deepening
+        self.time_budget_ms = time_budget_ms
         
         # Cache de transposition: {hash: (score, depth, flag, best_move)}
         self.transposition_cache = OrderedDict()
@@ -659,7 +663,13 @@ class OptimizedMinimaxAdvisor:
         # Trier les coups une fois
         ordered_moves = self._order_moves(board, moves, current_player, last_move)
         
+        deadline = None
+        if self.time_budget_ms:
+            deadline = time.perf_counter() + self.time_budget_ms / 1000.0
+        
         for depth in range(1, self.max_depth + 1):
+            if deadline is not None and time.perf_counter() >= deadline:
+                break
             try:
                 current_best_move = None
                 current_best_score = float('-inf')

@@ -3,7 +3,7 @@
 import os
 
 bind = os.environ.get("GUNICORN_BIND", "127.0.0.1:5000")
-workers = 2
+workers = int(os.environ.get("GUNICORN_WORKERS", "2"))
 timeout = 120
 worker_class = "sync"
 proc_name = "4mation_api"

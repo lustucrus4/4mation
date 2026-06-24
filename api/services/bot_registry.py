@@ -20,13 +20,15 @@ class RandomBot:
 
 
 class MinimaxBot:
-    """Joueur Minimax optimisé à profondeur fixe."""
+    """Joueur Minimax optimisé avec budget temps."""
 
-    def __init__(self, depth: int):
+    def __init__(self, depth: int, time_budget_ms: int = 400):
         self.depth = depth
+        self.time_budget_ms = time_budget_ms
         self._advisor = OptimizedMinimaxAdvisor(
             depth=depth,
             use_iterative_deepening=True,
+            time_budget_ms=time_budget_ms,
         )
 
     def choose_move(self, engine: GameEngine) -> Optional[Tuple[int, int]]:
@@ -61,25 +63,32 @@ class BotRegistry:
         },
         "minimax_d2": {
             "name": "Minimax (profondeur 2)",
-            "description": "Minimax optimisé, recherche peu profonde",
+            "description": "Minimax rapide (~200 ms)",
         },
         "minimax_d4": {
             "name": "Minimax (profondeur 4)",
-            "description": "Minimax optimisé, niveau débutant",
+            "description": "Minimax optimisé, niveau débutant (~400 ms)",
         },
         "minimax_d6": {
             "name": "Minimax (profondeur 6)",
-            "description": "Minimax optimisé, niveau intermédiaire",
+            "description": "Minimax optimisé, niveau intermédiaire (~500 ms)",
         },
         "minimax_d8": {
             "name": "Minimax (profondeur 8)",
-            "description": "Minimax optimisé, niveau avancé",
+            "description": "Minimax optimisé, niveau avancé (~800 ms)",
         },
+    }
+
+    _DEPTH_CONFIG: Dict[str, Tuple[int, int]] = {
+        "minimax_d2": (2, 200),
+        "minimax_d4": (4, 400),
+        "minimax_d6": (6, 500),
+        "minimax_d8": (8, 800),
     }
 
     def __init__(self) -> None:
         self._random_bot = RandomBot()
-        self._minimax_bots: Dict[int, MinimaxBot] = {}
+        self._minimax_bots: Dict[str, MinimaxBot] = {}
 
     def list_bots(self) -> List[Dict[str, str]]:
         return [
@@ -90,22 +99,17 @@ class BotRegistry:
     def is_valid_bot(self, bot_id: str) -> bool:
         return bot_id in self._BOT_META
 
-    def _get_minimax_bot(self, depth: int) -> MinimaxBot:
-        if depth not in self._minimax_bots:
-            self._minimax_bots[depth] = MinimaxBot(depth=depth)
-        return self._minimax_bots[depth]
+    def _get_minimax_bot(self, bot_id: str) -> MinimaxBot:
+        if bot_id not in self._minimax_bots:
+            depth, budget = self._DEPTH_CONFIG[bot_id]
+            self._minimax_bots[bot_id] = MinimaxBot(depth=depth, time_budget_ms=budget)
+        return self._minimax_bots[bot_id]
 
     def choose_move(self, bot_id: str, engine: GameEngine) -> Optional[Tuple[int, int]]:
         if bot_id == "random":
             return self._random_bot.choose_move(engine)
 
-        depth_map = {
-            "minimax_d2": 2,
-            "minimax_d4": 4,
-            "minimax_d6": 6,
-            "minimax_d8": 8,
-        }
-        if bot_id not in depth_map:
+        if bot_id not in self._DEPTH_CONFIG:
             raise ValueError(f"Bot inconnu: {bot_id}")
 
-        return self._get_minimax_bot(depth_map[bot_id]).choose_move(engine)
+        return self._get_minimax_bot(bot_id).choose_move(engine)

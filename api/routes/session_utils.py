@@ -21,12 +21,13 @@ def get_session_id(request: Request) -> str | None:
 
 
 def attach_session_cookie(response, session_id: str):
-    """Associe le cookie de session à une réponse Flask."""
+    """Associe le cookie de session à une réponse Flask (cross-origin API)."""
     response.set_cookie(
         SESSION_COOKIE,
         session_id,
         httponly=True,
-        samesite="Lax",
+        samesite="None",
+        secure=True,
         max_age=60 * 60 * 24 * 7,
     )
     return response

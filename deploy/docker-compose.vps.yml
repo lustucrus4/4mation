@@ -7,6 +7,9 @@ services:
       - "127.0.0.1:8097:8097"
     environment:
       PYTHONPATH: /app:/app/script
+      SESSION_DB_PATH: /app/data/sessions.db
+    volumes:
+      - 4mation-sessions:/app/data
     command:
       - sh
       - -c
@@ -16,7 +19,7 @@ services:
         git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
         cp -a /tmp/repo/api /tmp/repo/script /app/
         pip install --no-cache-dir -r /app/api/requirements.txt
-        mkdir -p /app/logs
+        mkdir -p /app/logs /app/data
         exec gunicorn -c /app/api/gunicorn_config.py --bind 0.0.0.0:8097 api.app:app
     restart: always
 
@@ -180,3 +183,6 @@ services:
         ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
         if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
         echo nginx-ssl-ok
+
+volumes:
+  4mation-sessions:

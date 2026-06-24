@@ -161,3 +161,33 @@ class GameEngine:
             for i, entry in enumerate(self.history)
         ]
 
+    def to_snapshot(self) -> Dict:
+        """Sérialise l'état du moteur pour persistance."""
+        state = self.state
+        last = state.last_move_position
+        return {
+            "board": state.board.tolist(),
+            "current_player": int(state.current_player),
+            "action_history": [
+                [int(p), int(r), int(c)] for p, r, c in state.action_history
+            ],
+            "last_move_position": [int(last[0]), int(last[1])] if last else None,
+            "is_terminal": bool(state.is_terminal),
+            "winner": int(state.winner) if state.winner is not None else None,
+            "move_count": int(state.move_count),
+            "history": [
+                {"player": int(e["player"]), "action": [int(e["action"][0]), int(e["action"][1])]}
+                for e in self.history
+            ],
+        }
+
+    @classmethod
+    def from_snapshot(cls, data: Dict) -> "GameEngine":
+        """Restaure un moteur depuis un snapshot."""
+        engine = cls()
+        engine.reset()
+        for entry in data.get("history", []):
+            action = tuple(entry["action"])
+            engine.step(action)
+        return engine
+

@@ -56,7 +56,8 @@ API_TIMEOUT_SEC = float(os.environ.get("SOLVER_API_TIMEOUT", "120"))
 API_MAX_RETRIES = int(os.environ.get("SOLVER_API_RETRIES", "4"))
 API_RETRY_BASE_SLEEP = float(os.environ.get("SOLVER_API_RETRY_BASE_SLEEP", "0.5"))
 API_RETRY_MAX_SLEEP = float(os.environ.get("SOLVER_API_RETRY_MAX_SLEEP", "2.0"))
-MAX_CLAIM_BATCH_SERVER = int(os.environ.get("SOLVER_MAX_CLAIM_BATCH", "50"))
+# Plafond serveur par requête claim/submit-batch (aligné work_queue_service, défaut 500).
+MAX_CLAIM_BATCH_SERVER = int(os.environ.get("SOLVER_MAX_CLAIM_BATCH", "500"))
 
 
 class HttpClient:
@@ -481,12 +482,12 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=int(os.environ.get("SOLVER_WORKERS", "4")))
     parser.add_argument("--max-empty", type=int, default=int(os.environ.get("TABLEBASE_MAX_EMPTY", "49")))
     parser.add_argument("--position-timeout", type=float, default=30.0)
-    parser.add_argument("--claim-batch", type=int, default=int(os.environ.get("SOLVER_CLAIM_BATCH", "25")))
+    parser.add_argument("--claim-batch", type=int, default=int(os.environ.get("SOLVER_CLAIM_BATCH", "500")))
     parser.add_argument(
         "--prefetch",
         type=int,
         default=int(os.environ.get("SOLVER_PREFETCH", "0")),
-        help="Positions à accumuler avant résolution (0 = claim-batch). Max 50/requête API.",
+        help="Positions à accumuler avant résolution (0 = claim-batch). Max SOLVER_MAX_CLAIM_BATCH/requête API (défaut 500).",
     )
     parser.add_argument(
         "--solve-threads",

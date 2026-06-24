@@ -10,18 +10,18 @@ if exist "%USERPROFILE%\.cargo\bin" (
 
 if not defined SOLVER_API_URL set "SOLVER_API_URL=https://api-4mation.lab211.fr"
 if not defined SOLVER_THREADS set "SOLVER_THREADS=16"
-if not defined SOLVER_CLAIM_BATCH set "SOLVER_CLAIM_BATCH=25"
+if not defined SOLVER_CLAIM_BATCH set "SOLVER_CLAIM_BATCH=500"
 
 set "WORKER_BIN=script\solver_rust\target\release\4mation-worker.exe"
 if not exist "%WORKER_BIN%" (
-    echo Binaire absent — compilation release...
+    echo Binaire absent - compilation release...
     pushd script\solver_rust
     cargo build --release
     if errorlevel 1 (
         echo Echec compilation Rust.
         echo - rustup : https://rustup.rs
-        echo - MSVC Build Tools (C++) : https://visualstudio.microsoft.com/fr/downloads/
-        echo   Cochez « Developpement Desktop en C++ » puis relancez ce script.
+        echo - MSVC Build Tools C++ : https://visualstudio.microsoft.com/fr/downloads/
+        echo   Cochez Developpement Desktop en C++ puis relancez ce script.
         popd
         exit /b 1
     )
@@ -29,7 +29,7 @@ if not exist "%WORKER_BIN%" (
 )
 
 echo ========================================
-echo  4mation — Worker Rust (4mation-worker)
+echo  4mation - Worker Rust 4mation-worker
 echo ========================================
 echo API      : %SOLVER_API_URL%
 echo Threads  : %SOLVER_THREADS% (rayon)

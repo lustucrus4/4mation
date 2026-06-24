@@ -8,7 +8,8 @@ use tracing::info;
 
 use crate::api_client::{ClaimedPosition, LastMove, SubmitPayload};
 
-const MAX_CLAIM_BATCH: usize = 50;
+/// Aligné sur SOLVER_MAX_CLAIM_BATCH côté API (défaut 500).
+const MAX_CLAIM_BATCH: usize = 500;
 
 pub struct LocalDb {
     path: String,

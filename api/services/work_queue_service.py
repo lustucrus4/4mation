@@ -24,7 +24,8 @@ DEFAULT_DB = (
 )
 
 CLAIM_TIMEOUT_SEC = int(os.environ.get("SOLVER_CLAIM_TIMEOUT_SEC", "300"))
-MAX_CLAIM_BATCH = int(os.environ.get("SOLVER_MAX_CLAIM_BATCH", "50"))
+# Plafond claim/submit-batch par requête (SQLite WAL : 500 positions OK en une transaction).
+MAX_CLAIM_BATCH = int(os.environ.get("SOLVER_MAX_CLAIM_BATCH", "500"))
 # Limite en positions claimées / fenêtre (pas en requêtes HTTP) — compatible workers batchés.
 RATE_LIMIT_POSITIONS = int(os.environ.get("SOLVER_RATE_LIMIT_POSITIONS", "3000"))
 RATE_LIMIT_WINDOW_SEC = int(os.environ.get("SOLVER_RATE_LIMIT_WINDOW_SEC", "60"))
@@ -275,6 +276,12 @@ class WorkQueueService:
         """Soumet plusieurs positions en une transaction. Retourne (ok, fail, erreurs)."""
         if not results:
             return 0, 0, []
+        if len(results) > MAX_CLAIM_BATCH:
+            return (
+                0,
+                len(results),
+                [f"trop de résultats ({len(results)} > {MAX_CLAIM_BATCH})"],
+            )
 
         ok_count = 0
         fail_count = 0

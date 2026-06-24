@@ -37,8 +37,8 @@ struct Args {
     #[arg(long, env = "SOLVER_THREADS", default_value = "16")]
     threads: usize,
 
-    /// Positions par claim HTTP (max serveur : 50)
-    #[arg(long, env = "SOLVER_CLAIM_BATCH", default_value = "25")]
+    /// Positions par claim HTTP (max serveur : SOLVER_MAX_CLAIM_BATCH, défaut 500)
+    #[arg(long, env = "SOLVER_CLAIM_BATCH", default_value = "500")]
     claim_batch: usize,
 
     /// Cases vides max pour résolution rétrograde

@@ -37,7 +37,7 @@ Variables d'environnement utiles :
 |----------|--------|-------------|
 | `SOLVER_API_URL` | `https://api-4mation.lab211.fr` | URL API |
 | `SOLVER_THREADS` | `16` | Threads rayon (cœurs physiques) |
-| `SOLVER_CLAIM_BATCH` | `25` | Positions par claim (max 50) |
+| `SOLVER_CLAIM_BATCH` | `500` | Positions par claim (max `SOLVER_MAX_CLAIM_BATCH`, défaut 500) |
 | `TABLEBASE_MAX_EMPTY` | `49` | Cases vides max pour résolution |
 | `SOLVER_WORKER_TOKEN` | — | Token si requis par l'API |
 
@@ -51,7 +51,7 @@ Connexion HTTP persistante (reqwest), claim par lot, résolution parallèle (ray
 .\target\release\4mation-worker.exe `
   --api-url https://api-4mation.lab211.fr `
   --threads 16 `
-  --claim-batch 25
+  --claim-batch 500
 ```
 
 ### Base locale (`--local-db`)

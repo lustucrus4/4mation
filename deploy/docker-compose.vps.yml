@@ -26,7 +26,7 @@ services:
 
       SOLVER_RATE_LIMIT_POSITIONS: "3000"
 
-      SOLVER_MAX_CLAIM_BATCH: "50"
+      SOLVER_MAX_CLAIM_BATCH: "500"
 
     volumes:
 
@@ -145,7 +145,7 @@ services:
 
       SOLVER_WORKERS: "4"
 
-      SOLVER_CLAIM_BATCH: "25"
+      SOLVER_CLAIM_BATCH: "500"
 
       SOLVER_SOLVE_THREADS: "2"
 
@@ -184,7 +184,7 @@ services:
           python /app/script/solver/distributed_worker.py \
             --api-url $${SOLVER_API_URL:-http://api:8097} \
             --workers $${SOLVER_WORKERS:-4} \
-            --claim-batch $${SOLVER_CLAIM_BATCH:-25} \
+            --claim-batch $${SOLVER_CLAIM_BATCH:-500} \
             --solve-threads $${SOLVER_SOLVE_THREADS:-2} \
             --position-timeout 30 \
           || echo "Worker arrêté — redémarrage dans 5s"

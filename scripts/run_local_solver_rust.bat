@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 
-REM Solveur 4mation 100%% local + dashboard Rust integre — Legion Ryzen 16 coeurs
+REM Solveur 4mation 100%% local + dashboard Rust integre - Legion Ryzen 16 coeurs
 cd /d "%~dp0.."
 
 if exist "%USERPROFILE%\.cargo\bin" (
@@ -27,6 +27,9 @@ if not exist "%LOCAL_BIN%" (
     )
     popd
 )
+
+REM Libere le port si un ancien dashboard (Flask/Python ou Rust) tourne encore
+call "%~dp0free_dashboard_port.bat"
 
 echo ========================================
 echo  4mation - Solveur local Rust + dashboard

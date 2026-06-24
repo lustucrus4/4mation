@@ -36,7 +36,7 @@ echo          Lancez scripts\run_local_solver_rust.bat ou run_local_solver_stack
 echo.
 
 REM Libere le port si un ancien dashboard tourne encore
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetTCPConnection -LocalPort %SOLVER_DASHBOARD_PORT% -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+call "%~dp0free_dashboard_port.bat"
 
 "%DASH_BIN%" --db "%TABLEBASE_DB%" --port %SOLVER_DASHBOARD_PORT% %*
 set "EXIT_CODE=%ERRORLEVEL%"
@@ -45,4 +45,4 @@ if not "%EXIT_CODE%"=="0" (
     echo ERREUR : le dashboard s est arrete avec le code %EXIT_CODE%.
     pause
 )
-exit /b %EXIT_CODE%
+exit /b %EXIT_CODE%

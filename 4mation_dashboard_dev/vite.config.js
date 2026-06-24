@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { resolve } from "path";
 
 const apiTarget = process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:5000";
 
@@ -15,5 +16,11 @@ export default defineConfig({
   build: {
     outDir: "../4mation_dashboard_deploy",
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        solver: resolve(__dirname, "solver.html"),
+      },
+    },
   },
 });

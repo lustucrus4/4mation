@@ -1,48 +1,99 @@
-<!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>4mation — Jeu</title>
-    <link rel="stylesheet" href="/src/style.css" />
-  </head>
-  <body>
-    <div class="app">
-      <header class="header">
-        <div class="header-top">
-          <h1>4mation</h1>
-          <!-- Placeholder SSO Lab211 — à brancher sur le SDK auth.lab211.fr -->
-          <button id="btn-login" class="btn btn-ghost" type="button" title="Connexion SSO (à venir)">
-            Connexion
-          </button>
-        </div>
-        <p class="subtitle">Alignez 4 pions adjacents sur un plateau 7×7</p>
-      </header>
-
-      <section class="controls">
-        <label class="field">
-          <span>Mode</span>
-          <select id="mode-select">
-            <option value="standard">Partie classique</option>
-            <option value="learning">Apprentissage</option>
-          </select>
-        </label>
-        <label class="field field-bot" id="bot-field">
-          <span>Adversaire IA</span>
-          <select id="bot-select"></select>
-        </label>
-        <button id="btn-new" class="btn" type="button">Nouvelle partie</button>
-        <button id="btn-ai" class="btn btn-secondary" type="button">Coup de l'IA</button>
-        <button id="btn-undo" class="btn btn-ghost" type="button" disabled>Annuler coup</button>
-        <button id="btn-variant" class="btn btn-ghost" type="button" disabled>Nouvelle variante</button>
-      </section>
-
-      <div id="board" class="board" aria-label="Plateau 7 par 7"></div>
-
-      <p id="message" class="message">Chargement…</p>
-      <p id="game-info" class="game-info">—</p>
-      <ol id="timeline" class="timeline" aria-label="Historique des coups"></ol>
-    </div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
-</html>
+<!doctype html>
+
+<html lang="fr">
+
+  <head>
+
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>4mation — Jeu</title>
+
+    <link rel="stylesheet" href="/src/style.css" />
+
+  </head>
+
+  <body>
+
+    <div class="app">
+
+      <header class="header">
+
+        <div class="header-top">
+
+          <h1>4mation</h1>
+
+          <!-- Placeholder SSO Lab211 — à brancher sur le SDK auth.lab211.fr -->
+
+          <button id="btn-login" class="btn btn-ghost" type="button" title="Connexion SSO (à venir)">
+
+            Connexion
+
+          </button>
+
+        </div>
+
+        <p class="subtitle">Alignez 4 pions adjacents sur un plateau 7×7</p>
+
+      </header>
+
+
+
+      <section class="controls">
+
+        <label class="field">
+
+          <span>Mode</span>
+
+          <select id="mode-select">
+
+            <option value="standard">Partie classique</option>
+
+            <option value="learning">Apprentissage</option>
+
+          </select>
+
+        </label>
+
+        <label class="field field-bot" id="bot-field">
+
+          <span>Adversaire IA</span>
+
+          <select id="bot-select"></select>
+
+        </label>
+
+        <button id="btn-new" class="btn" type="button">Nouvelle partie</button>
+
+        <button id="btn-ai" class="btn btn-secondary" type="button">Coup de l'IA</button>
+
+        <button id="btn-undo" class="btn btn-ghost" type="button" disabled>Annuler coup</button>
+
+        <button id="btn-variant" class="btn btn-ghost" type="button" disabled>Nouvelle variante</button>
+
+      </section>
+
+
+
+      <div id="board" class="board" aria-label="Plateau 7 par 7"></div>
+
+
+
+      <p id="message" class="message">Chargement…</p>
+
+      <p id="game-info" class="game-info">—</p>
+
+      <ol id="timeline" class="timeline" aria-label="Historique des coups"></ol>
+
+      <footer class="site-footer">
+        <a href="/solver.html">Avancement solveur</a>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+
+  </body>
+
+</html>
+

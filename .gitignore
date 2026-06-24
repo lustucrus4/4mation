@@ -45,6 +45,10 @@ script/game_tree/data/*.json
 !script/game_tree/data/.gitkeep
 script/game_tree/tree_visualization_*.html
 script/game_tree/tree_visualization_*.pdf
+script/solver/data/solver_checkpoint.json
+script/solver/data/tablebase.db
+script/solver/data/tablebase.db-*
+script/solver/data/solver_status.json
 
 # TensorBoard
 events.out.tfevents.*

@@ -1,0 +1,400 @@
+#!/usr/bin/env python3
+"""
+Solveur complet progressif avec checkpoint/reprise (Phase C — serveur background).
+
+Parcourt l'espace de positions par BFS rétrograde depuis les terminales,
+écrit au fur et à mesure dans tablebase.db et publie solver_status.json.
+
+Usage:
+    python script/solver/build_full_tablebase.py [--db PATH] [--max-empty 20] [--batch 500]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import sys
+import time
+from collections import deque
+from pathlib import Path
+from typing import Optional, Set, Tuple
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SCRIPT = ROOT / "script"
+if str(SCRIPT) not in sys.path:
+    sys.path.insert(0, str(SCRIPT))
+
+from game_tree.optimized_minimax import OptimizedMinimaxAdvisor
+from solver.db_schema import init_db
+from solver.position_hasher import HASHER
+from solver.retrograde_solver import RetrogradeSolver, SolvedPosition
+from solver.solver_status import (
+    append_recent,
+    board_to_list,
+    position_entry,
+    read_status,
+    write_status,
+)
+
+DEFAULT_DB = SCRIPT / "solver" / "data" / "tablebase.db"
+CHECKPOINT_FILE = "solver_checkpoint.json"
+PHASE = "full"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger("full_tablebase")
+
+
+def _store_position(
+    conn,
+    solved: SolvedPosition,
+    board: np.ndarray,
+    current_player: int,
+    last_move: Optional[Tuple[int, int]],
+) -> None:
+    br, bc = (-1, -1)
+    if solved.best_move:
+        br, bc = solved.best_move
+    lmr, lmc = (-1, -1)
+    if last_move is not None:
+        lmr, lmc = last_move
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO positions
+        (hash, result, win_rate, best_move_row, best_move_col, depth_remaining,
+         board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        (
+            solved.hash_key,
+            solved.result,
+            solved.win_rate,
+            br,
+            bc,
+            solved.depth_remaining,
+            json.dumps(board_to_list(board)),
+            current_player,
+            lmr,
+            lmc,
+        ),
+    )
+
+
+def _update_progress(
+    conn,
+    *,
+    solved: int,
+    queued: int,
+    last_hash: str,
+    started_at: str,
+    total_target: int,
+    progress_percent: float,
+    solver_running: bool,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO solver_progress
+        (id, total_queued, total_solved, last_hash, started_at, current_phase,
+         solver_running, total_target, progress_percent, updated_at)
+        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET
+            total_queued=excluded.total_queued,
+            total_solved=excluded.total_solved,
+            last_hash=excluded.last_hash,
+            started_at=COALESCE(solver_progress.started_at, excluded.started_at),
+            current_phase=excluded.current_phase,
+            solver_running=excluded.solver_running,
+            total_target=excluded.total_target,
+            progress_percent=excluded.progress_percent,
+            updated_at=CURRENT_TIMESTAMP
+        """,
+        (
+            queued,
+            solved,
+            last_hash,
+            started_at,
+            PHASE,
+            1 if solver_running else 0,
+            total_target,
+            progress_percent,
+        ),
+    )
+
+
+def _load_checkpoint(db_path: Path) -> Set[str]:
+    cp = db_path.parent / CHECKPOINT_FILE
+    if not cp.exists():
+        return set()
+    try:
+        data = json.loads(cp.read_text(encoding="utf-8"))
+        return set(data.get("processed", []))
+    except (json.JSONDecodeError, OSError):
+        return set()
+
+
+def _save_checkpoint(db_path: Path, processed: Set[str]) -> None:
+    cp = db_path.parent / CHECKPOINT_FILE
+    cp.write_text(
+        json.dumps({"processed": list(processed)[-10000:], "count": len(processed)}),
+        encoding="utf-8",
+    )
+
+
+def _enumerate_seed_positions(
+    advisor: OptimizedMinimaxAdvisor,
+    max_empty: int,
+    num_games: int = 500,
+) -> deque:
+    """Génère des positions candidates via parties aléatoires."""
+    import random
+
+    queue: deque = deque()
+    seen: Set[str] = set()
+
+    for _ in range(num_games):
+        board = np.zeros((7, 7), dtype=np.int8)
+        player = 1
+        last_move = None
+        for _ply in range(49):
+            if HASHER.empty_cells(board) <= max_empty:
+                h = HASHER.hash_key(board, player, last_move)
+                if h not in seen:
+                    seen.add(h)
+                    queue.append((board.copy(), player, last_move))
+            if advisor._check_winner(board) is not None:
+                break
+            moves = advisor._get_frontier_moves(board, last_move, player)
+            if not moves:
+                break
+            move = random.choice(moves)
+            board = board.copy()
+            board[move[0], move[1]] = player
+            last_move = move
+            if advisor._check_winner(board) is not None or np.all(board != 0):
+                break
+            player = 3 - player
+
+    return queue
+
+
+def _publish_live_status(
+    *,
+    total_solved: int,
+    total_target: int,
+    queued: int,
+    started_at: str,
+    started_mono: float,
+    batch_solved: int,
+    batch_elapsed: float,
+    last_hash: str,
+    recent: list,
+    board: np.ndarray,
+    current_player: int,
+    last_move: Optional[Tuple[int, int]],
+    solved: SolvedPosition,
+    solver_running: bool,
+) -> list:
+    rate = batch_solved / batch_elapsed if batch_elapsed > 0 else 0.0
+    elapsed = max(time.monotonic() - started_mono, 0.001)
+    overall_rate = total_solved / elapsed if total_solved else rate
+    use_rate = rate if rate > 0 else overall_rate
+    remaining = max(total_target - total_solved, 0)
+    eta = int(remaining / use_rate) if use_rate > 0 and remaining > 0 else None
+    progress = min(100.0, 100.0 * total_solved / total_target) if total_target > 0 else 0.0
+
+    entry = position_entry(
+        hash_key=solved.hash_key,
+        board=board,
+        current_player=current_player,
+        last_move=last_move,
+        best_move=solved.best_move,
+        result=solved.result,
+        win_rate=solved.win_rate,
+    )
+    recent = append_recent(recent, entry)
+
+    write_status({
+        "solver_running": solver_running,
+        "started_at": started_at,
+        "last_update": entry["solved_at"],
+        "current_phase": PHASE,
+        "total_positions_solved": total_solved,
+        "total_positions_target": total_target,
+        "total_queued": queued,
+        "progress_percent": round(progress, 2),
+        "positions_per_second": round(use_rate, 2),
+        "eta_seconds": eta,
+        "recent_positions": recent,
+    })
+    return recent
+
+
+def run_full_solver(
+    db_path: Path,
+    max_empty: int = 20,
+    batch_size: int = 500,
+    sleep_between_batches: float = 0.1,
+) -> None:
+    conn = init_db(db_path)
+    solver = RetrogradeSolver(max_empty=max_empty)
+    advisor = OptimizedMinimaxAdvisor(depth=2, use_iterative_deepening=False)
+    processed = _load_checkpoint(db_path)
+    total_solved = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+
+    queue = _enumerate_seed_positions(advisor, max_empty)
+    total_target = max(total_solved + len(queue) + len(processed), total_solved, 1)
+
+    started_mono = time.monotonic()
+    prev_status = read_status()
+    started_at = prev_status.get("started_at") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    recent: list = list(prev_status.get("recent_positions") or [])
+
+    logger.info(
+        "Démarrage solveur complet — max_empty=%d, déjà %d positions, file=%d, cible ~%d",
+        max_empty,
+        total_solved,
+        len(queue),
+        total_target,
+    )
+
+    _update_progress(
+        conn,
+        solved=total_solved,
+        queued=len(queue),
+        last_hash="",
+        started_at=started_at,
+        total_target=total_target,
+        progress_percent=100.0 * total_solved / total_target,
+        solver_running=True,
+    )
+    conn.commit()
+
+    write_status({
+        "solver_running": True,
+        "started_at": started_at,
+        "last_update": started_at,
+        "current_phase": PHASE,
+        "total_positions_solved": total_solved,
+        "total_positions_target": total_target,
+        "total_queued": len(queue),
+        "progress_percent": round(100.0 * total_solved / total_target, 2),
+        "positions_per_second": 0.0,
+        "eta_seconds": None,
+        "recent_positions": recent,
+    })
+
+    batch_count = 0
+    batch_start_mono = time.monotonic()
+    batch_start_solved = total_solved
+    last_hash = ""
+
+    while queue:
+        board, player, last_move = queue.popleft()
+        h = HASHER.hash_key(board, player, last_move)
+        if h in processed:
+            continue
+        processed.add(h)
+
+        existing = conn.execute("SELECT 1 FROM positions WHERE hash=?", (h,)).fetchone()
+        if existing:
+            continue
+
+        solved = solver.solve_position(board, player, last_move)
+        if solved is None:
+            continue
+
+        _store_position(conn, solved, board, player, last_move)
+        total_solved += 1
+        batch_count += 1
+        last_hash = h
+
+        if batch_count >= batch_size:
+            batch_elapsed = max(time.monotonic() - batch_start_mono, 0.001)
+            conn.commit()
+            progress = min(100.0, 100.0 * total_solved / total_target)
+            _update_progress(
+                conn,
+                solved=total_solved,
+                queued=len(queue),
+                last_hash=last_hash,
+                started_at=started_at,
+                total_target=total_target,
+                progress_percent=progress,
+                solver_running=True,
+            )
+            conn.commit()
+            recent = _publish_live_status(
+                total_solved=total_solved,
+                total_target=total_target,
+                queued=len(queue),
+                started_at=started_at,
+                started_mono=started_mono,
+                batch_solved=total_solved - batch_start_solved,
+                batch_elapsed=batch_elapsed,
+                last_hash=last_hash,
+                recent=recent,
+                board=board,
+                current_player=player,
+                last_move=last_move,
+                solved=solved,
+                solver_running=True,
+            )
+            _save_checkpoint(db_path, processed)
+            logger.info(
+                "Progression : %d/%d (%.1f%%) — %.1f pos/s, file=%d",
+                total_solved,
+                total_target,
+                progress,
+                (total_solved - batch_start_solved) / batch_elapsed,
+                len(queue),
+            )
+            batch_count = 0
+            batch_start_mono = time.monotonic()
+            batch_start_solved = total_solved
+            time.sleep(sleep_between_batches)
+
+    conn.commit()
+    progress = 100.0 if total_solved >= total_target else 100.0 * total_solved / max(total_target, 1)
+    _update_progress(
+        conn,
+        solved=total_solved,
+        queued=0,
+        last_hash=last_hash,
+        started_at=started_at,
+        total_target=total_target,
+        progress_percent=progress,
+        solver_running=False,
+    )
+    conn.commit()
+    _save_checkpoint(db_path, processed)
+
+    final = read_status()
+    final["solver_running"] = False
+    final["total_positions_solved"] = total_solved
+    final["total_queued"] = 0
+    final["progress_percent"] = round(progress, 2)
+    final["last_update"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    write_status(final)
+
+    conn.close()
+    logger.info("Solveur terminé — %d positions au total", total_solved)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Solveur complet progressif 4mation")
+    parser.add_argument("--db", default=str(DEFAULT_DB))
+    parser.add_argument("--max-empty", type=int, default=20)
+    parser.add_argument("--batch", type=int, default=500)
+    args = parser.parse_args()
+
+    run_full_solver(Path(args.db), args.max_empty, args.batch)
+
+
+if __name__ == "__main__":
+    main()
+

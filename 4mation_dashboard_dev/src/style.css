@@ -154,6 +154,10 @@ h1 {
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
 }
 
+.cell.playable.exact-rate[data-mcts]::after {
+  color: #7bed9f;
+}
+
 .cell.player-1 {
   background: linear-gradient(135deg, #ff4757, #c44569);
   border-color: var(--p1);
@@ -210,4 +214,217 @@ body.is-busy .controls .btn {
 
 .timeline:empty {
   display: none;
+}
+
+.app-wide {
+  width: min(960px, 100%);
+}
+
+.site-footer {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.site-footer a {
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.25);
+}
+
+.site-footer a:hover {
+  color: var(--accent);
+}
+
+/* ——— Page solveur ——— */
+
+.solver-panel {
+  margin: 20px 0;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progress-pct {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.progress-track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), #7bed9f);
+  transition: width 0.6s ease;
+  box-shadow: 0 0 12px rgba(17, 241, 204, 0.5);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-running {
+  background: rgba(17, 241, 204, 0.2);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.status-paused {
+  background: rgba(254, 202, 87, 0.15);
+  color: #feca57;
+  border: 1px solid #feca57;
+}
+
+.status-done {
+  background: rgba(46, 213, 115, 0.15);
+  color: #2ed573;
+  border: 1px solid #2ed573;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.stat dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat dd {
+  margin-top: 4px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stat-updated {
+  margin-top: 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.recent-section {
+  margin-top: 24px;
+}
+
+.recent-section h2 {
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.recent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.position-card {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mini-board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  aspect-ratio: 1;
+}
+
+.mini-cell {
+  border-radius: 20%;
+  background: var(--cell);
+  border: 1px solid var(--cell-border);
+}
+
+.mini-cell.player-1 {
+  background: linear-gradient(135deg, #ff4757, #c44569);
+}
+
+.mini-cell.player-2 {
+  background: linear-gradient(135deg, #3742fa, #2f3542);
+}
+
+.mini-cell.best-move {
+  outline: 2px solid #feca57;
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+.mini-cell.last-move:not(.best-move) {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.position-meta {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.72rem;
+}
+
+.result-badge {
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.result-W {
+  background: rgba(46, 213, 115, 0.25);
+  color: #2ed573;
+}
+
+.result-L {
+  background: rgba(255, 71, 87, 0.25);
+  color: #ff4757;
+}
+
+.result-D {
+  background: rgba(254, 202, 87, 0.2);
+  color: #feca57;
+}
+
+.win-rate {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.hash {
+  color: var(--muted);
+  font-family: monospace;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
 }

@@ -22,7 +22,12 @@ from solver.db_schema import init_db
 
 
 def main() -> None:
-    db = DEFAULT_DB
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Génère la tablebase initiale 4mation")
+    parser.add_argument("--db", default=str(DEFAULT_DB), help="Chemin SQLite cible")
+    args = parser.parse_args()
+    db = Path(args.db)
     print(f"Initialisation tablebase -> {db}")
     init_db(db)
     build_opening_book(db, max_ply=8, depth=4, time_budget_ms=1200)

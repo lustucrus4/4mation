@@ -50,6 +50,14 @@ services:
 
         mkdir -p /app/logs /app/data /var/www/4mation
 
+        if [ ! -f /app/data/tablebase.db ]; then
+
+          pip install --no-cache-dir numpy
+
+          python /app/script/solver/seed_initial_tablebase.py --db /app/data/tablebase.db
+
+        fi
+
         exec gunicorn -c /app/api/gunicorn_config.py --bind 0.0.0.0:8097 api.app:app
 
     restart: always
@@ -96,7 +104,21 @@ services:
 
         mkdir -p /app/data
 
-        exec python /app/script/solver/build_full_tablebase.py --db /app/data/tablebase.db --batch 200
+        if [ ! -f /app/data/tablebase.db ]; then
+
+          python /app/script/solver/seed_initial_tablebase.py --db /app/data/tablebase.db
+
+        fi
+
+        export SOLVER_STATUS_PATH=/app/data/solver_status.json
+
+        while true; do
+
+          python /app/script/solver/build_full_tablebase.py --db /app/data/tablebase.db --batch 200
+
+          sleep 60
+
+        done
 
     restart: unless-stopped
 

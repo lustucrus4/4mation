@@ -19,6 +19,10 @@ let autoAiAfterHuman = true;
 let isBusy = false;
 /** @type {Record<string, number> | null} */
 let mctsRates = null;
+/** @type {string} */
+let analysisLabel = "Estimé (MCTS)";
+/** @type {boolean} */
+let analysisExact = false;
 
 const boardEl = document.getElementById("board");
 const messageEl = document.getElementById("message");
@@ -177,8 +181,10 @@ function renderBoard(state) {
           const rate = mctsRates[cellKey(row, col)];
           if (rate !== undefined) {
             const pct = (rate * 100).toFixed(0);
+            const suffix = analysisExact ? "exact" : "MCTS";
             cell.setAttribute("data-mcts", `${pct}%`);
-            cell.title = `${pct}% victoire (MCTS)`;
+            cell.title = `${pct}% victoire (${analysisLabel})`;
+            cell.classList.toggle("exact-rate", analysisExact);
           }
         }
       }
@@ -208,7 +214,7 @@ function renderBoard(state) {
       messageEl.textContent =
         count === 49
           ? "Mode apprentissage — premier coup libre"
-          : `À vous — % victoire MCTS sur les cases jouables`;
+          : `À vous — % victoire (${analysisLabel}) sur les cases jouables`;
     } else {
       messageEl.textContent =
         count === 49
@@ -227,21 +233,32 @@ function renderBoard(state) {
 async function fetchMctsAnalysis() {
   if (gameMode !== "learning") {
     mctsRates = null;
+    analysisExact = false;
+    analysisLabel = "Estimé (MCTS)";
     return;
   }
   try {
-    setBusy(true, "Analyse MCTS…");
+    const busyLabel = "Analyse en cours…";
+    setBusy(true, busyLabel);
     const data = await apiFetch("/api/analyze", {
       method: "POST",
       body: JSON.stringify({ time_budget_ms: MCTS_BUDGET_MS }),
     });
+    const analysis = data.analysis ?? {};
+    analysisExact = Boolean(analysis.exact);
+    analysisLabel = analysis.label || (analysisExact ? "Exact (tablebase)" : "Estimé (MCTS)");
     const rates = {};
-    for (const m of data.analysis?.moves ?? []) {
+    for (const m of analysis.moves ?? []) {
       rates[cellKey(m.row, m.col)] = m.win_rate;
     }
     mctsRates = rates;
+    if (!analysis.moves?.length && analysis.partial && analysis.position_win_rate !== undefined) {
+      messageEl.textContent = `Position : ${(analysis.position_win_rate * 100).toFixed(0)}% (${analysisLabel})`;
+    }
   } catch {
     mctsRates = null;
+    analysisExact = false;
+    analysisLabel = "Estimé (MCTS)";
   } finally {
     setBusy(false);
   }

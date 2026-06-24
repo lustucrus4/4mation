@@ -6,6 +6,7 @@ import logging
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
+from api.services.tablebase_lookup import get_tablebase_lookup
 from game.game_engine import GameEngine
 from game_tree.optimized_minimax import OptimizedMinimaxAdvisor
 
@@ -44,6 +45,15 @@ class MinimaxBot:
         valid_actions = engine.get_valid_actions()
         if not valid_actions:
             return None
+
+        tb_move = get_tablebase_lookup().choose_move(
+            state.board,
+            int(state.current_player),
+            last_move,
+            valid_actions,
+        )
+        if tb_move is not None:
+            return tb_move
 
         try:
             analysis = self._advisor.analyze_position(

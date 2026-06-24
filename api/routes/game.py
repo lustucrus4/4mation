@@ -15,6 +15,7 @@ from flask import Blueprint, jsonify, request
 
 
 from api.services import BotRegistry, GameSessionManager, serialize_board_state
+from api.services.tablebase_lookup import get_tablebase_lookup
 
 from api.routes.session_utils import get_session_id, json_with_session
 
@@ -86,7 +87,7 @@ def _last_move_from_engine(engine) -> Optional[Tuple[int, int]]:
 
 def _play_coach_move(session_id: str, engine) -> Optional[Dict[str, Any]]:
 
-    """En mode learning, joue le meilleur coup MCTS après le coup humain."""
+    """En mode learning, joue le meilleur coup (tablebase ou MCTS)."""
 
     if engine.is_terminal():
 
@@ -98,15 +99,23 @@ def _play_coach_move(session_id: str, engine) -> Optional[Dict[str, Any]]:
 
     last_move = _last_move_from_engine(engine)
 
-    analysis = mcts_advisor.analyze_position(
-
+    tablebase = get_tablebase_lookup()
+    tb_analysis = tablebase.analyze_position(
         state.board,
-
         current_player=int(state.current_player),
-
         last_move=last_move,
-
     )
+    if tb_analysis and tb_analysis.get("best_move"):
+        analysis = tb_analysis
+    else:
+        analysis = mcts_advisor.analyze_position(
+            state.board,
+            current_player=int(state.current_player),
+            last_move=last_move,
+        )
+        analysis["source"] = "mcts"
+        analysis["exact"] = False
+        analysis["label"] = "Estimé (MCTS)"
 
     best = analysis.get("best_move")
 
@@ -454,35 +463,37 @@ def api_analyze():
 
     data = request.get_json(silent=True) or {}
 
-    time_budget_ms = int(data.get("time_budget_ms", 600))
-
-    time_budget_ms = max(300, min(time_budget_ms, 3000))
-
-
-
     state = engine.get_state()
 
     last_move = _last_move_from_engine(engine)
 
 
 
-    advisor = mcts_advisor
-
-    if time_budget_ms != advisor.time_budget_ms:
-
-        advisor = MCTSAdvisor(time_budget_ms=time_budget_ms)
-
-
-
-    analysis = advisor.analyze_position(
-
+    tablebase = get_tablebase_lookup()
+    tb_analysis = tablebase.analyze_position(
         state.board,
-
         current_player=int(state.current_player),
-
         last_move=last_move,
-
     )
+
+    if tb_analysis is not None:
+        analysis = tb_analysis
+    else:
+        time_budget_ms = int(data.get("time_budget_ms", 600))
+        time_budget_ms = max(300, min(time_budget_ms, 3000))
+
+        advisor = mcts_advisor
+        if time_budget_ms != advisor.time_budget_ms:
+            advisor = MCTSAdvisor(time_budget_ms=time_budget_ms)
+
+        analysis = advisor.analyze_position(
+            state.board,
+            current_player=int(state.current_player),
+            last_move=last_move,
+        )
+        analysis["source"] = "mcts"
+        analysis["exact"] = False
+        analysis["label"] = "Estimé (MCTS)"
 
 
 
@@ -610,5 +621,10 @@ def api_health():
 
     """Point de santé pour vérifier que l'API répond."""
 
-    return jsonify({"status": "ok", "service": "4mation-api"})
+    tb_stats = get_tablebase_lookup().stats()
+    return jsonify({
+        "status": "ok",
+        "service": "4mation-api",
+        "tablebase": tb_stats,
+    })
 

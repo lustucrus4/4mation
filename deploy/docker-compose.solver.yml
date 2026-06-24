@@ -1,0 +1,41 @@
+# Solveur complet Phase C — tourne en arrière-plan sur le VPS
+# Ne bloque pas l'API prod (volume partagé tablebase.db)
+
+services:
+  solver:
+    image: python:3.12-slim
+    container_name: 4mation-solver
+    working_dir: /app
+    environment:
+      PYTHONPATH: /app:/app/script
+      TABLEBASE_DB_PATH: /app/data/tablebase.db
+      TABLEBASE_MAX_EMPTY: "20"
+    volumes:
+      - 4mation-sessions:/app/data
+    command:
+      - sh
+      - -c
+      - |
+        apt-get update && apt-get install -y --no-install-recommends git
+        rm -rf /tmp/repo
+        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+        cp -a /tmp/repo/script /app/
+        pip install --no-cache-dir numpy
+        mkdir -p /app/data
+        if [ ! -f /app/data/tablebase.db ] && [ -f /app/script/solver/data/tablebase.db ]; then
+          cp /app/script/solver/data/tablebase.db /app/data/tablebase.db
+        fi
+        echo "Solveur Phase C démarré — écriture dans /app/data/tablebase.db"
+        while true; do
+          python /app/script/solver/build_full_tablebase.py \
+            --db /app/data/tablebase.db \
+            --max-empty 20 \
+            --batch 500
+          echo "Cycle solveur terminé — pause 60s avant reprise"
+          sleep 60
+        done
+    restart: unless-stopped
+
+volumes:
+  4mation-sessions:
+    external: true

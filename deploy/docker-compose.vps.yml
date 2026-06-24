@@ -64,11 +64,11 @@ services:
 
 
 
-  solver:
+  solver-filler:
 
     image: python:3.12-slim
 
-    container_name: 4mation-solver
+    container_name: 4mation-solver-filler
 
     working_dir: /app
 
@@ -79,10 +79,6 @@ services:
       TABLEBASE_DB_PATH: /app/data/tablebase.db
 
       SOLVER_STATUS_PATH: /app/data/solver_status.json
-
-      SOLVER_API_URL: http://api:8097
-
-      SOLVER_WORKERS: "2"
 
     volumes:
 
@@ -112,32 +108,79 @@ services:
 
         mkdir -p /app/data
 
-        if [ ! -f /app/data/tablebase.db ]; then
-          python /app/script/solver/seed_initial_tablebase.py --db /app/data/tablebase.db
-        else
-          POS_COUNT=$$(python -c "import sqlite3; c=sqlite3.connect('/app/data/tablebase.db'); print(c.execute('SELECT COUNT(*) FROM positions').fetchone()[0])")
-          if [ "$$POS_COUNT" = "0" ]; then
-            echo "Tablebase vide — seed initial"
-            python /app/script/solver/seed_initial_tablebase.py --db /app/data/tablebase.db
-          fi
-        fi
+        while true; do
+          rm -rf /tmp/repo
+          git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          cp -a /tmp/repo/script /app/
+          echo "Filler — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python /app/script/solver/work_queue_filler.py \
+            --db /app/data/tablebase.db --max-empty 12 --batch 100 --sleep 2 \
+          || echo "Filler erreur — retry 15s"
+          sleep 15
+        done
 
-        export SOLVER_STATUS_PATH=/app/data/solver_status.json
+    restart: unless-stopped
+
+
+
+  solver:
+
+    image: python:3.12-slim
+
+    container_name: 4mation-solver
+
+    working_dir: /app
+
+    environment:
+
+      PYTHONPATH: /app/script
+
+      TABLEBASE_DB_PATH: /app/data/tablebase.db
+
+      SOLVER_API_URL: http://api:8097
+
+      SOLVER_WORKERS: "2"
+
+    volumes:
+
+      - 4mation-data:/app/data
+
+    depends_on:
+
+      - api
+
+      - solver-filler
+
+    command:
+
+      - sh
+
+      - -c
+
+      - |
+
+        apt-get update && apt-get install -y --no-install-recommends git
+
+        rm -rf /tmp/repo
+
+        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+
+        cp -a /tmp/repo/script /app/
+
+        pip install --no-cache-dir numpy
+
+        mkdir -p /app/data
 
         while true; do
           rm -rf /tmp/repo
           git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
           cp -a /tmp/repo/script /app/
-          echo "Solveur distribué — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          python /app/script/solver/work_queue_filler.py \
-            --db /app/data/tablebase.db --max-empty 12 --batch 200 --sleep 3 &
-          FILLER_PID=$$!
+          echo "Workers solveur — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           python /app/script/solver/distributed_worker.py \
             --api-url $${SOLVER_API_URL:-http://api:8097} \
             --workers $${SOLVER_WORKERS:-2} \
             --position-timeout 30 \
           || echo "Worker arrêté — redémarrage dans 10s"
-          kill $$FILLER_PID 2>/dev/null || true
           sleep 10
         done
 

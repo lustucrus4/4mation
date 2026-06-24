@@ -118,11 +118,12 @@ def fill_queue(
     known = _known_hashes(conn)
     bfs_seen: Set[str] = set(checkpoint.get("bfs_seen_tail") or [])
     retro_seen: Set[str] = set(checkpoint.get("retro_seen_tail") or [])
-    bfs_seen |= known
-    retro_seen |= known
+    # Ne pas fusionner known dans bfs_seen/retro_seen : sinon le parcours ne découvre
+    # plus de nouvelles branches à travers des positions déjà résolues.
 
     exploration_mode = checkpoint.get("exploration_mode") or "retrograde"
     work_iter = None
+    idle_rounds = 0
 
     logger.info(
         "Filler démarré — max_empty=%d, known=%d, mode=%s",
@@ -175,11 +176,20 @@ def fill_queue(
                 exploration_mode = "retrograde"
                 logger.info("Niveau filler suivant — max_empty=%d", max_empty)
             else:
-                logger.info("Filler terminé — espace exploré pour tous les niveaux")
+                logger.info(
+                    "Passe exploration terminée (max_empty=%d) — recyclage niveau 0",
+                    max_empty,
+                )
+                level_idx = 0
+                max_empty = MAX_EMPTY_LEVELS[0]
+                exploration_mode = "retrograde"
+                work_iter = None
+                bfs_seen.clear()
+                retro_seen.clear()
+                known = _known_hashes(conn)
                 if once:
                     break
-                time.sleep(30)
-                known = _known_hashes(conn)
+                time.sleep(max(sleep_sec, 10))
                 continue
 
         pending = conn.execute(
@@ -204,7 +214,32 @@ def fill_queue(
         )
 
         if inserted:
+            idle_rounds = 0
             logger.info("+%d positions en queue (pending=%d)", inserted, pending)
+        else:
+            idle_rounds += 1
+            if idle_rounds >= 5:
+                logger.warning(
+                    "Filler bloqué (%d tours sans insertion) — avance niveau ou reset exploration",
+                    idle_rounds,
+                )
+                work_iter = None
+                idle_rounds = 0
+                bfs_seen.clear()
+                retro_seen.clear()
+                if exploration_mode == "retrograde":
+                    exploration_mode = "forward"
+                elif level_idx + 1 < len(MAX_EMPTY_LEVELS):
+                    level_idx += 1
+                    max_empty = MAX_EMPTY_LEVELS[level_idx]
+                    exploration_mode = "retrograde"
+                    logger.info("Niveau filler forcé — max_empty=%d", max_empty)
+                else:
+                    exploration_mode = "retrograde"
+                    level_idx = 0
+                    max_empty = MAX_EMPTY_LEVELS[0]
+                    known = _known_hashes(conn)
+                    logger.info("Recyclage exploration depuis niveau %d", max_empty)
 
         if once:
             break

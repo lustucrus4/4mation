@@ -112,6 +112,11 @@ h1 {
   border: 1px solid var(--accent);
 }
 
+#auth-slot .lab211-auth-btn {
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

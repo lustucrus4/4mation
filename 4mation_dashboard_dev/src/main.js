@@ -2,6 +2,8 @@
  * Client jeu 4mation — Partie classique + mode Apprentissage (MCTS)
  */
 
+import { setupLab211Auth } from "./lab211-auth-setup.js";
+
 const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 const SESSION_KEY = "4mation_session_id";
 const MODE_KEY = "4mation_mode";
@@ -35,7 +37,7 @@ const btnNew = document.getElementById("btn-new");
 const btnAi = document.getElementById("btn-ai");
 const btnUndo = document.getElementById("btn-undo");
 const btnVariant = document.getElementById("btn-variant");
-const btnLogin = document.getElementById("btn-login");
+const authSlotEl = document.getElementById("auth-slot");
 
 function apiUrl(path) {
   return `${API_BASE}${path}`;
@@ -424,11 +426,8 @@ btnNew.addEventListener("click", newGame);
 btnAi.addEventListener("click", playAiMove);
 btnUndo.addEventListener("click", undoMove);
 btnVariant.addEventListener("click", newVariant);
-btnLogin.addEventListener("click", () => {
-  alert("Connexion SSO Lab211 — ajouter https://4mation.lab211.fr dans auth.lab211.fr");
-});
-
 async function init() {
+  setupLab211Auth(authSlotEl);
   updateModeUI();
   try {
     await loadBots();

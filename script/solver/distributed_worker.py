@@ -41,6 +41,7 @@ logger = logging.getLogger("distributed_worker")
 DEFAULT_API = "https://api-4mation.lab211.fr"
 IDLE_SLEEP_SEC = 5.0
 STATS_INTERVAL_SEC = 30.0
+API_TIMEOUT_SEC = float(os.environ.get("SOLVER_API_TIMEOUT", "120"))
 
 
 def _api_request(
@@ -124,6 +125,7 @@ def worker_loop(
     solved_count = 0
     failed_count = 0
     last_stats = time.monotonic()
+    last_idle_log = 0.0
 
     logger.info("Worker %s démarré", worker_id)
 
@@ -137,6 +139,7 @@ def worker_loop(
                 claim_url,
                 {"worker_id": worker_id, "count": claim_batch},
                 token=token,
+                timeout=API_TIMEOUT_SEC,
             )
             if not resp.get("success"):
                 logger.warning("[%s] Claim échoué : %s", worker_id, resp.get("error"))
@@ -145,6 +148,13 @@ def worker_loop(
 
             positions: List[Dict[str, Any]] = resp.get("positions") or []
             if not positions:
+                now = time.monotonic()
+                if now - last_idle_log >= 60.0:
+                    logger.info(
+                        "[%s] En attente — file API vide (filler VPS en cours d'alimentation)",
+                        worker_id,
+                    )
+                    last_idle_log = now
                 time.sleep(IDLE_SLEEP_SEC)
                 continue
 

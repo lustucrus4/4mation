@@ -34,7 +34,15 @@ pip install numpy
 
 ## Lancement rapide (Windows)
 
-**Double-clic** ou PowerShell :
+**Recommandé — double-clic** (contourne `ExecutionPolicy` PowerShell, pas de configuration système) :
+
+```bat
+scripts\run_local_worker.bat
+```
+
+Ou depuis l'explorateur : double-clic sur `scripts\run_local_worker.bat` (ou `.cmd`, identique).
+
+Alternative PowerShell (si `ExecutionPolicy` autorise les scripts) :
 
 ```powershell
 cd c:\Users\Lucien\Documents\Projet code\4mation
@@ -93,6 +101,7 @@ Le solveur exhaustif monolithique (`build_full_tablebase.py`) peut coexister ou 
 
 | Symptôme | Cause probable | Action |
 |----------|----------------|--------|
+| `L'exécution de scripts est désactivée` (`.ps1`) | `ExecutionPolicy` Windows | Utiliser `scripts\run_local_worker.bat` à la place |
 | `Claim` vide en boucle | Queue vide | Vérifier que le filler tourne sur le VPS |
 | HTTP 401 | Token requis | Exporter `SOLVER_WORKER_TOKEN` localement |
 | HTTP 429 | Rate limit | Réduire `--workers` ou attendre |
@@ -104,4 +113,6 @@ Le solveur exhaustif monolithique (`build_full_tablebase.py`) peut coexister ou 
 - `script/solver/work_queue_filler.py` — générateur de travail (VPS)
 - `api/routes/solver_workers.py` — routes API
 - `api/services/work_queue_service.py` — logique file partagée
-- `scripts/run_local_worker.ps1` — lanceur Windows
+- `scripts/run_local_worker.bat` — lanceur Windows (recommandé, double-clic)
+- `scripts/run_local_worker.cmd` — alias identique au `.bat`
+- `scripts/run_local_worker.ps1` — lanceur PowerShell (nécessite ExecutionPolicy)

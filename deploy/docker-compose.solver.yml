@@ -26,17 +26,15 @@ services:
           cp /app/script/solver/data/tablebase.db /app/data/tablebase.db
         fi
         echo "Solveur Phase C démarré — écriture dans /app/data/tablebase.db"
-        while true; do
-          python /app/script/solver/build_full_tablebase.py \
-            --db /app/data/tablebase.db \
-            --max-empty 12 \
-            --batch 25 \
-            --progress-every 1 \
-            --progress-interval 15 \
-            --position-timeout 30
-          echo "Cycle solveur terminé — pause 60s avant reprise"
-          sleep 60
-        done
+        exec python /app/script/solver/build_full_tablebase.py \
+          --db /app/data/tablebase.db \
+          --max-empty 12 \
+          --batch 25 \
+          --progress-every 1 \
+          --progress-interval 15 \
+          --position-timeout 30 \
+          --continuous \
+          --refill-sleep 10
     restart: unless-stopped
 
 volumes:

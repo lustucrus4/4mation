@@ -103,6 +103,14 @@ class SolverProgressService:
         started_at = live.get("started_at") or db_started
         last_update = live.get("last_update") or db_updated
 
+        stale_age: Optional[float] = None
+        if last_update:
+            try:
+                ts = datetime.fromisoformat(str(last_update).replace("Z", "+00:00"))
+                stale_age = (datetime.now(timezone.utc) - ts).total_seconds()
+            except (ValueError, TypeError):
+                stale_age = None
+
         eta = live.get("eta_seconds")
         rate = float(live.get("positions_per_second") or 0.0)
         if eta is None and rate > 0 and total_target and total_solved < total_target:
@@ -114,11 +122,17 @@ class SolverProgressService:
 
         status_label = "termine"
         if running:
-            status_label = "en_cours"
+            if stale_age is not None and stale_age > 60:
+                status_label = "calcul_long"
+            else:
+                status_label = "en_cours"
         elif total_target and total_solved >= total_target:
             status_label = "termine"
         elif total_solved > 0 and not running:
-            status_label = "pause"
+            if stale_age is not None and stale_age <= 90:
+                status_label = "rechargement"
+            else:
+                status_label = "pause"
 
         progress_value = round(float(progress), 4) if progress is not None else None
 

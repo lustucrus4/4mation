@@ -48,6 +48,8 @@ function elapsedSince(iso) {
 function statusLabel(status) {
   const map = {
     en_cours: { text: "En cours", cls: "status-running" },
+    calcul_long: { text: "Calcul long", cls: "status-running" },
+    rechargement: { text: "Rechargement", cls: "status-running" },
     pause: { text: "Pause", cls: "status-paused" },
     termine: { text: "Terminé", cls: "status-done" },
   };

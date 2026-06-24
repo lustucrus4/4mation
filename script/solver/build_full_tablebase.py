@@ -288,6 +288,11 @@ def _save_checkpoint(db_path: Path, processed: Set[str]) -> None:
 
 
 
+def _known_hashes_from_db(conn) -> Set[str]:
+    rows = conn.execute("SELECT hash FROM positions").fetchall()
+    return {str(r[0]) for r in rows}
+
+
 def _enumerate_seed_positions(
 
     advisor: OptimizedMinimaxAdvisor,
@@ -295,6 +300,8 @@ def _enumerate_seed_positions(
     max_empty: int,
 
     num_games: int = 500,
+
+    exclude: Optional[Set[str]] = None,
 
 ) -> deque:
 
@@ -306,7 +313,9 @@ def _enumerate_seed_positions(
 
     queue: deque = deque()
 
-    seen: Set[str] = set()
+    seen: Set[str] = set(exclude or ())
+
+    skip = exclude or set()
 
 
 
@@ -324,7 +333,7 @@ def _enumerate_seed_positions(
 
                 h = HASHER.hash_key(board, player, last_move)
 
-                if h not in seen:
+                if h not in seen and h not in skip:
 
                     seen.add(h)
 
@@ -547,6 +556,27 @@ def _flush_progress(
     return recent
 
 
+def _refill_queue(
+    conn,
+    advisor: OptimizedMinimaxAdvisor,
+    max_empty: int,
+    *,
+    num_games: int,
+    known: Set[str],
+) -> deque:
+    """Génère une file de positions absentes de la base."""
+    raw = _enumerate_seed_positions(
+        advisor, max_empty, num_games=num_games, exclude=known,
+    )
+    fresh: deque = deque()
+    for board, player, last_move in raw:
+        h = HASHER.hash_key(board, player, last_move)
+        if h in known:
+            continue
+        fresh.append((board, player, last_move))
+    return _sort_queue_by_difficulty(fresh)
+
+
 def run_full_solver(
     db_path: Path,
     max_empty: int = 12,
@@ -555,6 +585,9 @@ def run_full_solver(
     progress_interval_sec: float = 15.0,
     sleep_between_batches: float = 0.05,
     position_timeout_sec: float = 30.0,
+    continuous: bool = True,
+    refill_sleep_sec: float = 5.0,
+    max_refill_games: int = 8000,
 ) -> None:
 
     conn = init_db(db_path)
@@ -563,16 +596,16 @@ def run_full_solver(
 
     advisor = OptimizedMinimaxAdvisor(depth=2, use_iterative_deepening=False)
 
-    processed = _load_checkpoint(db_path)
+    checkpoint_processed = _load_checkpoint(db_path)
 
     total_solved = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
 
-
-
-    queue = _sort_queue_by_difficulty(_enumerate_seed_positions(advisor, max_empty))
+    known = _known_hashes_from_db(conn)
+    num_games = 500
+    queue = _refill_queue(conn, advisor, max_empty, num_games=num_games, known=known)
 
     # Cible = file initiale + déjà résolu (sans gonfler via checkpoint)
-    total_target = max(total_solved + len(queue), total_solved, 1)
+    total_target = max(total_solved + len(queue), total_solved + 50, total_solved, 1)
 
 
 
@@ -703,8 +736,58 @@ def run_full_solver(
     heartbeat_thread = threading.Thread(target=_heartbeat_loop, daemon=True)
     heartbeat_thread.start()
 
+    processed: Set[str] = set(known) | checkpoint_processed
+    refill_attempts = 0
+    max_refill_attempts = 12
+
     try:
-        while queue:
+        while True:
+            if not queue:
+                if not continuous:
+                    break
+                known = _known_hashes_from_db(conn)
+                if refill_attempts >= max_refill_attempts:
+                    logger.warning(
+                        "File vide après %d tentatives de rechargement — arrêt",
+                        refill_attempts,
+                    )
+                    break
+                refill_attempts += 1
+                num_games = min(num_games * 2, max_refill_games)
+                logger.info(
+                    "Rechargement file — %d positions connues, essai %d (%d parties simulées)",
+                    len(known),
+                    refill_attempts,
+                    num_games,
+                )
+                queue = _refill_queue(
+                    conn, advisor, max_empty, num_games=num_games, known=known,
+                )
+                total_target = max(total_solved + len(queue), total_solved + 50, total_solved, 1)
+                with heartbeat_lock:
+                    shared_state["queued"] = len(queue)
+                _flush_progress(
+                    conn,
+                    total_solved=total_solved,
+                    total_target=total_target,
+                    queued=len(queue),
+                    last_hash=last_hash,
+                    started_at=started_at,
+                    started_mono=started_mono,
+                    recent=recent,
+                    solver=solver,
+                    solver_running=True,
+                    force_json=True,
+                )
+                if not queue:
+                    logger.info(
+                        "Aucune position inédite trouvée — pause %.0fs avant nouvel essai",
+                        refill_sleep_sec,
+                    )
+                    time.sleep(refill_sleep_sec)
+                    continue
+                refill_attempts = 0
+                num_games = 500
 
             board, player, last_move = queue.popleft()
 
@@ -722,6 +805,7 @@ def run_full_solver(
 
             if existing:
 
+                known.add(h)
                 continue
 
 
@@ -745,6 +829,8 @@ def run_full_solver(
             _store_position(conn, solved, board, player, last_move)
 
             total_solved += 1
+            known.add(h)
+            refill_attempts = 0
             batch_count += 1
             last_hash = h
             last_board = board
@@ -877,6 +963,13 @@ def main() -> None:
     parser.add_argument("--progress-every", type=int, default=1)
     parser.add_argument("--progress-interval", type=float, default=15.0)
     parser.add_argument("--position-timeout", type=float, default=30.0)
+    parser.add_argument(
+        "--continuous",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Boucle jusqu'à épuisement des positions inédites (défaut: oui)",
+    )
+    parser.add_argument("--refill-sleep", type=float, default=5.0)
 
     args = parser.parse_args()
 
@@ -889,6 +982,8 @@ def main() -> None:
         args.progress_every,
         args.progress_interval,
         position_timeout_sec=args.position_timeout,
+        continuous=args.continuous,
+        refill_sleep_sec=args.refill_sleep,
     )
 
 

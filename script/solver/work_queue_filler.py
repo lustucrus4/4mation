@@ -108,18 +108,23 @@ def _save_checkpoint(
 
 def _known_hashes(conn, *, full: bool = True) -> Set[str]:
     known: Set[str] = set()
-    for row in conn.execute("SELECT hash FROM positions"):
-        known.add(str(row[0]).lower())
     if full:
-        for row in conn.execute(
-            "SELECT hash FROM work_queue WHERE status IN ('pending', 'in_progress', 'done')"
-        ):
+        for row in conn.execute("SELECT hash FROM positions"):
             known.add(str(row[0]).lower())
-    else:
-        for row in conn.execute(
-            "SELECT hash FROM work_queue WHERE status IN ('pending', 'in_progress')"
-        ):
-            known.add(str(row[0]).lower())
+    for row in conn.execute(
+        "SELECT hash FROM work_queue WHERE status IN ('pending', 'in_progress', 'done')"
+    ):
+        known.add(str(row[0]).lower())
+    return known
+
+
+def _known_hashes_fast(conn) -> Set[str]:
+    """Chargement rapide au démarrage : queue seulement (positions en refresh incrémental)."""
+    known: Set[str] = set()
+    for row in conn.execute(
+        "SELECT hash FROM work_queue WHERE status IN ('pending', 'in_progress', 'done')"
+    ):
+        known.add(str(row[0]).lower())
     return known
 
 
@@ -180,13 +185,20 @@ def fill_queue(
     max_empty = MAX_EMPTY_LEVELS[min(level_idx, len(MAX_EMPTY_LEVELS) - 1)]
 
     advisor = OptimizedMinimaxAdvisor(depth=2, use_iterative_deepening=False)
-    known = _known_hashes(conn)
+    pending_init = conn.execute(
+        "SELECT COUNT(*) FROM work_queue WHERE status = 'pending'"
+    ).fetchone()[0]
+    turbo_boot = min_pending > 0 and pending_init < min_pending
+    known = _known_hashes_fast(conn) if turbo_boot else _known_hashes(conn, full=True)
     bfs_seen: Set[str] = set(checkpoint.get("bfs_seen_tail") or [])
     retro_seen: Set[str] = set(checkpoint.get("retro_seen_tail") or [])
     # Ne pas fusionner known dans bfs_seen/retro_seen : sinon le parcours ne découvre
     # plus de nouvelles branches à travers des positions déjà résolues.
 
     exploration_mode = checkpoint.get("exploration_mode") or "retrograde"
+    if turbo_boot and exploration_mode == "forward":
+        exploration_mode = "retrograde"
+        logger.info("Turbo boot — bascule forward → retrograde (pending=%d)", pending_init)
     work_iter = None
     idle_rounds = 0
     turbo_rounds = 0
@@ -305,7 +317,12 @@ def fill_queue(
             logger.info("+%d positions en queue (pending=%d)%s", inserted, pending, tag)
         else:
             idle_rounds += 1
-            if idle_rounds >= IDLE_ROUNDS_BEFORE_RESET:
+            if turbo and exploration_mode == "forward" and idle_rounds >= 1:
+                exploration_mode = "retrograde"
+                work_iter = None
+                idle_rounds = 0
+                logger.info("Turbo — bascule forward → retrograde (pending=%d)", pending)
+            elif idle_rounds >= IDLE_ROUNDS_BEFORE_RESET:
                 logger.warning(
                     "Filler bloqué (%d tours sans insertion) — avance niveau ou reset exploration",
                     idle_rounds,

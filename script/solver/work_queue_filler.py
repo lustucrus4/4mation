@@ -107,6 +107,7 @@ def fill_queue(
     max_empty_start: int = 12,
     batch_size: int = 200,
     sleep_sec: float = 2.0,
+    min_pending: int = 0,
     once: bool = False,
 ) -> None:
     conn = init_db(db_path)
@@ -126,10 +127,12 @@ def fill_queue(
     idle_rounds = 0
 
     logger.info(
-        "Filler démarré — max_empty=%d, known=%d, mode=%s",
+        "Filler démarré — max_empty=%d, known=%d, mode=%s, batch=%d, min_pending=%d",
         max_empty,
         len(known),
         exploration_mode,
+        batch_size,
+        min_pending,
     )
 
     while True:
@@ -243,6 +246,8 @@ def fill_queue(
 
         if once:
             break
+        if min_pending > 0 and pending < min_pending:
+            continue
         time.sleep(sleep_sec)
 
 
@@ -252,6 +257,12 @@ def main() -> None:
     parser.add_argument("--max-empty", type=int, default=12)
     parser.add_argument("--batch", type=int, default=200)
     parser.add_argument("--sleep", type=float, default=2.0)
+    parser.add_argument(
+        "--min-pending",
+        type=int,
+        default=0,
+        help="Cible de tampon : pas de pause tant que pending < cette valeur",
+    )
     parser.add_argument("--once", action="store_true", help="Un seul lot puis sortie")
     args = parser.parse_args()
 
@@ -260,6 +271,7 @@ def main() -> None:
         max_empty_start=args.max_empty,
         batch_size=args.batch,
         sleep_sec=args.sleep,
+        min_pending=max(0, args.min_pending),
         once=args.once,
     )
 

@@ -120,7 +120,8 @@ services:
           cp -a /tmp/repo/script /app/
           echo "Filler — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           python /app/script/solver/work_queue_filler.py \
-            --db /app/data/tablebase.db --max-empty 12 --batch 100 --sleep 2 \
+            --db /app/data/tablebase.db --max-empty 12 --batch 500 --sleep 1 \
+            --min-pending 800 \
           || echo "Filler erreur — retry 15s"
           sleep 15
         done

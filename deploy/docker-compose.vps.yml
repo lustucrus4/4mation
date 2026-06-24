@@ -38,50 +38,42 @@ services:
       - /bin/sh
       - -ec
       - |
-        apk add --no-cache git curl unzip
+        apk add --no-cache git curl unzip rsync
         mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled /var/www/4mation /var/www/certbot
-        for f in /etc/nginx/sites-enabled/*; do
-          if [ -f "$$f" ] && grep -qE '4mation\.lab211\.fr|api-4mation\.lab211\.fr' "$$f" 2>/dev/null; then rm -f "$$f"; fi
-        done
+        rm -f /etc/nginx/sites-enabled/4mation /etc/nginx/sites-available/4mation
         rm -rf /tmp/repo
         git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-        rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/ 2>/dev/null || cp -a /tmp/repo/4mation_dashboard_deploy/. /var/www/4mation/
-        cat > /etc/nginx/sites-available/4mation <<'NGINX'
+        rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/
+        cat > /etc/nginx/sites-available/4mation <<'EOF'
         server {
             listen 80;
             server_name 4mation.lab211.fr;
             root /var/www/4mation;
             index index.html;
-            location /.well-known/acme-challenge/ {
-                root /var/www/certbot;
-            }
+            location /.well-known/acme-challenge/ { root /var/www/certbot; }
             location /assets/ {
                 expires 30d;
                 add_header Cache-Control "public, immutable";
             }
-            location / {
-                try_files $$uri $$uri/ /index.html;
-            }
+            location / { try_files $uri $uri/ /index.html; }
         }
         server {
             listen 80;
             server_name api-4mation.lab211.fr;
-            location /.well-known/acme-challenge/ {
-                root /var/www/certbot;
-            }
+            location /.well-known/acme-challenge/ { root /var/www/certbot; }
             location / {
                 proxy_pass http://127.0.0.1:8097;
                 proxy_http_version 1.1;
-                proxy_set_header Host $$host;
-                proxy_set_header X-Real-IP $$remote_addr;
-                proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $$scheme;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
                 proxy_read_timeout 120s;
             }
         }
-        NGINX
+        EOF
         ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
-        rm -f /etc/nginx/sites-enabled/default
+        nginx -t
         if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
         echo nginx-http-ok
 
@@ -127,43 +119,66 @@ services:
       - /bin/sh
       - -ec
       - |
-        CERT_DIR=$$(ls -d /etc/letsencrypt/live/4mation.lab211.fr /etc/letsencrypt/live/api-4mation.lab211.fr 2>/dev/null | head -1)
-        if [ -n "$$CERT_DIR" ] && [ -f "$$CERT_DIR/fullchain.pem" ]; then
-          cat >> /etc/nginx/sites-available/4mation <<NGINX
+        CERT=/etc/letsencrypt/live/4mation.lab211.fr
+        if [ ! -f "$$CERT/fullchain.pem" ]; then CERT=/etc/letsencrypt/live/api-4mation.lab211.fr; fi
+        test -f "$$CERT/fullchain.pem"
+        cat > /etc/nginx/sites-available/4mation <<EOF
+        server {
+            listen 80;
+            server_name 4mation.lab211.fr;
+            root /var/www/4mation;
+            index index.html;
+            location /.well-known/acme-challenge/ { root /var/www/certbot; }
+            location /assets/ {
+                expires 30d;
+                add_header Cache-Control "public, immutable";
+            }
+            location / { try_files \$$uri \$$uri/ /index.html; }
+        }
         server {
             listen 443 ssl;
             server_name 4mation.lab211.fr;
-            ssl_certificate $$CERT_DIR/fullchain.pem;
-            ssl_certificate_key $$CERT_DIR/privkey.pem;
+            ssl_certificate $$CERT/fullchain.pem;
+            ssl_certificate_key $$CERT/privkey.pem;
             root /var/www/4mation;
             index index.html;
             location /assets/ {
                 expires 30d;
                 add_header Cache-Control "public, immutable";
             }
+            location / { try_files \$$uri \$$uri/ /index.html; }
+        }
+        server {
+            listen 80;
+            server_name api-4mation.lab211.fr;
+            location /.well-known/acme-challenge/ { root /var/www/certbot; }
             location / {
-                try_files $$uri $$uri/ /index.html;
+                proxy_pass http://127.0.0.1:8097;
+                proxy_http_version 1.1;
+                proxy_set_header Host \$$host;
+                proxy_set_header X-Real-IP \$$remote_addr;
+                proxy_set_header X-Forwarded-For \$$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$$scheme;
+                proxy_read_timeout 120s;
             }
         }
         server {
             listen 443 ssl;
             server_name api-4mation.lab211.fr;
-            ssl_certificate $$CERT_DIR/fullchain.pem;
-            ssl_certificate_key $$CERT_DIR/privkey.pem;
+            ssl_certificate $$CERT/fullchain.pem;
+            ssl_certificate_key $$CERT/privkey.pem;
             location / {
                 proxy_pass http://127.0.0.1:8097;
                 proxy_http_version 1.1;
-                proxy_set_header Host $$host;
-                proxy_set_header X-Real-IP $$remote_addr;
-                proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $$scheme;
+                proxy_set_header Host \$$host;
+                proxy_set_header X-Real-IP \$$remote_addr;
+                proxy_set_header X-Forwarded-For \$$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$$scheme;
                 proxy_read_timeout 120s;
             }
         }
-        NGINX
-          if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
-          echo nginx-ssl-ok
-        else
-          echo nginx-ssl-skip-no-cert
-          exit 1
-        fi
+        EOF
+        ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
+        nginx -t
+        if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
+        echo nginx-ssl-ok

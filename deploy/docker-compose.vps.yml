@@ -117,10 +117,10 @@ services:
         while true; do
           echo "Filler — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           python /app/script/solver/work_queue_filler.py \
-            --db /app/data/tablebase.db --max-empty 12 --batch 500 --sleep 0 \
-            --min-pending 500 \
-          || echo "Filler erreur — retry 3s"
-          sleep 3
+            --db /app/data/tablebase.db --max-empty 12 --batch 2000 --sleep 0 \
+            --min-pending 4000 \
+          || echo "Filler erreur — retry 1s"
+          sleep 1
         done
 
     restart: unless-stopped
@@ -180,9 +180,6 @@ services:
         mkdir -p /app/data
 
         while true; do
-          rm -rf /tmp/repo
-          git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-          cp -a /tmp/repo/script /app/
           echo "Workers solveur — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           python /app/script/solver/distributed_worker.py \
             --api-url $${SOLVER_API_URL:-http://api:8097} \
@@ -190,8 +187,8 @@ services:
             --claim-batch $${SOLVER_CLAIM_BATCH:-25} \
             --solve-threads $${SOLVER_SOLVE_THREADS:-2} \
             --position-timeout 30 \
-          || echo "Worker arrêté — redémarrage dans 10s"
-          sleep 10
+          || echo "Worker arrêté — redémarrage dans 5s"
+          sleep 5
         done
 
     restart: unless-stopped

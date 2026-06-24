@@ -39,11 +39,18 @@ from solver.solver_status import board_to_list
 
 DEFAULT_DB = SCRIPT / "solver" / "data" / "tablebase.db"
 CHECKPOINT_FILE = "filler_checkpoint.json"
-DEFAULT_BATCH = 500
+DEFAULT_BATCH = 2000
 DEFAULT_SLEEP_SEC = 0.0
-DEFAULT_MIN_PENDING = 500
-TURBO_BATCH_CAP = 1500
-CHECKPOINT_EVERY_TURBO = 5
+DEFAULT_MIN_PENDING = 4000
+TURBO_BATCH_CAP = 8000
+CHECKPOINT_EVERY_TURBO = 25
+IDLE_ROUNDS_BEFORE_RESET = 2
+SEED_LIMIT = 8000
+INSERT_SQL = """
+INSERT OR IGNORE INTO work_queue
+(hash, board_json, player, last_move_row, last_move_col, status)
+VALUES (?, ?, ?, ?, ?, 'pending')
+"""
 
 logging.basicConfig(
     level=logging.INFO,
@@ -108,9 +115,15 @@ def _resolve_level_index(max_empty: int, checkpoint: dict) -> int:
 
 
 def _effective_batch(batch_size: int, pending: int, min_pending: int) -> int:
-    if min_pending > 0 and pending < min_pending:
-        return min(batch_size * 2, TURBO_BATCH_CAP)
-    return batch_size
+    if min_pending <= 0 or pending >= min_pending:
+        return batch_size
+    if pending < min_pending // 4:
+        mult = 4
+    elif pending < min_pending // 2:
+        mult = 3
+    else:
+        mult = 2
+    return min(batch_size * mult, TURBO_BATCH_CAP)
 
 
 def fill_queue(
@@ -158,11 +171,12 @@ def fill_queue(
             if exploration_mode == "forward":
                 work_iter = forward_bfs_unsolved(advisor, max_empty, known, bfs_seen)
             else:
-                seeds = load_seed_positions_from_db(conn, limit=3000)
+                seeds = load_seed_positions_from_db(conn, limit=SEED_LIMIT)
                 work_iter = retrograde_unsolved_parents(
                     advisor, max_empty, known, seeds, retro_seen
                 )
 
+        rows_buffer: list[tuple] = []
         try:
             while inserted < target_batch:
                 board, player, last_move = next(work_iter)
@@ -174,17 +188,19 @@ def fill_queue(
                 lmr, lmc = (-1, -1)
                 if last_move is not None:
                     lmr, lmc = last_move
+                rows_buffer.append((h, board_json, player, lmr, lmc))
+                if len(rows_buffer) >= 250:
+                    before = conn.total_changes
+                    conn.executemany(INSERT_SQL, rows_buffer)
+                    inserted += conn.total_changes - before
+                    rows_buffer.clear()
+                    if inserted >= target_batch:
+                        break
+            if rows_buffer and inserted < target_batch:
                 before = conn.total_changes
-                conn.execute(
-                    """
-                    INSERT OR IGNORE INTO work_queue
-                    (hash, board_json, player, last_move_row, last_move_col, status)
-                    VALUES (?, ?, ?, ?, ?, 'pending')
-                    """,
-                    (h, board_json, player, lmr, lmc),
-                )
-                if conn.total_changes > before:
-                    inserted += 1
+                conn.executemany(INSERT_SQL, rows_buffer)
+                inserted += conn.total_changes - before
+                rows_buffer.clear()
         except StopIteration:
             work_iter = None
             if exploration_mode == "retrograde":
@@ -209,7 +225,8 @@ def fill_queue(
                 known = _known_hashes(conn)
                 if once:
                     break
-                time.sleep(max(sleep_sec, 1.0))
+                if sleep_sec > 0:
+                    time.sleep(sleep_sec)
                 continue
 
         pending = conn.execute(
@@ -241,7 +258,7 @@ def fill_queue(
             logger.info("+%d positions en queue (pending=%d)%s", inserted, pending, tag)
         else:
             idle_rounds += 1
-            if idle_rounds >= 3:
+            if idle_rounds >= IDLE_ROUNDS_BEFORE_RESET:
                 logger.warning(
                     "Filler bloqué (%d tours sans insertion) — avance niveau ou reset exploration",
                     idle_rounds,
@@ -281,7 +298,7 @@ def main() -> None:
         "--min-pending",
         type=int,
         default=DEFAULT_MIN_PENDING,
-        help="Cible de tampon : pas de pause tant que pending < cette valeur (batch x2 en turbo)",
+        help="Cible de tampon : pas de pause tant que pending < cette valeur (turbo x2–x4 selon niveau)",
     )
     parser.add_argument("--once", action="store_true", help="Un seul lot puis sortie")
     args = parser.parse_args()

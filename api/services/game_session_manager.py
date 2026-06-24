@@ -70,7 +70,7 @@ class GameSessionManager:
         return True
 
     def persist(self, session_id: str) -> bool:
-        session = self.get_session(session_id)
+        session = self._sessions.get(session_id)
         if session is None:
             return False
         self._store.save(session_id, session.mode, session.engine)

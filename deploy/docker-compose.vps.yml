@@ -16,13 +16,17 @@ services:
 
       PYTHONPATH: /app:/app/script
 
-      GUNICORN_WORKERS: "4"
+      GUNICORN_WORKERS: "8"
 
       SESSION_DB_PATH: /app/data/sessions.db
 
       TABLEBASE_DB_PATH: /app/data/tablebase.db
 
       SOLVER_STATUS_PATH: /app/data/solver_status.json
+
+      SOLVER_RATE_LIMIT_POSITIONS: "3000"
+
+      SOLVER_MAX_CLAIM_BATCH: "50"
 
     volumes:
 
@@ -141,7 +145,11 @@ services:
 
       SOLVER_API_URL: http://api:8097
 
-      SOLVER_WORKERS: "2"
+      SOLVER_WORKERS: "4"
+
+      SOLVER_CLAIM_BATCH: "25"
+
+      SOLVER_SOLVE_THREADS: "2"
 
     volumes:
 
@@ -180,7 +188,9 @@ services:
           echo "Workers solveur — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           python /app/script/solver/distributed_worker.py \
             --api-url $${SOLVER_API_URL:-http://api:8097} \
-            --workers $${SOLVER_WORKERS:-2} \
+            --workers $${SOLVER_WORKERS:-4} \
+            --claim-batch $${SOLVER_CLAIM_BATCH:-25} \
+            --solve-threads $${SOLVER_SOLVE_THREADS:-2} \
             --position-timeout 30 \
           || echo "Worker arrêté — redémarrage dans 10s"
           sleep 10

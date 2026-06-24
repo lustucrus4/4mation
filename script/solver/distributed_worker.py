@@ -21,6 +21,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -55,6 +56,7 @@ API_TIMEOUT_SEC = float(os.environ.get("SOLVER_API_TIMEOUT", "120"))
 API_MAX_RETRIES = int(os.environ.get("SOLVER_API_RETRIES", "4"))
 API_RETRY_BASE_SLEEP = float(os.environ.get("SOLVER_API_RETRY_BASE_SLEEP", "0.5"))
 API_RETRY_MAX_SLEEP = float(os.environ.get("SOLVER_API_RETRY_MAX_SLEEP", "2.0"))
+MAX_CLAIM_BATCH_SERVER = int(os.environ.get("SOLVER_MAX_CLAIM_BATCH", "50"))
 
 
 class HttpClient:
@@ -71,7 +73,7 @@ class HttpClient:
                 status_forcelist=(502, 503, 504),
                 allowed_methods=["GET", "POST"],
             )
-            adapter = HTTPAdapter(pool_connections=4, pool_maxsize=8, max_retries=retry)
+            adapter = HTTPAdapter(pool_connections=8, pool_maxsize=16, max_retries=retry)
             session.mount("https://", adapter)
             session.mount("http://", adapter)
             self._session = session
@@ -177,15 +179,20 @@ def _parse_last_move(raw: Any) -> Optional[tuple[int, int]]:
 
 def _solve_position(
     pos: Dict[str, Any],
-    solver: RetrogradeSolver,
+    max_empty: int,
+    position_timeout_sec: float,
+    solver: Optional[RetrogradeSolver] = None,
 ) -> Optional[Dict[str, Any]]:
+    local_solver = solver or RetrogradeSolver(
+        max_empty=max_empty, position_timeout_sec=position_timeout_sec
+    )
     board = np.array(pos["board_json"], dtype=np.int8)
     player = int(pos.get("player", 1))
     last_move = _parse_last_move(pos.get("last_move"))
 
-    solver.clear_cache()
-    solver.begin_position()
-    solved = solver.solve_position(board, player, last_move)
+    local_solver.clear_cache()
+    local_solver.begin_position()
+    solved = local_solver.solve_position(board, player, last_move)
     if solved is None:
         return None
 
@@ -203,6 +210,80 @@ def _solve_position(
         "player": player,
         "last_move": pos.get("last_move"),
     }
+
+
+def _solve_batch_parallel(
+    positions: List[Dict[str, Any]],
+    max_empty: int,
+    position_timeout_sec: float,
+    solve_threads: int,
+    solver: RetrogradeSolver,
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    if not positions:
+        return [], []
+
+    if solve_threads <= 1 or len(positions) == 1:
+        results: List[Dict[str, Any]] = []
+        release_hashes: List[str] = []
+        for pos in positions:
+            try:
+                result = _solve_position(pos, max_empty, position_timeout_sec, solver)
+                if result is None:
+                    release_hashes.append(str(pos.get("hash", "")))
+                else:
+                    results.append(result)
+            except Exception:
+                logger.exception("Erreur position %s", pos.get("hash"))
+                release_hashes.append(str(pos.get("hash", "")))
+        return results, release_hashes
+
+    results = []
+    release_hashes: List[str] = []
+    with ThreadPoolExecutor(max_workers=solve_threads) as pool:
+        futures = {
+            pool.submit(_solve_position, pos, max_empty, position_timeout_sec): pos
+            for pos in positions
+        }
+        for fut in as_completed(futures):
+            pos = futures[fut]
+            try:
+                result = fut.result()
+                if result is None:
+                    release_hashes.append(str(pos.get("hash", "")))
+                else:
+                    results.append(result)
+            except Exception:
+                logger.exception("Erreur position %s", pos.get("hash"))
+                release_hashes.append(str(pos.get("hash", "")))
+    return results, release_hashes
+
+
+def _claim_positions(
+    http: HttpClient,
+    claim_url: str,
+    worker_id: str,
+    claim_batch: int,
+    prefetch: int,
+) -> List[Dict[str, Any]]:
+    """Claim une ou plusieurs fois jusqu'à prefetch positions (ou claim_batch si prefetch=0)."""
+    target = prefetch if prefetch > 0 else claim_batch
+    per_request = max(1, min(claim_batch, MAX_CLAIM_BATCH_SERVER))
+    accumulated: List[Dict[str, Any]] = []
+
+    while len(accumulated) < target:
+        need = min(per_request, target - len(accumulated))
+        resp = http.post(claim_url, {"worker_id": worker_id, "count": need})
+        if not resp.get("success"):
+            if not accumulated:
+                logger.warning("[%s] Claim échoué : %s", worker_id, resp.get("error"))
+            break
+        batch = resp.get("positions") or []
+        if not batch:
+            break
+        accumulated.extend(batch)
+        if len(batch) < need:
+            break
+    return accumulated
 
 
 def _submit_batch(
@@ -247,6 +328,8 @@ def worker_loop(
     position_timeout_sec: float,
     token: Optional[str],
     claim_batch: int,
+    prefetch: int,
+    solve_threads: int,
     max_iterations: Optional[int] = None,
 ) -> None:
     hostname = socket.gethostname()
@@ -266,23 +349,23 @@ def worker_loop(
     last_idle_log = 0.0
 
     transport = "requests+keep-alive" if _HAS_REQUESTS else "urllib"
-    logger.info("Worker %s démarré (HTTP: %s)", worker_id, transport)
+    logger.info(
+        "Worker %s démarré (HTTP: %s, batch=%d, prefetch=%d, threads=%d)",
+        worker_id,
+        transport,
+        claim_batch,
+        prefetch or claim_batch,
+        solve_threads,
+    )
 
     while True:
         if max_iterations is not None and solved_count >= max_iterations:
             logger.info("[%s] Limite %d atteinte — arrêt", worker_id, max_iterations)
             break
         try:
-            resp = http.post(
-                claim_url,
-                {"worker_id": worker_id, "count": claim_batch},
+            positions = _claim_positions(
+                http, claim_url, worker_id, claim_batch, prefetch
             )
-            if not resp.get("success"):
-                logger.warning("[%s] Claim échoué : %s", worker_id, resp.get("error"))
-                time.sleep(IDLE_SLEEP_SEC)
-                continue
-
-            positions: List[Dict[str, Any]] = resp.get("positions") or []
             if not positions:
                 now = time.monotonic()
                 if now - last_idle_log >= 60.0:
@@ -294,20 +377,14 @@ def worker_loop(
                 time.sleep(IDLE_SLEEP_SEC)
                 continue
 
-            batch_results: List[Dict[str, Any]] = []
-            release_hashes: List[str] = []
-
-            for pos in positions:
-                try:
-                    result = _solve_position(pos, solver)
-                    if result is None:
-                        failed_count += 1
-                        release_hashes.append(str(pos.get("hash", "")))
-                        continue
-                    batch_results.append(result)
-                except Exception as exc:
-                    failed_count += 1
-                    logger.exception("[%s] Erreur position : %s", worker_id, exc)
+            batch_results, release_hashes = _solve_batch_parallel(
+                positions,
+                max_empty,
+                position_timeout_sec,
+                solve_threads,
+                solver,
+            )
+            failed_count += len(release_hashes)
 
             for h in release_hashes:
                 if not h:
@@ -348,11 +425,21 @@ def run_workers(
     position_timeout_sec: float,
     token: Optional[str],
     claim_batch: int,
+    prefetch: int,
+    solve_threads: int,
     max_iterations: Optional[int],
 ) -> None:
     if num_workers <= 1:
         worker_loop(
-            api_url, 0, max_empty, position_timeout_sec, token, claim_batch, max_iterations
+            api_url,
+            0,
+            max_empty,
+            position_timeout_sec,
+            token,
+            claim_batch,
+            prefetch,
+            solve_threads,
+            max_iterations,
         )
         return
 
@@ -367,6 +454,8 @@ def run_workers(
                 position_timeout_sec,
                 token,
                 claim_batch,
+                prefetch,
+                solve_threads,
                 max_iterations,
             ),
             daemon=True,
@@ -392,17 +481,34 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=int(os.environ.get("SOLVER_WORKERS", "4")))
     parser.add_argument("--max-empty", type=int, default=int(os.environ.get("TABLEBASE_MAX_EMPTY", "49")))
     parser.add_argument("--position-timeout", type=float, default=30.0)
-    parser.add_argument("--claim-batch", type=int, default=int(os.environ.get("SOLVER_CLAIM_BATCH", "10")))
+    parser.add_argument("--claim-batch", type=int, default=int(os.environ.get("SOLVER_CLAIM_BATCH", "25")))
+    parser.add_argument(
+        "--prefetch",
+        type=int,
+        default=int(os.environ.get("SOLVER_PREFETCH", "0")),
+        help="Positions à accumuler avant résolution (0 = claim-batch). Max 50/requête API.",
+    )
+    parser.add_argument(
+        "--solve-threads",
+        type=int,
+        default=int(os.environ.get("SOLVER_SOLVE_THREADS", "2")),
+        help="Threads de résolution par processus worker (mode hybride local).",
+    )
     parser.add_argument("--token", default=os.environ.get("SOLVER_WORKER_TOKEN", ""))
     parser.add_argument("--max-iterations", type=int, default=None, help="Test : N itérations par worker")
     args = parser.parse_args()
 
     token = args.token.strip() or None
+    prefetch = max(0, min(args.prefetch, MAX_CLAIM_BATCH_SERVER * 4))
+    solve_threads = max(1, args.solve_threads)
     logger.info(
-        "Démarrage — api=%s, workers=%d, batch=%d, max_empty=%d, timeout=%.0fs, http=%s",
+        "Démarrage — api=%s, workers=%d, batch=%d, prefetch=%d, solve_threads=%d, "
+        "max_empty=%d, timeout=%.0fs, http=%s",
         args.api_url,
         args.workers,
         args.claim_batch,
+        prefetch or args.claim_batch,
+        solve_threads,
         args.max_empty,
         args.position_timeout,
         "requests" if _HAS_REQUESTS else "urllib",
@@ -415,6 +521,8 @@ def main() -> None:
         args.position_timeout,
         token,
         args.claim_batch,
+        prefetch,
+        solve_threads,
         args.max_iterations,
     )
 

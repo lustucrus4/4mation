@@ -25,8 +25,13 @@ DEFAULT_DB = (
 
 CLAIM_TIMEOUT_SEC = int(os.environ.get("SOLVER_CLAIM_TIMEOUT_SEC", "300"))
 MAX_CLAIM_BATCH = int(os.environ.get("SOLVER_MAX_CLAIM_BATCH", "50"))
-RATE_LIMIT_CLAIMS = int(os.environ.get("SOLVER_RATE_LIMIT_CLAIMS", "120"))
+# Limite en positions claimées / fenêtre (pas en requêtes HTTP) — compatible workers batchés.
+RATE_LIMIT_POSITIONS = int(os.environ.get("SOLVER_RATE_LIMIT_POSITIONS", "3000"))
 RATE_LIMIT_WINDOW_SEC = int(os.environ.get("SOLVER_RATE_LIMIT_WINDOW_SEC", "60"))
+# Rétrocompat : ancienne variable = requêtes/min → convertie en positions si POSITIONS absent.
+_legacy_claims = os.environ.get("SOLVER_RATE_LIMIT_CLAIMS")
+if _legacy_claims and "SOLVER_RATE_LIMIT_POSITIONS" not in os.environ:
+    RATE_LIMIT_POSITIONS = int(_legacy_claims) * MAX_CLAIM_BATCH
 
 
 class WorkQueueService:
@@ -34,20 +39,21 @@ class WorkQueueService:
         env_db = os.environ.get("TABLEBASE_DB_PATH")
         self.db_path = Path(db_path or env_db or DEFAULT_DB)
         self._lock = threading.Lock()
-        self._claim_log: Dict[str, Deque[float]] = defaultdict(deque)
+        self._claim_log: Dict[str, Deque[Tuple[float, int]]] = defaultdict(deque)
 
     def _get_conn(self) -> sqlite3.Connection:
         init_db(self.db_path)
         return connect(self.db_path)
 
-    def _check_rate_limit(self, worker_id: str) -> bool:
+    def _check_rate_limit(self, worker_id: str, position_count: int) -> bool:
         now = time.monotonic()
         window = self._claim_log[worker_id]
-        while window and now - window[0] > RATE_LIMIT_WINDOW_SEC:
+        while window and now - window[0][0] > RATE_LIMIT_WINDOW_SEC:
             window.popleft()
-        if len(window) >= RATE_LIMIT_CLAIMS:
+        used = sum(n for _, n in window)
+        if used + position_count > RATE_LIMIT_POSITIONS:
             return False
-        window.append(now)
+        window.append((now, position_count))
         return True
 
     def _reclaim_stale(self, conn: sqlite3.Connection) -> int:
@@ -73,7 +79,7 @@ class WorkQueueService:
         count = max(1, min(int(count or 1), MAX_CLAIM_BATCH))
 
         with self._lock:
-            if not self._check_rate_limit(worker_id):
+            if not self._check_rate_limit(worker_id, count):
                 return [], "rate limit claim dépassé"
 
             conn = self._get_conn()
@@ -92,16 +98,20 @@ class WorkQueueService:
                     (count,),
                 ).fetchall()
 
-                claimed: List[Dict[str, Any]] = []
-                for row in rows:
+                if rows:
+                    hashes = [row["hash"] for row in rows]
+                    placeholders = ",".join("?" * len(hashes))
                     conn.execute(
-                        """
+                        f"""
                         UPDATE work_queue
                         SET status = 'in_progress', worker_id = ?, claimed_at = CURRENT_TIMESTAMP
-                        WHERE hash = ? AND status = 'pending'
+                        WHERE status = 'pending' AND hash IN ({placeholders})
                         """,
-                        (worker_id, row["hash"]),
+                        [worker_id, *hashes],
                     )
+
+                claimed: List[Dict[str, Any]] = []
+                for row in rows:
                     last_move = None
                     if row["last_move_row"] is not None and int(row["last_move_row"]) >= 0:
                         last_move = {
@@ -221,17 +231,7 @@ class WorkQueueService:
                     (payload.get("worker_id"), hash_key),
                 )
 
-                total_solved = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
-                conn.execute(
-                    """
-                    INSERT INTO solver_progress (id, total_solved, total_queued, updated_at)
-                    VALUES (1, ?, COALESCE((SELECT total_queued FROM solver_progress WHERE id = 1), 0), CURRENT_TIMESTAMP)
-                    ON CONFLICT(id) DO UPDATE SET
-                        total_solved = excluded.total_solved,
-                        updated_at = CURRENT_TIMESTAMP
-                    """,
-                    (total_solved,),
-                )
+                self._bump_solved_count(conn, 1)
                 self._sync_queued_count(conn)
                 conn.commit()
                 return True, None
@@ -253,6 +253,20 @@ class WorkQueueService:
             ON CONFLICT(id) DO UPDATE SET total_queued = excluded.total_queued, updated_at = CURRENT_TIMESTAMP
             """,
             (pending,),
+        )
+
+    def _bump_solved_count(self, conn: sqlite3.Connection, delta: int) -> None:
+        if delta <= 0:
+            return
+        conn.execute(
+            """
+            INSERT INTO solver_progress (id, total_solved, updated_at)
+            VALUES (1, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+                total_solved = COALESCE(solver_progress.total_solved, 0) + ?,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (delta, delta),
         )
 
     def submit_batch(
@@ -361,17 +375,7 @@ class WorkQueueService:
                     )
                     ok_count += 1
 
-                total_solved = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
-                conn.execute(
-                    """
-                    INSERT INTO solver_progress (id, total_solved, total_queued, updated_at)
-                    VALUES (1, ?, COALESCE((SELECT total_queued FROM solver_progress WHERE id = 1), 0), CURRENT_TIMESTAMP)
-                    ON CONFLICT(id) DO UPDATE SET
-                        total_solved = excluded.total_solved,
-                        updated_at = CURRENT_TIMESTAMP
-                    """,
-                    (total_solved,),
-                )
+                self._bump_solved_count(conn, ok_count)
                 self._sync_queued_count(conn)
                 conn.commit()
                 return ok_count, fail_count, errors

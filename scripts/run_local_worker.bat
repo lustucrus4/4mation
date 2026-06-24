@@ -15,10 +15,12 @@ if exist ".venv\Scripts\python.exe" (
 )
 
 if not defined SOLVER_API_URL set "SOLVER_API_URL=https://api-4mation.lab211.fr"
-REM 16 cœurs physiques ; monter a 24-32 si CPU bas (charge I/O API). Defaut code Python : 4.
-if not defined SOLVER_WORKERS set "SOLVER_WORKERS=16"
+REM 8-12 processus : equilibre CPU local vs charge API/SQLite (eviter 16+ flood).
+if not defined SOLVER_WORKERS set "SOLVER_WORKERS=10"
 REM Positions par claim HTTP — reduit la latence reseau (max serveur : 50).
 if not defined SOLVER_CLAIM_BATCH set "SOLVER_CLAIM_BATCH=25"
+REM Threads de resolution par processus (hybride local avant submit-batch).
+if not defined SOLVER_SOLVE_THREADS set "SOLVER_SOLVE_THREADS=2"
 
 set "PYTHONPATH=%CD%;%CD%\script"
 
@@ -28,11 +30,12 @@ echo ========================================
 echo API      : %SOLVER_API_URL%
 echo Workers  : %SOLVER_WORKERS% processus
 echo Batch    : %SOLVER_CLAIM_BATCH% positions/claim
+echo Threads  : %SOLVER_SOLVE_THREADS% resolution/processus
 echo Machine  : %COMPUTERNAME%
 echo.
 echo Appuyez sur Ctrl+C pour arreter.
 echo.
 
-"%PYTHON%" script\solver\distributed_worker.py --api-url %SOLVER_API_URL% --workers %SOLVER_WORKERS% --claim-batch %SOLVER_CLAIM_BATCH%
+"%PYTHON%" script\solver\distributed_worker.py --api-url %SOLVER_API_URL% --workers %SOLVER_WORKERS% --claim-batch %SOLVER_CLAIM_BATCH% --solve-threads %SOLVER_SOLVE_THREADS%
 
 endlocal

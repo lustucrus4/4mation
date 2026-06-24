@@ -1,17 +1,14 @@
-# Worker solveur Rust — 4mation-worker
+# Solveur Rust — 4mation-local & 4mation-worker
 
-Binaire haute performance pour résoudre des positions 4mation en local ou via l'API distribuée.
+Binaires haute performance pour construire la tablebase Connect4/4mation (7×7, frontier, WDL exact).
 
 ## Prérequis
 
 - [Rust](https://rustup.rs) (toolchain stable)
-- Windows : **Visual Studio Build Tools** avec charge de travail « Développement Desktop en C++ » (`link.exe` MSVC requis)
+- Windows : **Visual Studio Build Tools** avec « Développement Desktop en C++ »
 
 ```powershell
 rustup default stable
-# Si cargo build échoue avec "link.exe not found" :
-winget install Microsoft.VisualStudio.2022.BuildTools
-# Puis cocher « MSVC v143 » et « Windows SDK » dans l'installateur
 ```
 
 ## Compilation
@@ -21,76 +18,129 @@ cd script/solver_rust
 cargo build --release
 ```
 
-Le binaire se trouve dans `target/release/4mation-worker.exe` (Windows).
+Binaires produits :
 
-## Lancement rapide (Windows)
+| Binaire | Rôle |
+|---------|------|
+| `target/release/4mation-local.exe` | **Recommandé Legion** — exploration + résolution + SQLite, zéro réseau |
+| `target/release/4mation-worker.exe` | Worker HTTP (API distribuée, conservé pour compatibilité) |
+
+## Lancement local (Legion, 16 cœurs)
 
 Depuis la racine du projet :
 
 ```bat
-scripts\run_local_worker_rust.bat
+scripts\run_local_solver_rust.bat
 ```
 
-Variables d'environnement utiles :
-
-| Variable | Défaut | Description |
-|----------|--------|-------------|
-| `SOLVER_API_URL` | `https://api-4mation.lab211.fr` | URL API |
-| `SOLVER_THREADS` | `16` | Threads rayon (cœurs physiques) |
-| `SOLVER_CLAIM_BATCH` | `500` | Positions par claim (max `SOLVER_MAX_CLAIM_BATCH`, défaut 500) |
-| `TABLEBASE_MAX_EMPTY` | `49` | Cases vides max pour résolution |
-| `SOLVER_WORKER_TOKEN` | — | Token si requis par l'API |
-
-## Modes
-
-### API distante (défaut)
-
-Connexion HTTP persistante (reqwest), claim par lot, résolution parallèle (rayon), submit-batch.
+Ou directement :
 
 ```powershell
-.\target\release\4mation-worker.exe `
-  --api-url https://api-4mation.lab211.fr `
+.\script\solver_rust\target\release\4mation-local.exe `
+  --db script\solver\data\tablebase.db `
   --threads 16 `
-  --claim-batch 500
+  --max-empty 12 `
+  --solve-batch 500 `
+  --min-pending 5000
 ```
 
-### Base locale (`--local-db`)
+### Options CLI (`4mation-local`)
 
-Zéro latence réseau : lecture/écriture directe sur `tablebase.db` (copie synchronisée ou API locale).
+| Option | Défaut | Description |
+|--------|--------|-------------|
+| `--db` | `script/solver/data/tablebase.db` | Chemin SQLite |
+| `--threads` | `16` | Threads rayon (résolution parallèle) |
+| `--max-empty` | `12` | Niveau initial cases vides (12→20→30→40→49) |
+| `--solve-batch` | `500` | Positions par lot de résolution |
+| `--min-pending` | `5000` | Tampon file avant pause exploration |
+| `--max-iterations` | — | Arrêt après N résolutions (tests) |
+| `--once` | — | Un cycle puis sortie |
 
-```powershell
-.\target\release\4mation-worker.exe `
-  --local-db ..\solver\data\tablebase.db `
-  --threads 16
+Variables d'environnement : `SOLVER_THREADS`, `TABLEBASE_MAX_EMPTY`.
+
+## Architecture locale
+
 ```
+4mation-local
+├── explorer.rs    — BFS avant + rétrograde parents (remplace work_queue_filler.py)
+├── hasher.rs      — Hash Zobrist identique à position_hasher.py
+├── solver.rs      — Résolution rétrograde W/L/D (port retrograde_solver.py)
+├── game.rs        — Règles 7×7, frontier, victoire
+├── local_db.rs    — Schéma SQLite, inserts groupés, claim/submit bulk
+└── local_engine.rs — Boucle : explorer → claim → résoudre (rayon) → écrire
+```
+
+**Pas de HTTP** dans le chemin critique. Une seule machine, 16 threads.
 
 ## Tests
 
 ```powershell
 cargo test
 cargo build --release
-.\target\release\4mation-worker.exe --max-iterations 3 --threads 4 --claim-batch 5
+.\target\release\4mation-local.exe --max-iterations 5 --threads 4 --once
 ```
 
-## Architecture
+## Performance attendue vs mode API distribué
 
-- `game.rs` — règles 7×7, coups frontier, détection victoire
-- `solver.rs` — solveur rétrograde (port de `retrograde_solver.py`)
-- `api_client.rs` — client HTTP avec pool et submit-batch
-- `local_db.rs` — mode SQLite direct
-- `main.rs` — boucle claim → résolution parallèle → submit
+| Goulot | API + filler VPS | 4mation-local (Legion) |
+|--------|------------------|------------------------|
+| Réseau | Latence claim/submit | Aucun |
+| Exploration | Process Python séparé | Rust intégré, même processus |
+| Résolution | 16 workers HTTP | 16 threads rayon, cache local |
+| SQLite | VPS distant | Disque NVMe local, WAL + bulk |
 
-## Gain attendu vs worker Python (16 processus)
+Ordre de grandeur : **10–30×** plus de positions/minute qu’une chaîne API+VPS+workers Python, selon profondeur des positions. CPU cible : **70–95 %** sur 16 cœurs en fin de partie.
 
-| Goulot | Python (avant) | Rust worker |
-|--------|----------------|-------------|
-| HTTP | Nouvelle connexion par requête (urllib) | Pool keep-alive, batch submit |
-| Parallélisme | 16 processus × overhead IPC | 1 processus, 16 threads rayon |
-| Résolution | Python + numpy récursif | Rust natif, cache HashMap |
-| CPU typique | ~20 % (réseau) | 60–90 % selon profondeur |
+## Worker HTTP (legacy)
 
-Ordre de grandeur : **3–10×** plus de positions/minute selon la latence API et la complexité des positions, jusqu'à **15×** en mode `--local-db`.
+```powershell
+.\target\release\4mation-worker.exe --api-url https://api-4mation.lab211.fr --threads 16
+.\target\release\4mation-worker.exe --local-db ..\solver\data\tablebase.db --threads 16
+```
 
-## Compatibilité API
+## Reste à faire (évolutions)
 
-Endpoints inchangés : `claim`, `submit`, `release`. Nouveau endpoint optionnel : `submit-batch` (repli automatique sur submit unitaire si absent).
+- Symétries / canonicalisation des positions (réduction espace d’états)
+- Checkpoint JSON persistant (`filler_checkpoint.json`) comme le filler Python
+- Parallélisation de l’exploration BFS (actuellement séquentielle, résolution déjà parallèle)
+- Livre d’ouverture (`opening_book`) et phases A/B Python
+- Timeout par position (budget nœuds déjà limité à 500k)
+
+## Dashboard local (suivi avancement)
+
+Page web locale calquée sur `4mation_dashboard_dev/solver.html` : progression, débit, ETA, file de travail, mini-plateaux des 20 dernières positions.
+
+### Prérequis
+
+- Python 3 + `pip install -r api/requirements.txt` (Flask, numpy)
+
+### URL
+
+**http://127.0.0.1:8765/** (port via `SOLVER_DASHBOARD_PORT`)
+
+### Lancement
+
+```bat
+REM Dashboard seul (lecture tablebase.db)
+scripts\run_local_dashboard.bat
+
+REM Solveur 4mation-local + dashboard (2 fenêtres)
+scripts\run_local_solver_stack.bat
+```
+
+Manuel :
+
+```powershell
+python script\solver_rust\local_dashboard.py --db script\solver\data\tablebase.db
+scripts\run_local_solver_rust.bat
+```
+
+### Fichiers
+
+| Fichier | Rôle |
+|---------|------|
+| `web/index.html`, `web/style.css`, `web/solver.js` | UI (auto-refresh 2,5 s) |
+| `local_dashboard.py` | Serveur Flask : `GET /api/solver/status`, `GET /api/solver/work/stats` |
+| `scripts/run_local_dashboard.bat` | Lanceur Windows |
+
+Le dashboard lit la même base SQLite que `4mation-local` via les services Python existants (`SolverProgressService`, `WorkQueueService`). **Aucun impact** sur le dashboard prod Hostinger.

@@ -126,13 +126,12 @@ class TablebaseLookup:
             if row is not None:
                 return self._row_to_hit(row, "opening_book")
 
-        if HASHER.empty_cells(board) <= self.max_endgame_empty:
-            row = conn.execute(
-                "SELECT hash, result, win_rate, best_move_row, best_move_col, depth_remaining FROM positions WHERE hash=?",
-                (h,),
-            ).fetchone()
-            if row is not None:
-                return self._row_to_hit(row, "tablebase")
+        row = conn.execute(
+            "SELECT hash, result, win_rate, best_move_row, best_move_col, depth_remaining FROM positions WHERE hash=?",
+            (h,),
+        ).fetchone()
+        if row is not None:
+            return self._row_to_hit(row, "tablebase")
 
         return None
 
@@ -178,6 +177,16 @@ class TablebaseLookup:
         """
         start = time.perf_counter()
         hit = self.lookup(board, current_player, last_move)
+
+        if hit is not None:
+            retro = self._retrograde.analyze_moves(board, current_player, last_move)
+            if retro is not None:
+                retro["source"] = hit.source
+                retro["exact"] = True
+                retro["label"] = "Exact (tablebase)"
+                retro["elapsed_ms"] = int((time.perf_counter() - start) * 1000)
+                retro["coverage_percent"] = 100.0
+                return retro
 
         if HASHER.empty_cells(board) <= self.max_endgame_empty:
             retro = self._retrograde.analyze_moves(board, current_player, last_move)
@@ -226,8 +235,10 @@ class TablebaseLookup:
         if not all_found:
             if hit is not None and hit.best_move is not None:
                 elapsed_ms = int((time.perf_counter() - start) * 1000)
+                found_count = len(moves_out)
+                coverage = 100.0 * found_count / len(valid_moves) if valid_moves else 0.0
                 return {
-                    "moves": [],
+                    "moves": moves_out,
                     "best_move": hit.best_move,
                     "current_player": current_player,
                     "valid_moves_count": len(valid_moves),
@@ -237,12 +248,13 @@ class TablebaseLookup:
                     "label": f"Exact ({hit.source})",
                     "position_win_rate": hit.win_rate,
                     "partial": True,
+                    "coverage_percent": coverage,
                 }
             return None
 
         moves_out.sort(key=lambda m: m["win_rate"], reverse=True)
         best_move = moves_out[0]["move"] if moves_out else None
-        source = hit.source if hit else "opening_book"
+        source = hit.source if hit else "tablebase"
         elapsed_ms = int((time.perf_counter() - start) * 1000)
 
         return {
@@ -255,6 +267,7 @@ class TablebaseLookup:
             "exact": True,
             "label": f"Exact ({source})",
             "position_win_rate": hit.win_rate if hit else moves_out[0]["win_rate"],
+            "coverage_percent": 100.0,
         }
 
     def choose_move(
@@ -277,11 +290,16 @@ class TablebaseLookup:
             return {"available": False, "path": str(self.db_path)}
         pos = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
         opening = conn.execute("SELECT COUNT(*) FROM opening_book").fetchone()[0]
+        progress_row = conn.execute(
+            "SELECT total_solved, current_phase, progress_percent FROM solver_progress WHERE id=1"
+        ).fetchone()
         return {
             "available": True,
             "path": str(self.db_path),
             "positions": pos,
             "opening_book": opening,
+            "solver_phase": progress_row["current_phase"] if progress_row else None,
+            "solver_progress_percent": progress_row["progress_percent"] if progress_row else None,
         }
 
 

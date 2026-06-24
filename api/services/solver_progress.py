@@ -75,26 +75,17 @@ class SolverProgressService:
 
         total_solved = max(int(live.get("total_positions_solved") or 0), db_solved)
         total_target = live.get("total_positions_target")
-        if total_target is None:
-            conn2 = self._get_conn()
-            if conn2 is not None:
-                try:
-                    r = conn2.execute(
-                        "SELECT total_target FROM solver_progress WHERE id = 1"
-                    ).fetchone()
-                    if r and r["total_target"]:
-                        total_target = int(r["total_target"])
-                except sqlite3.Error:
-                    pass
-                finally:
-                    conn2.close()
 
         total_queued = int(live.get("total_queued") or db_queued)
 
-        if total_target and int(total_target) > 0:
+        progress_unknown = bool(live.get("progress_unknown", total_target is None))
+        if live.get("progress_percent") is None or progress_unknown:
+            progress = None
+        elif total_target and int(total_target) > 0:
             progress = min(100.0, 100.0 * total_solved / int(total_target))
         else:
             progress = None
+            progress_unknown = True
 
         running = is_solver_active(live, STALE_SECONDS) or db_running
         if live.get("last_update") is None and db_updated:
@@ -113,8 +104,14 @@ class SolverProgressService:
 
         eta = live.get("eta_seconds")
         rate = float(live.get("positions_per_second") or 0.0)
-        if eta is None and rate > 0 and total_target and total_solved < total_target:
-            eta = int((total_target - total_solved) / rate)
+        if (
+            eta is None
+            and not progress_unknown
+            and rate > 0
+            and total_target
+            and total_solved < int(total_target)
+        ):
+            eta = int((int(total_target) - total_solved) / rate)
 
         recent: List[Dict[str, Any]] = list(live.get("recent_positions") or [])
         if not recent:
@@ -126,7 +123,7 @@ class SolverProgressService:
                 status_label = "calcul_long"
             else:
                 status_label = "en_cours"
-        elif total_target and total_solved >= total_target:
+        elif not progress_unknown and total_target and total_solved >= int(total_target):
             status_label = "termine"
         elif total_solved > 0 and not running:
             if stale_age is not None and stale_age <= 90:
@@ -136,19 +133,31 @@ class SolverProgressService:
 
         progress_value = round(float(progress), 4) if progress is not None else None
 
+        phase_labels = {
+            "endgame": "Fin de partie",
+            "midgame": "Milieu de partie",
+            "opening": "Ouverture",
+            "complet": "Complet",
+            "full": "Exploration",
+        }
+        raw_phase = live.get("current_phase") or db_phase
+        phase_display = phase_labels.get(str(raw_phase), str(raw_phase))
+
         return {
             "total_positions_solved": total_solved,
             "total_positions_target": total_target,
             "total_queued": total_queued,
-            "progress_percent": progress_value if progress_value is not None else 0.0,
+            "progress_percent": progress_value,
             "progress_unknown": progress is None,
+            "max_empty": live.get("max_empty"),
+            "phase_label": phase_display,
             "positions_per_second": round(rate, 2),
             "eta_seconds": eta,
             "solver_running": running,
             "status": status_label,
             "started_at": started_at,
             "last_update": last_update,
-            "current_phase": live.get("current_phase") or db_phase,
+            "current_phase": raw_phase,
             "recent_positions": recent[:20],
             "db_path": str(self.db_path),
             "db_available": self.db_path.exists(),

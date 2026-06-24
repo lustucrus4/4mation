@@ -56,8 +56,15 @@ function statusLabel(status) {
   return map[status] || { text: status || "—", cls: "status-paused" };
 }
 
-function phaseLabel(phase) {
-  const map = { endgame: "Fin de partie", opening: "Ouverture", full: "Complet (Phase C)" };
+function phaseLabel(phase, phaseLabelFromApi) {
+  if (phaseLabelFromApi) return phaseLabelFromApi;
+  const map = {
+    endgame: "Fin de partie",
+    midgame: "Milieu de partie",
+    opening: "Ouverture",
+    complet: "Complet",
+    full: "Exploration",
+  };
   return map[phase] || phase || "—";
 }
 
@@ -131,7 +138,10 @@ function renderRecent(positions) {
 function formatProgressPercent(pct, solved, unknown) {
   const solvedCount = solved ?? 0;
   if (unknown || pct == null) {
-    return solvedCount > 0 ? `${solvedCount.toLocaleString("fr-FR")} positions` : "—";
+    if (solvedCount > 0) {
+      return `${solvedCount.toLocaleString("fr-FR")} résolues (exploration en cours)`;
+    }
+    return "—";
   }
   const value = Math.min(100, Math.max(0, pct));
   if (value > 0 && value < 0.1) {
@@ -162,17 +172,18 @@ function updateUI(data) {
   statusBadgeEl.className = `status-badge ${badge.cls}`;
 
   statSolvedEl.textContent = (data.total_positions_solved ?? 0).toLocaleString("fr-FR");
-  statTargetEl.textContent =
-    data.total_positions_target != null
-      ? data.total_positions_target.toLocaleString("fr-FR")
-      : "—";
+  const targetLabel =
+    data.progress_unknown || data.total_positions_target == null
+      ? "estimation en cours"
+      : `~${data.total_positions_target.toLocaleString("fr-FR")}`;
+  statTargetEl.textContent = targetLabel;
   statRateEl.textContent =
     data.positions_per_second > 0
       ? `${data.positions_per_second.toLocaleString("fr-FR")} /s`
       : "—";
   statEtaEl.textContent = formatEta(data.eta_seconds);
   statDurationEl.textContent = formatDuration(elapsedSince(data.started_at));
-  statPhaseEl.textContent = phaseLabel(data.current_phase);
+  statPhaseEl.textContent = phaseLabel(data.current_phase, data.phase_label);
   statUpdatedEl.textContent = data.last_update
     ? new Date(data.last_update).toLocaleString("fr-FR")
     : "—";

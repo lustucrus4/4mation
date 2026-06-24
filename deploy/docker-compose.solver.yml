@@ -1,4 +1,4 @@
-# Solveur complet Phase C — tourne en arrière-plan sur le VPS
+# Solveur complet Phase C — résolution exhaustive continue
 # Ne bloque pas l'API prod (volume partagé tablebase.db)
 
 services:
@@ -9,7 +9,8 @@ services:
     environment:
       PYTHONPATH: /app:/app/script
       TABLEBASE_DB_PATH: /app/data/tablebase.db
-      TABLEBASE_MAX_EMPTY: "12"
+      SOLVER_STATUS_PATH: /app/data/solver_status.json
+      TABLEBASE_MAX_EMPTY: "49"
     volumes:
       - 4mation-sessions:/app/data
     command:
@@ -17,24 +18,25 @@ services:
       - -c
       - |
         apt-get update && apt-get install -y --no-install-recommends git
-        rm -rf /tmp/repo
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-        cp -a /tmp/repo/script /app/
         pip install --no-cache-dir numpy
         mkdir -p /app/data
-        if [ ! -f /app/data/tablebase.db ] && [ -f /app/script/solver/data/tablebase.db ]; then
-          cp /app/script/solver/data/tablebase.db /app/data/tablebase.db
-        fi
-        echo "Solveur Phase C démarré — écriture dans /app/data/tablebase.db"
-        exec python /app/script/solver/build_full_tablebase.py \
-          --db /app/data/tablebase.db \
-          --max-empty 12 \
-          --batch 25 \
-          --progress-every 1 \
-          --progress-interval 15 \
-          --position-timeout 30 \
-          --continuous \
-          --refill-sleep 10
+        while true; do
+          rm -rf /tmp/repo
+          git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          cp -a /tmp/repo/script /app/
+          if [ ! -f /app/data/tablebase.db ] && [ -f /app/script/solver/data/tablebase.db ]; then
+            cp /app/script/solver/data/tablebase.db /app/data/tablebase.db
+          fi
+          echo "Solveur exhaustif Phase C — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python /app/script/solver/build_full_tablebase.py \
+            --db /app/data/tablebase.db \
+            --max-empty 12 \
+            --batch 25 \
+            --progress-interval 15 \
+            --position-timeout 30 \
+          || echo "Solveur arrêté (code $$?) — redémarrage dans 10s"
+          sleep 10
+        done
     restart: unless-stopped
 
 volumes:

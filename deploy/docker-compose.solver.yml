@@ -9,7 +9,7 @@ services:
     environment:
       PYTHONPATH: /app:/app/script
       TABLEBASE_DB_PATH: /app/data/tablebase.db
-      TABLEBASE_MAX_EMPTY: "20"
+      TABLEBASE_MAX_EMPTY: "12"
     volumes:
       - 4mation-sessions:/app/data
     command:
@@ -29,10 +29,11 @@ services:
         while true; do
           python /app/script/solver/build_full_tablebase.py \
             --db /app/data/tablebase.db \
-            --max-empty 20 \
+            --max-empty 12 \
             --batch 25 \
-            --progress-every 5 \
-            --progress-interval 15
+            --progress-every 1 \
+            --progress-interval 15 \
+            --position-timeout 30
           echo "Cycle solveur terminé — pause 60s avant reprise"
           sleep 60
         done

@@ -7,6 +7,7 @@ Résout W/L/D pour le joueur au trait, best_move et win_rate exact.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
@@ -36,10 +37,20 @@ class SolvedPosition:
 class RetrogradeSolver:
     """Résolution à rebours depuis les positions terminales."""
 
-    def __init__(self, max_empty: int = 12) -> None:
+    def __init__(
+        self,
+        max_empty: int = 12,
+        position_timeout_sec: float = 30.0,
+        max_nodes: int = 500_000,
+    ) -> None:
         self.max_empty = max_empty
+        self.position_timeout_sec = position_timeout_sec
+        self.max_nodes = max_nodes
         self._advisor = OptimizedMinimaxAdvisor(depth=4, use_iterative_deepening=False)
         self._cache: Dict[str, SolvedPosition] = {}
+        self._deadline: Optional[float] = None
+        self._nodes_explored: int = 0
+        self._timed_out: bool = False
 
     def should_solve(self, board: np.ndarray) -> bool:
         return HASHER.empty_cells(board) <= self.max_empty
@@ -90,6 +101,15 @@ class RetrogradeSolver:
 
         return None
 
+    def _budget_exceeded(self) -> bool:
+        if self._deadline is not None and time.monotonic() >= self._deadline:
+            self._timed_out = True
+            return True
+        if self._nodes_explored >= self.max_nodes:
+            self._timed_out = True
+            return True
+        return False
+
     def solve_position(
         self,
         board: np.ndarray,
@@ -99,6 +119,11 @@ class RetrogradeSolver:
         """Résout une position si ≤ max_empty cases vides."""
         if not self.should_solve(board):
             return None
+
+        if self._budget_exceeded():
+            return None
+
+        self._nodes_explored += 1
 
         h = HASHER.hash_key(board, current_player, last_move)
         if h in self._cache:
@@ -264,5 +289,14 @@ class RetrogradeSolver:
             "position_win_rate": pos.win_rate if pos else None,
         }
 
+    def begin_position(self) -> None:
+        """Réinitialise le budget temps/nœuds pour une nouvelle position."""
+        self._deadline = time.monotonic() + self.position_timeout_sec
+        self._nodes_explored = 0
+        self._timed_out = False
+
     def clear_cache(self) -> None:
         self._cache.clear()
+        self._deadline = None
+        self._nodes_explored = 0
+        self._timed_out = False

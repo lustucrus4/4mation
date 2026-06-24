@@ -25,15 +25,11 @@ from __future__ import annotations
 
 
 import argparse
-
 import json
-
 import logging
-
 import sys
-
+import threading
 import time
-
 from collections import deque
 
 from pathlib import Path
@@ -366,6 +362,16 @@ def _enumerate_seed_positions(
 
 
 
+def _sort_queue_by_difficulty(queue: deque) -> deque:
+    """Traite d'abord les positions avec le moins de cases vides."""
+    items = list(queue)
+    items.sort(key=lambda item: HASHER.empty_cells(item[0]))
+    return deque(items)
+
+
+
+
+
 def _publish_live_status(
 
     *,
@@ -543,16 +549,17 @@ def _flush_progress(
 
 def run_full_solver(
     db_path: Path,
-    max_empty: int = 20,
+    max_empty: int = 12,
     batch_size: int = 25,
-    progress_every: int = 5,
+    progress_every: int = 1,
     progress_interval_sec: float = 15.0,
     sleep_between_batches: float = 0.05,
+    position_timeout_sec: float = 30.0,
 ) -> None:
 
     conn = init_db(db_path)
 
-    solver = RetrogradeSolver(max_empty=max_empty)
+    solver = RetrogradeSolver(max_empty=max_empty, position_timeout_sec=position_timeout_sec)
 
     advisor = OptimizedMinimaxAdvisor(depth=2, use_iterative_deepening=False)
 
@@ -562,7 +569,7 @@ def run_full_solver(
 
 
 
-    queue = _enumerate_seed_positions(advisor, max_empty)
+    queue = _sort_queue_by_difficulty(_enumerate_seed_positions(advisor, max_empty))
 
     # Cible = file initiale + déjà résolu (sans gonfler via checkpoint)
     total_target = max(total_solved + len(queue), total_solved, 1)
@@ -656,90 +663,151 @@ def run_full_solver(
     last_player = 1
     last_move_saved: Optional[Tuple[int, int]] = None
     last_solved: Optional[SolvedPosition] = None
+    skipped_timeouts = 0
 
-    while queue:
+    heartbeat_stop = threading.Event()
+    heartbeat_lock = threading.Lock()
+    shared_state = {
+        "total_solved": total_solved,
+        "queued": len(queue),
+        "last_hash": "",
+        "last_progress_mono": time.monotonic(),
+    }
 
-        board, player, last_move = queue.popleft()
+    def _heartbeat_loop() -> None:
+        while not heartbeat_stop.wait(progress_interval_sec):
+            with heartbeat_lock:
+                if heartbeat_stop.is_set():
+                    break
+                now = time.monotonic()
+                if (now - shared_state["last_progress_mono"]) < progress_interval_sec:
+                    continue
+                try:
+                    _flush_progress(
+                        conn,
+                        total_solved=shared_state["total_solved"],
+                        total_target=total_target,
+                        queued=shared_state["queued"],
+                        last_hash=shared_state["last_hash"],
+                        started_at=started_at,
+                        started_mono=started_mono,
+                        recent=recent,
+                        solver=solver,
+                        solver_running=True,
+                        force_json=True,
+                    )
+                    shared_state["last_progress_mono"] = now
+                except Exception as exc:
+                    logger.warning("Heartbeat progression échoué: %s", exc)
 
-        h = HASHER.hash_key(board, player, last_move)
+    heartbeat_thread = threading.Thread(target=_heartbeat_loop, daemon=True)
+    heartbeat_thread.start()
 
-        if h in processed:
+    try:
+        while queue:
 
-            continue
+            board, player, last_move = queue.popleft()
 
-        processed.add(h)
+            h = HASHER.hash_key(board, player, last_move)
 
+            if h in processed:
 
+                continue
 
-        existing = conn.execute("SELECT 1 FROM positions WHERE hash=?", (h,)).fetchone()
-
-        if existing:
-
-            continue
-
-
-
-        solved = solver.solve_position(board, player, last_move)
-
-        if solved is None:
-
-            continue
+            processed.add(h)
 
 
 
-        _store_position(conn, solved, board, player, last_move)
+            existing = conn.execute("SELECT 1 FROM positions WHERE hash=?", (h,)).fetchone()
 
-        total_solved += 1
-        batch_count += 1
-        last_hash = h
-        last_board = board
-        last_player = player
-        last_move_saved = last_move
-        last_solved = solved
+            if existing:
 
-        now_mono = time.monotonic()
-        should_flush = (
-            batch_count >= batch_size
-            or batch_count >= progress_every
-            or (now_mono - last_progress_mono) >= progress_interval_sec
-        )
+                continue
 
-        if should_flush:
 
-            batch_elapsed = max(now_mono - batch_start_mono, 0.001)
-            progress = min(100.0, 100.0 * total_solved / max(total_target, 1))
-            recent = _flush_progress(
-                conn,
-                total_solved=total_solved,
-                total_target=total_target,
-                queued=len(queue),
-                last_hash=last_hash,
-                started_at=started_at,
-                started_mono=started_mono,
-                recent=recent,
-                solver=solver,
-                solver_running=True,
-                board=last_board,
-                current_player=last_player,
-                last_move=last_move_saved,
-                solved=last_solved,
-                batch_solved=total_solved - batch_start_solved,
-                batch_elapsed=batch_elapsed,
+
+            solver.begin_position()
+            solved = solver.solve_position(board, player, last_move)
+
+            if solved is None:
+                if solver._timed_out:
+                    skipped_timeouts += 1
+                    logger.warning(
+                        "Position ignorée (timeout %.0fs ou limite nœuds) — hash=%s, vides=%d",
+                        position_timeout_sec,
+                        h[:12],
+                        HASHER.empty_cells(board),
+                    )
+                continue
+
+
+
+            _store_position(conn, solved, board, player, last_move)
+
+            total_solved += 1
+            batch_count += 1
+            last_hash = h
+            last_board = board
+            last_player = player
+            last_move_saved = last_move
+            last_solved = solved
+            with heartbeat_lock:
+                shared_state["total_solved"] = total_solved
+                shared_state["queued"] = len(queue)
+                shared_state["last_hash"] = last_hash
+
+            now_mono = time.monotonic()
+            should_flush = (
+                batch_count >= batch_size
+                or batch_count >= progress_every
+                or (now_mono - last_progress_mono) >= progress_interval_sec
             )
-            _save_checkpoint(db_path, processed)
-            logger.info(
-                "Progression : %d/%d (%.2f%%) — %.2f pos/s, file=%d",
-                total_solved,
-                total_target,
-                progress,
-                (total_solved - batch_start_solved) / batch_elapsed,
-                len(queue),
-            )
-            batch_count = 0
-            batch_start_mono = time.monotonic()
-            batch_start_solved = total_solved
-            last_progress_mono = time.monotonic()
-            time.sleep(sleep_between_batches)
+
+            if should_flush:
+
+                batch_elapsed = max(now_mono - batch_start_mono, 0.001)
+                progress = min(100.0, 100.0 * total_solved / max(total_target, 1))
+                recent = _flush_progress(
+                    conn,
+                    total_solved=total_solved,
+                    total_target=total_target,
+                    queued=len(queue),
+                    last_hash=last_hash,
+                    started_at=started_at,
+                    started_mono=started_mono,
+                    recent=recent,
+                    solver=solver,
+                    solver_running=True,
+                    board=last_board,
+                    current_player=last_player,
+                    last_move=last_move_saved,
+                    solved=last_solved,
+                    batch_solved=total_solved - batch_start_solved,
+                    batch_elapsed=batch_elapsed,
+                )
+                _save_checkpoint(db_path, processed)
+                logger.info(
+                    "Progression : %d/%d (%.2f%%) — %.2f pos/s, file=%d",
+                    total_solved,
+                    total_target,
+                    progress,
+                    (total_solved - batch_start_solved) / batch_elapsed,
+                    len(queue),
+                )
+                batch_count = 0
+                batch_start_mono = time.monotonic()
+                batch_start_solved = total_solved
+                last_progress_mono = time.monotonic()
+                with heartbeat_lock:
+                    shared_state["last_progress_mono"] = last_progress_mono
+                time.sleep(sleep_between_batches)
+
+    finally:
+        heartbeat_stop.set()
+        heartbeat_thread.join(timeout=2.0)
+
+    if skipped_timeouts:
+        logger.info("%d positions ignorées (timeout)", skipped_timeouts)
 
 
 
@@ -803,11 +871,12 @@ def main() -> None:
 
     parser.add_argument("--db", default=str(DEFAULT_DB))
 
-    parser.add_argument("--max-empty", type=int, default=20)
+    parser.add_argument("--max-empty", type=int, default=12)
 
     parser.add_argument("--batch", type=int, default=25)
-    parser.add_argument("--progress-every", type=int, default=5)
+    parser.add_argument("--progress-every", type=int, default=1)
     parser.add_argument("--progress-interval", type=float, default=15.0)
+    parser.add_argument("--position-timeout", type=float, default=30.0)
 
     args = parser.parse_args()
 
@@ -819,6 +888,7 @@ def main() -> None:
         args.batch,
         args.progress_every,
         args.progress_interval,
+        position_timeout_sec=args.position_timeout,
     )
 
 

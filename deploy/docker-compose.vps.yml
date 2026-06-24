@@ -105,16 +105,26 @@ services:
         mkdir -p /app/data
 
         if [ ! -f /app/data/tablebase.db ]; then
-
           python /app/script/solver/seed_initial_tablebase.py --db /app/data/tablebase.db
-
+        else
+          POS_COUNT=$$(python -c "import sqlite3; c=sqlite3.connect('/app/data/tablebase.db'); print(c.execute('SELECT COUNT(*) FROM positions').fetchone()[0])")
+          if [ "$$POS_COUNT" = "0" ]; then
+            echo "Tablebase vide — seed initial"
+            python /app/script/solver/seed_initial_tablebase.py --db /app/data/tablebase.db
+          fi
         fi
 
         export SOLVER_STATUS_PATH=/app/data/solver_status.json
 
         while true; do
 
-          python /app/script/solver/build_full_tablebase.py --db /app/data/tablebase.db --batch 25 --progress-every 5 --progress-interval 15
+          python /app/script/solver/build_full_tablebase.py \
+            --db /app/data/tablebase.db \
+            --max-empty 12 \
+            --batch 25 \
+            --progress-every 1 \
+            --progress-interval 15 \
+            --position-timeout 30
 
           sleep 60
 

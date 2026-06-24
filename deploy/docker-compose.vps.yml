@@ -8,6 +8,7 @@ services:
     environment:
       PYTHONPATH: /app:/app/script
       SESSION_DB_PATH: /app/data/sessions.db
+      TABLEBASE_DB_PATH: /app/data/tablebase.db
     volumes:
       - 4mation-sessions:/app/data
     command:
@@ -20,6 +21,9 @@ services:
         cp -a /tmp/repo/api /tmp/repo/script /app/
         pip install --no-cache-dir -r /app/api/requirements.txt
         mkdir -p /app/logs /app/data
+        if [ ! -f /app/data/tablebase.db ] && [ -f /app/script/solver/data/tablebase.db ]; then
+          cp /app/script/solver/data/tablebase.db /app/data/tablebase.db
+        fi
         exec gunicorn -c /app/api/gunicorn_config.py --bind 0.0.0.0:8097 api.app:app
     restart: always
 
@@ -42,41 +46,10 @@ services:
       - -ec
       - |
         apk add --no-cache git curl unzip rsync
-        mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled /var/www/4mation /var/www/certbot
-        rm -f /etc/nginx/sites-enabled/4mation /etc/nginx/sites-available/4mation
+        mkdir -p /var/www/4mation /var/www/certbot
         rm -rf /tmp/repo
         git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
         rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/
-        cat > /etc/nginx/sites-available/4mation <<'EOF'
-        server {
-            listen 80;
-            server_name 4mation.lab211.fr;
-            root /var/www/4mation;
-            index index.html;
-            location /.well-known/acme-challenge/ { root /var/www/certbot; }
-            location /assets/ {
-                expires 30d;
-                add_header Cache-Control "public, immutable";
-            }
-            location / { try_files $uri $uri/ /index.html; }
-        }
-        server {
-            listen 80;
-            server_name api-4mation.lab211.fr;
-            location /.well-known/acme-challenge/ { root /var/www/certbot; }
-            location / {
-                proxy_pass http://127.0.0.1:8097;
-                proxy_http_version 1.1;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_read_timeout 120s;
-            }
-        }
-        EOF
-        ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
-        if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
         echo nginx-http-ok
 
   certbot:

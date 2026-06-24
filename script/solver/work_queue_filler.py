@@ -39,13 +39,17 @@ from solver.solver_status import board_to_list
 
 DEFAULT_DB = SCRIPT / "solver" / "data" / "tablebase.db"
 CHECKPOINT_FILE = "filler_checkpoint.json"
-DEFAULT_BATCH = 2000
+DEFAULT_BATCH = 5000
 DEFAULT_SLEEP_SEC = 0.0
-DEFAULT_MIN_PENDING = 4000
-TURBO_BATCH_CAP = 8000
-CHECKPOINT_EVERY_TURBO = 25
-IDLE_ROUNDS_BEFORE_RESET = 2
-SEED_LIMIT = 8000
+DEFAULT_MIN_PENDING = 10000
+TURBO_BATCH_CAP = 50000
+CHECKPOINT_EVERY_TURBO = 200
+IDLE_ROUNDS_BEFORE_RESET = 1
+SEED_LIMIT = 20000
+INSERT_CHUNK = 2000
+KNOWN_REFRESH_SEC = 45.0
+PROGRESS_EVERY_TURBO = 15
+CHECKPOINT_TAIL = 25000
 INSERT_SQL = """
 INSERT OR IGNORE INTO work_queue
 (hash, board_json, player, last_move_row, last_move_col, status)
@@ -69,6 +73,14 @@ def _load_checkpoint(db_path: Path) -> dict:
         return {}
 
 
+def _tune_sqlite(conn) -> None:
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA cache_size=-128000")
+    conn.execute("PRAGMA temp_store=MEMORY")
+    conn.execute("PRAGMA mmap_size=268435456")
+
+
 def _save_checkpoint(
     db_path: Path,
     *,
@@ -78,8 +90,8 @@ def _save_checkpoint(
     exploration_mode: str,
 ) -> None:
     cp = db_path.parent / CHECKPOINT_FILE
-    tail_bfs = list(bfs_seen)[-50000:]
-    tail_retro = list(retro_seen)[-50000:]
+    tail_bfs = list(bfs_seen)[-CHECKPOINT_TAIL:]
+    tail_retro = list(retro_seen)[-CHECKPOINT_TAIL:]
     cp.write_text(
         json.dumps(
             {
@@ -94,15 +106,40 @@ def _save_checkpoint(
     )
 
 
-def _known_hashes(conn) -> Set[str]:
+def _known_hashes(conn, *, full: bool = True) -> Set[str]:
     known: Set[str] = set()
     for row in conn.execute("SELECT hash FROM positions"):
         known.add(str(row[0]).lower())
+    if full:
+        for row in conn.execute(
+            "SELECT hash FROM work_queue WHERE status IN ('pending', 'in_progress', 'done')"
+        ):
+            known.add(str(row[0]).lower())
+    else:
+        for row in conn.execute(
+            "SELECT hash FROM work_queue WHERE status IN ('pending', 'in_progress')"
+        ):
+            known.add(str(row[0]).lower())
+    return known
+
+
+def _incremental_known_refresh(conn, known: Set[str], last_refresh: float) -> float:
+    """Ajoute les hashes résolus récemment sans recharger toute la base."""
+    now = time.monotonic()
+    if now - last_refresh < KNOWN_REFRESH_SEC:
+        return last_refresh
     for row in conn.execute(
-        "SELECT hash FROM work_queue WHERE status IN ('pending', 'in_progress', 'done')"
+        "SELECT hash FROM positions WHERE solved_at > datetime('now', '-120 seconds')"
     ):
         known.add(str(row[0]).lower())
-    return known
+    for row in conn.execute(
+        """
+        SELECT hash FROM work_queue
+        WHERE status = 'done' AND created_at > datetime('now', '-120 seconds')
+        """
+    ):
+        known.add(str(row[0]).lower())
+    return now
 
 
 def _resolve_level_index(max_empty: int, checkpoint: dict) -> int:
@@ -117,7 +154,9 @@ def _resolve_level_index(max_empty: int, checkpoint: dict) -> int:
 def _effective_batch(batch_size: int, pending: int, min_pending: int) -> int:
     if min_pending <= 0 or pending >= min_pending:
         return batch_size
-    if pending < min_pending // 4:
+    if pending < min_pending // 5:
+        mult = 5
+    elif pending < min_pending // 3:
         mult = 4
     elif pending < min_pending // 2:
         mult = 3
@@ -135,6 +174,7 @@ def fill_queue(
     once: bool = False,
 ) -> None:
     conn = init_db(db_path)
+    _tune_sqlite(conn)
     checkpoint = _load_checkpoint(db_path)
     level_idx = _resolve_level_index(max_empty_start, checkpoint)
     max_empty = MAX_EMPTY_LEVELS[min(level_idx, len(MAX_EMPTY_LEVELS) - 1)]
@@ -150,6 +190,7 @@ def fill_queue(
     work_iter = None
     idle_rounds = 0
     turbo_rounds = 0
+    known_refresh_at = time.monotonic()
 
     logger.info(
         "Filler démarré — max_empty=%d, known=%d, mode=%s, batch=%d, min_pending=%d",
@@ -167,6 +208,7 @@ def fill_queue(
         ).fetchone()[0]
         turbo = min_pending > 0 and pending_now < min_pending
         target_batch = _effective_batch(batch_size, pending_now, min_pending)
+        known_refresh_at = _incremental_known_refresh(conn, known, known_refresh_at)
         if work_iter is None:
             if exploration_mode == "forward":
                 work_iter = forward_bfs_unsolved(advisor, max_empty, known, bfs_seen)
@@ -189,7 +231,7 @@ def fill_queue(
                 if last_move is not None:
                     lmr, lmc = last_move
                 rows_buffer.append((h, board_json, player, lmr, lmc))
-                if len(rows_buffer) >= 250:
+                if len(rows_buffer) >= INSERT_CHUNK:
                     before = conn.total_changes
                     conn.executemany(INSERT_SQL, rows_buffer)
                     inserted += conn.total_changes - before
@@ -222,24 +264,29 @@ def fill_queue(
                 work_iter = None
                 bfs_seen.clear()
                 retro_seen.clear()
-                known = _known_hashes(conn)
+                known = _known_hashes(conn, full=True)
+                known_refresh_at = time.monotonic()
                 if once:
                     break
-                if sleep_sec > 0:
+                if sleep_sec > 0 and not turbo:
                     time.sleep(sleep_sec)
                 continue
 
-        pending = conn.execute(
-            "SELECT COUNT(*) FROM work_queue WHERE status = 'pending'"
-        ).fetchone()[0]
-        conn.execute(
-            """
-            INSERT INTO solver_progress (id, total_queued, updated_at)
-            VALUES (1, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(id) DO UPDATE SET total_queued = excluded.total_queued, updated_at = CURRENT_TIMESTAMP
-            """,
-            (pending,),
-        )
+        if turbo and inserted > 0:
+            pending = pending_now + inserted
+        else:
+            pending = conn.execute(
+                "SELECT COUNT(*) FROM work_queue WHERE status = 'pending'"
+            ).fetchone()[0]
+        if not turbo or turbo_rounds % PROGRESS_EVERY_TURBO == 0:
+            conn.execute(
+                """
+                INSERT INTO solver_progress (id, total_queued, updated_at)
+                VALUES (1, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET total_queued = excluded.total_queued, updated_at = CURRENT_TIMESTAMP
+                """,
+                (pending,),
+            )
         conn.commit()
 
         turbo_rounds = turbo_rounds + 1 if turbo else 0
@@ -278,7 +325,8 @@ def fill_queue(
                     exploration_mode = "retrograde"
                     level_idx = 0
                     max_empty = MAX_EMPTY_LEVELS[0]
-                    known = _known_hashes(conn)
+                    known = _known_hashes(conn, full=True)
+                    known_refresh_at = time.monotonic()
                     logger.info("Recyclage exploration depuis niveau %d", max_empty)
 
         if once:
@@ -298,7 +346,7 @@ def main() -> None:
         "--min-pending",
         type=int,
         default=DEFAULT_MIN_PENDING,
-        help="Cible de tampon : pas de pause tant que pending < cette valeur (turbo x2–x4 selon niveau)",
+        help="Cible de tampon : pas de pause tant que pending < cette valeur (turbo x2–x5 selon niveau)",
     )
     parser.add_argument("--once", action="store_true", help="Un seul lot puis sortie")
     args = parser.parse_args()

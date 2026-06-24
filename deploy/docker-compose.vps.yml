@@ -42,15 +42,18 @@ services:
 
       - |
 
-        apt-get update && apt-get install -y --no-install-recommends git curl rsync
+        sync_repo() {
+          if [ -d /tmp/repo/.git ]; then
+            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+          else
+            apt-get update && apt-get install -y --no-install-recommends git curl rsync
+            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          fi
+          cp -a /tmp/repo/api /tmp/repo/script /app/
+          rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/ || true
+        }
 
-        rm -rf /tmp/repo
-
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-
-        cp -a /tmp/repo/api /tmp/repo/script /app/
-
-        rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/ || true
+        sync_repo
 
         pip install --no-cache-dir -r /app/api/requirements.txt
 
@@ -102,28 +105,27 @@ services:
 
       - |
 
-        apt-get update && apt-get install -y --no-install-recommends git
+        sync_repo() {
+          if [ -d /tmp/repo/.git ]; then
+            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+          else
+            apt-get update && apt-get install -y --no-install-recommends git
+            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          fi
+          cp -a /tmp/repo/script /app/
+        }
 
-        rm -rf /tmp/repo
-
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-
-        cp -a /tmp/repo/script /app/
+        sync_repo
 
         pip install --no-cache-dir numpy
 
         mkdir -p /app/data
 
-        while true; do
-          echo "Filler — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          python /app/script/solver/work_queue_filler.py \
-            --db /app/data/tablebase.db --max-empty 12 --batch 2000 --sleep 0 \
-            --min-pending 4000 \
-          || echo "Filler erreur — retry 1s"
-          sleep 1
-        done
+        exec python /app/script/solver/work_queue_filler.py \
+          --db /app/data/tablebase.db --max-empty 12 --batch 5000 --sleep 0 \
+          --min-pending 10000
 
-    restart: unless-stopped
+    restart: always
 
 
 
@@ -167,13 +169,17 @@ services:
 
       - |
 
-        apt-get update && apt-get install -y --no-install-recommends git
+        sync_repo() {
+          if [ -d /tmp/repo/.git ]; then
+            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+          else
+            apt-get update && apt-get install -y --no-install-recommends git
+            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          fi
+          cp -a /tmp/repo/script /app/
+        }
 
-        rm -rf /tmp/repo
-
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-
-        cp -a /tmp/repo/script /app/
+        sync_repo
 
         pip install --no-cache-dir numpy
 
@@ -187,8 +193,8 @@ services:
             --claim-batch $${SOLVER_CLAIM_BATCH:-500} \
             --solve-threads $${SOLVER_SOLVE_THREADS:-2} \
             --position-timeout 30 \
-          || echo "Worker arrêté — redémarrage dans 5s"
-          sleep 5
+          || echo "Worker arrêté — redémarrage dans 2s"
+          sleep 2
         done
 
     restart: unless-stopped

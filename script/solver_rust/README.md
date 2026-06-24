@@ -5,10 +5,13 @@ Binaire haute performance pour résoudre des positions 4mation en local ou via l
 ## Prérequis
 
 - [Rust](https://rustup.rs) (toolchain stable)
-- Windows : MSVC Build Tools recommandés
+- Windows : **Visual Studio Build Tools** avec charge de travail « Développement Desktop en C++ » (`link.exe` MSVC requis)
 
 ```powershell
 rustup default stable
+# Si cargo build échoue avec "link.exe not found" :
+winget install Microsoft.VisualStudio.2022.BuildTools
+# Puis cocher « MSVC v143 » et « Windows SDK » dans l'installateur
 ```
 
 ## Compilation

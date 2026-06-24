@@ -42,18 +42,23 @@ pub fn frontier_moves(board: &Board, last_move: Option<Move>, current_player: i8
     let mut valid = Vec::new();
     let mut seen = [false; BOARD_SIZE * BOARD_SIZE];
 
-    let mut mark = |r: usize, c: usize| {
+    fn push_unique(
+        valid: &mut Vec<Move>,
+        seen: &mut [bool; BOARD_SIZE * BOARD_SIZE],
+        r: usize,
+        c: usize,
+    ) {
         let idx = r * BOARD_SIZE + c;
         if !seen[idx] {
             seen[idx] = true;
             valid.push((r, c));
         }
-    };
+    }
 
     if empty_cells(board) == BOARD_SIZE * BOARD_SIZE {
         for r in 0..BOARD_SIZE {
             for c in 0..BOARD_SIZE {
-                mark(r, c);
+                push_unique(&mut valid, &mut seen, r, c);
             }
         }
         return valid;
@@ -73,7 +78,7 @@ pub fn frontier_moves(board: &Board, last_move: Option<Move>, current_player: i8
                     && (c as usize) < BOARD_SIZE
                     && board[r as usize][c as usize] == 0
                 {
-                    mark(r as usize, c as usize);
+                    push_unique(&mut valid, &mut seen, r as usize, c as usize);
                 }
             }
         }
@@ -98,7 +103,7 @@ pub fn frontier_moves(board: &Board, last_move: Option<Move>, current_player: i8
                             && (c as usize) < BOARD_SIZE
                             && board[r as usize][c as usize] == 0
                         {
-                            mark(r as usize, c as usize);
+                            push_unique(&mut valid, &mut seen, r as usize, c as usize);
                         }
                     }
                 }

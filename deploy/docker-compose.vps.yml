@@ -16,7 +16,7 @@ services:
         git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
         cp -a /tmp/repo/api /tmp/repo/script /app/
         pip install --no-cache-dir -r /app/api/requirements.txt
-        mkdir -p /app/api/logs
+        mkdir -p /app/logs
         exec gunicorn -c /app/api/gunicorn_config.py --bind 0.0.0.0:8097 api.app:app
     restart: always
 

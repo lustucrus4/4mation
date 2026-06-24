@@ -94,6 +94,14 @@ python script/solver/seed_initial_tablebase.py
 
 Page web : **https://4mation.lab211.fr/solver.html**
 
+## Mode distribué (workers parallèles)
+
+Voir **[README_DISTRIBUTED.md](./README_DISTRIBUTED.md)** pour lancer un worker local (16 processus sur Ryzen 9).
+
+- VPS : `work_queue_filler.py` alimente la file `work_queue`
+- Workers : `distributed_worker.py` (PC local, VPS, etc.)
+- API : `/api/solver/work/claim|submit|stats|release`
+
 ## Déploiement VPS
 
 Le service `solver` dans `deploy/docker-compose.solver.yml` tourne en boucle continue (`restart: unless-stopped`).

@@ -59,6 +59,26 @@ def submit_work():
     return jsonify({"success": True, "hash": data.get("hash")})
 
 
+@solver_workers_bp.post("/api/solver/work/submit-batch")
+@_require_worker_auth
+def submit_work_batch():
+    data = request.get_json(silent=True) or {}
+    worker_id = str(data.get("worker_id") or "").strip()
+    results = data.get("results")
+    if not isinstance(results, list):
+        return jsonify({"success": False, "error": "results (liste) requis"}), 400
+
+    ok_count, fail_count, errors = get_work_queue_service().submit_batch(worker_id, results)
+    return jsonify(
+        {
+            "success": fail_count == 0 or ok_count > 0,
+            "submitted": ok_count,
+            "failed": fail_count,
+            "errors": errors[:20],
+        }
+    )
+
+
 @solver_workers_bp.post("/api/solver/work/release")
 @_require_worker_auth
 def release_work():

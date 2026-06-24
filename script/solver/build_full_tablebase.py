@@ -200,9 +200,11 @@ def _publish_status(
     solved: Optional[SolvedPosition] = None,
 ) -> list:
     rate = batch_solved / batch_elapsed if batch_elapsed > 0 else 0.0
-    elapsed = max(time.monotonic() - started_mono, 0.001)
+    elapsed = max(time.monotonic() - started_mono, 1.0)
     overall_rate = total_solved / elapsed if total_solved else rate
     use_rate = rate if rate > 0 else overall_rate
+    if use_rate > 100_000:
+        use_rate = rate if 0 < rate <= 100_000 else 0.0
 
     progress = _compute_progress_percent(total_solved, max_empty)
     est = estimate_state_space(max_empty)

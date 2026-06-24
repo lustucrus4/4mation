@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS work_queue (
 );
 
 CREATE INDEX IF NOT EXISTS idx_positions_depth ON positions(depth_remaining);
+CREATE INDEX IF NOT EXISTS idx_positions_solved_at ON positions(solved_at);
 CREATE INDEX IF NOT EXISTS idx_opening_ply ON opening_book(ply);
 CREATE INDEX IF NOT EXISTS idx_work_queue_status ON work_queue(status);
 CREATE INDEX IF NOT EXISTS idx_work_queue_claimed ON work_queue(claimed_at);
@@ -81,6 +82,7 @@ _MIGRATIONS = [
     "ALTER TABLE solver_progress ADD COLUMN solver_running INTEGER DEFAULT 0",
     "ALTER TABLE solver_progress ADD COLUMN total_target INTEGER",
     "ALTER TABLE solver_progress ADD COLUMN progress_percent REAL DEFAULT 0",
+    "CREATE INDEX IF NOT EXISTS idx_positions_solved_at ON positions(solved_at)",
 ]
 
 

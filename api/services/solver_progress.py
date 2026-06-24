@@ -25,6 +25,11 @@ DEFAULT_DB = (
     Path(__file__).resolve().parent.parent.parent / "script" / "solver" / "data" / "tablebase.db"
 )
 
+# Fenêtres glissantes pour estimer le débit en mode workers distribués.
+RATE_WINDOWS_SEC = (60, 120, 300)
+# Au-delà de ce seuil, le JSON live est considéré aberrant (ex. total_solved / 0,001 s).
+MAX_SANE_RATE = 100_000.0
+
 
 class SolverProgressService:
     def __init__(
@@ -42,6 +47,49 @@ class SolverProgressService:
             return None
         return connect(self.db_path)
 
+    def _workers_active(self, conn: sqlite3.Connection) -> bool:
+        try:
+            row = conn.execute(
+                """
+                SELECT COUNT(*) FROM work_queue
+                WHERE status = 'in_progress'
+                  AND claimed_at >= datetime('now', '-300 seconds')
+                """
+            ).fetchone()
+            return int(row[0]) > 0
+        except sqlite3.Error:
+            return False
+
+    def _rate_from_db(self, conn: sqlite3.Connection) -> float:
+        """Débit moyen (positions/s) sur les dernières résolutions enregistrées en base."""
+        for window in RATE_WINDOWS_SEC:
+            try:
+                cnt = conn.execute(
+                    """
+                    SELECT COUNT(*) FROM positions
+                    WHERE solved_at >= datetime('now', ?)
+                    """,
+                    (f"-{window} seconds",),
+                ).fetchone()[0]
+            except sqlite3.Error:
+                return 0.0
+            if cnt > 0:
+                return float(cnt) / window
+        return 0.0
+
+    def _db_recently_updated(self, conn: sqlite3.Connection, max_age_sec: int = 300) -> bool:
+        try:
+            row = conn.execute(
+                "SELECT updated_at FROM solver_progress WHERE id = 1"
+            ).fetchone()
+            if row is None or not row["updated_at"]:
+                return False
+            ts = datetime.fromisoformat(str(row["updated_at"]).replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - ts).total_seconds()
+            return age <= max_age_sec
+        except (sqlite3.Error, ValueError, TypeError):
+            return False
+
     def get_status(self) -> Dict[str, Any]:
         live = read_status(self.status_path)
         conn = self._get_conn()
@@ -52,6 +100,9 @@ class SolverProgressService:
         db_started: Optional[str] = None
         db_updated: Optional[str] = None
         db_running = False
+        db_target: Optional[int] = None
+        workers_active = False
+        db_rate = 0.0
 
         if conn is not None:
             init_db(self.db_path)
@@ -69,12 +120,21 @@ class SolverProgressService:
                 db_started = row["started_at"]
                 db_updated = row["updated_at"]
                 db_running = bool(row["solver_running"])
+                if row["total_target"] is not None:
+                    db_target = int(row["total_target"])
             else:
                 db_solved = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+            workers_active = self._workers_active(conn)
+            db_rate = self._rate_from_db(conn)
+            db_recent = self._db_recently_updated(conn)
             conn.close()
+        else:
+            db_recent = False
 
         total_solved = max(int(live.get("total_positions_solved") or 0), db_solved)
         total_target = live.get("total_positions_target")
+        if total_target is None and db_target is not None:
+            total_target = db_target
 
         total_queued = int(live.get("total_queued") or db_queued)
 
@@ -87,12 +147,15 @@ class SolverProgressService:
             progress = None
             progress_unknown = True
 
-        running = is_solver_active(live, STALE_SECONDS) or db_running
+        live_active = is_solver_active(live, STALE_SECONDS)
+        running = live_active or db_running or workers_active
         if live.get("last_update") is None and db_updated:
-            running = db_running
+            running = db_running or workers_active
 
         started_at = live.get("started_at") or db_started
         last_update = live.get("last_update") or db_updated
+        if workers_active or (db_recent and db_updated):
+            last_update = db_updated or last_update
 
         stale_age: Optional[float] = None
         if last_update:
@@ -102,11 +165,21 @@ class SolverProgressService:
             except (ValueError, TypeError):
                 stale_age = None
 
+        live_rate = float(live.get("positions_per_second") or 0.0)
+        use_db_rate = (
+            workers_active
+            or (not live_active and db_recent and db_rate > 0)
+            or live_rate > MAX_SANE_RATE
+        )
+        rate = db_rate if use_db_rate else live_rate
+        if use_db_rate and db_rate <= 0 and live_rate > MAX_SANE_RATE:
+            rate = 0.0
+
         eta = live.get("eta_seconds")
-        rate = float(live.get("positions_per_second") or 0.0)
+        if use_db_rate or eta is None:
+            eta = None
         if (
-            eta is None
-            and not progress_unknown
+            not progress_unknown
             and rate > 0
             and total_target
             and total_solved < int(total_target)

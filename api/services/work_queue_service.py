@@ -255,6 +255,133 @@ class WorkQueueService:
             (pending,),
         )
 
+    def submit_batch(
+        self, worker_id: str, results: List[Dict[str, Any]]
+    ) -> Tuple[int, int, List[str]]:
+        """Soumet plusieurs positions en une transaction. Retourne (ok, fail, erreurs)."""
+        if not results:
+            return 0, 0, []
+
+        ok_count = 0
+        fail_count = 0
+        errors: List[str] = []
+
+        with self._lock:
+            conn = self._get_conn()
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                for payload in results:
+                    if worker_id and not payload.get("worker_id"):
+                        payload = {**payload, "worker_id": worker_id}
+                    hash_key = str(payload.get("hash") or "").strip().lower()
+                    result = str(payload.get("result") or "").strip().upper()
+                    if not hash_key or result not in ("W", "L", "D"):
+                        fail_count += 1
+                        errors.append(f"{hash_key or '?'}: payload invalide")
+                        continue
+                    try:
+                        win_rate = float(payload.get("win_rate", 0.5))
+                    except (TypeError, ValueError):
+                        fail_count += 1
+                        errors.append(f"{hash_key}: win_rate invalide")
+                        continue
+
+                    best_move = payload.get("best_move")
+                    br, bc = -1, -1
+                    if isinstance(best_move, dict):
+                        if best_move.get("row") is not None and int(best_move["row"]) >= 0:
+                            br = int(best_move["row"])
+                            bc = int(best_move.get("col", -1))
+
+                    board_json = payload.get("board_json")
+                    player = payload.get("player")
+                    last_move = payload.get("last_move")
+                    depth_remaining = int(payload.get("depth_remaining") or 0)
+
+                    row = conn.execute(
+                        "SELECT board_json, player, last_move_row, last_move_col FROM work_queue WHERE hash = ?",
+                        (hash_key,),
+                    ).fetchone()
+
+                    if board_json is None and row is not None:
+                        board_json = row["board_json"]
+                    if player is None and row is not None:
+                        player = row["player"]
+                    if last_move is None and row is not None:
+                        if row["last_move_row"] is not None and int(row["last_move_row"]) >= 0:
+                            last_move = {
+                                "row": int(row["last_move_row"]),
+                                "col": int(row["last_move_col"]),
+                            }
+
+                    if board_json is None:
+                        fail_count += 1
+                        errors.append(f"{hash_key}: board_json manquant")
+                        continue
+
+                    board_json_str = (
+                        json.dumps(board_json)
+                        if isinstance(board_json, list)
+                        else str(board_json)
+                    )
+
+                    lmr, lmc = -1, -1
+                    if isinstance(last_move, dict) and last_move.get("row") is not None:
+                        if int(last_move["row"]) >= 0:
+                            lmr = int(last_move["row"])
+                            lmc = int(last_move.get("col", -1))
+
+                    conn.execute(
+                        """
+                        INSERT OR REPLACE INTO positions
+                        (hash, result, win_rate, best_move_row, best_move_col, depth_remaining,
+                         board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        """,
+                        (
+                            hash_key,
+                            result,
+                            win_rate,
+                            br,
+                            bc,
+                            depth_remaining,
+                            board_json_str,
+                            int(player or 1),
+                            lmr,
+                            lmc,
+                        ),
+                    )
+                    conn.execute(
+                        """
+                        UPDATE work_queue
+                        SET status = 'done', worker_id = COALESCE(worker_id, ?), claimed_at = COALESCE(claimed_at, CURRENT_TIMESTAMP)
+                        WHERE hash = ?
+                        """,
+                        (payload.get("worker_id"), hash_key),
+                    )
+                    ok_count += 1
+
+                total_solved = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
+                conn.execute(
+                    """
+                    INSERT INTO solver_progress (id, total_solved, total_queued, updated_at)
+                    VALUES (1, ?, COALESCE((SELECT total_queued FROM solver_progress WHERE id = 1), 0), CURRENT_TIMESTAMP)
+                    ON CONFLICT(id) DO UPDATE SET
+                        total_solved = excluded.total_solved,
+                        updated_at = CURRENT_TIMESTAMP
+                    """,
+                    (total_solved,),
+                )
+                self._sync_queued_count(conn)
+                conn.commit()
+                return ok_count, fail_count, errors
+            except sqlite3.Error as exc:
+                conn.rollback()
+                logger.exception("Erreur submit_batch work_queue")
+                return ok_count, fail_count, errors + [str(exc)]
+            finally:
+                conn.close()
+
     def release(self, worker_id: str, hash_key: str) -> Tuple[bool, Optional[str]]:
         hash_key = str(hash_key or "").strip().lower()
         worker_id = (worker_id or "").strip()

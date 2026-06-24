@@ -73,5 +73,5 @@ node_modules/
 .coverage
 htmlcov/
 
-# Jupyter
-.ipynb_checkpoints
+# Rust / Cargo
+script/solver_rust/target/

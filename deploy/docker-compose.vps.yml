@@ -16,6 +16,8 @@ services:
 
       PYTHONPATH: /app:/app/script
 
+      GUNICORN_WORKERS: "4"
+
       SESSION_DB_PATH: /app/data/sessions.db
 
       TABLEBASE_DB_PATH: /app/data/tablebase.db

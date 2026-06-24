@@ -9,23 +9,12 @@ use tracing::{info, warn};
 
 use crate::game::{parse_board, Board};
 use crate::solver::{RetrogradeSolver, SolvedPosition};
+pub use crate::work::{
+    parse_last_move, ClaimedPosition, LastMove, SubmitMove, SubmitPayload,
+};
 
 const DEFAULT_TIMEOUT_SEC: u64 = 120;
 const MAX_RETRIES: u32 = 4;
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct ClaimedPosition {
-    pub hash: String,
-    pub board_json: Value,
-    pub player: i32,
-    pub last_move: Option<LastMove>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct LastMove {
-    pub row: i32,
-    pub col: i32,
-}
 
 #[derive(Debug, Serialize)]
 struct ClaimRequest<'a> {
@@ -38,25 +27,6 @@ struct ClaimResponse {
     success: bool,
     positions: Option<Vec<ClaimedPosition>>,
     error: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct SubmitPayload {
-    pub hash: String,
-    pub result: char,
-    pub win_rate: f64,
-    pub best_move: Option<SubmitMove>,
-    pub depth_remaining: u32,
-    pub board_json: Value,
-    pub player: i32,
-    pub last_move: Option<LastMove>,
-    pub worker_id: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct SubmitMove {
-    pub row: i32,
-    pub col: i32,
 }
 
 #[derive(Debug, Serialize)]
@@ -165,7 +135,11 @@ impl ApiClient {
         Ok(resp.positions.unwrap_or_default())
     }
 
-    pub async fn submit_batch(&self, worker_id: &str, results: Vec<SubmitPayload>) -> Result<(usize, usize)> {
+    pub async fn submit_batch(
+        &self,
+        worker_id: &str,
+        results: Vec<SubmitPayload>,
+    ) -> Result<(usize, usize)> {
         if results.is_empty() {
             return Ok((0, 0));
         }
@@ -174,7 +148,6 @@ impl ApiClient {
             results,
         };
 
-        // Tenter batch ; repli position par position si endpoint absent
         let url = format!("{}/api/solver/work/submit-batch", self.base_url);
         let mut req = self.client.post(&url).json(&batch);
         for (k, v) in self.auth_headers() {
@@ -239,20 +212,7 @@ impl ApiClient {
     }
 }
 
-pub fn parse_last_move(raw: &Option<LastMove>) -> Option<(usize, usize)> {
-    raw.as_ref().and_then(|lm| {
-        if lm.row < 0 {
-            None
-        } else {
-            Some((lm.row as usize, lm.col.max(0) as usize))
-        }
-    })
-}
-
-pub fn solve_claimed(
-    pos: &ClaimedPosition,
-    max_empty: usize,
-) -> Option<SubmitPayload> {
+pub fn solve_claimed(pos: &ClaimedPosition, max_empty: usize) -> Option<SubmitPayload> {
     let board: Board = parse_board(&pos.board_json);
     let player = pos.player as i8;
     let last_move = parse_last_move(&pos.last_move);
@@ -274,6 +234,8 @@ pub fn solve_claimed(
         board_json: pos.board_json.clone(),
         player: pos.player,
         last_move: pos.last_move.clone(),
-        worker_id: String::new(), // rempli par l'appelant
+        worker_id: String::new(),
     })
 }
+
+// Réexport pour compatibilité des imports existants depuis api_client

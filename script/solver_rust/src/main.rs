@@ -4,6 +4,7 @@ mod api_client;
 mod game;
 mod local_db;
 mod solver;
+mod work;
 
 use anyhow::{Context, Result};
 use clap::Parser;

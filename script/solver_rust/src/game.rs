@@ -5,6 +5,7 @@ pub const WIN_LENGTH: usize = 4;
 
 pub type Board = [[i8; BOARD_SIZE]; BOARD_SIZE];
 pub type Move = (usize, usize);
+pub type Position = (Board, i8, Option<Move>);
 
 const DIRECTIONS: [(i32, i32); 4] = [(0, 1), (1, 0), (1, 1), (1, -1)];
 

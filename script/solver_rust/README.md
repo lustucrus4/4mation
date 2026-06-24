@@ -140,7 +140,26 @@ scripts\run_local_solver_rust.bat
 | Fichier | Rôle |
 |---------|------|
 | `web/index.html`, `web/style.css`, `web/solver.js` | UI (auto-refresh 2,5 s) |
-| `local_dashboard.py` | Serveur Flask : `GET /api/solver/status`, `GET /api/solver/work/stats` |
+| `local_dashboard.py` | Serveur Flask : stats solveur + contrôle local (start/stop) |
 | `scripts/run_local_dashboard.bat` | Lanceur Windows |
 
 Le dashboard lit la même base SQLite que `4mation-local` via les services Python existants (`SolverProgressService`, `WorkQueueService`). **Aucun impact** sur le dashboard prod Hostinger.
+
+### Contrôle depuis le navigateur (localhost uniquement)
+
+Depuis **http://127.0.0.1:8765/**, la section **Contrôle solveur** permet de :
+
+- **Démarrer le solveur** — lance `scripts\run_local_solver_rust.bat` dans une nouvelle fenêtre `cmd`
+- **Arrêter le solveur** — termine `4mation-local.exe` (`taskkill`)
+- Afficher l’état **actif** / **arrêté** (polling toutes les 3 s)
+
+Endpoints réservés à `127.0.0.1` / `::1` (403 sinon) :
+
+| Méthode | Route | Rôle |
+|---------|-------|------|
+| `GET` | `/api/local/process-status` | `4mation-local.exe` en cours ? |
+| `POST` | `/api/local/start-solver` | Lance le solveur (whitelist `.bat`) |
+| `POST` | `/api/local/stop-solver` | Arrête le solveur |
+| `POST` | `/api/local/start-stack` | Lance dashboard + solveur (optionnel) |
+
+Aucune commande arbitraire : seuls les scripts listés dans `ALLOWED_LOCAL_SCRIPTS` (`local_dashboard.py`) sont exécutables.

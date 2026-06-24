@@ -1,12 +1,16 @@
 [package]
 name = "formation-worker"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Worker solveur 4mation haute performance (HTTP + résolution Rust)"
+description = "Solveur 4mation haute performance (local + worker HTTP optionnel)"
 
 [[bin]]
 name = "4mation-worker"
 path = "src/main.rs"
+
+[[bin]]
+name = "4mation-local"
+path = "src/local_main.rs"
 
 [dependencies]
 anyhow = "1"

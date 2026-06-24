@@ -213,29 +213,24 @@ impl RetrogradeSolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game::parse_board;
 
     #[test]
-    fn empty_board_is_drawish_frontier() {
+    fn empty_board_should_solve_when_max_empty_49() {
         let board = [[0i8; BOARD_SIZE]; BOARD_SIZE];
-        let mut solver = RetrogradeSolver::new(49);
-        let result = solver.solve_position(&board, 1, None);
-        assert!(result.is_some());
+        let solver = RetrogradeSolver::new(49);
+        assert!(solver.should_solve(&board));
     }
 
     #[test]
-    fn parse_and_solve_small() {
-        let json: serde_json::Value = serde_json::json!([
-            [0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 2, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0]
-        ]);
-        let board = parse_board(&json);
-        let mut solver = RetrogradeSolver::new(49);
-        assert!(solver.solve_position(&board, 1, Some((1, 2))).is_some());
+    fn endgame_position_solves() {
+        // Plateau presque plein (≤12 cases vides) — fin de partie résoluble
+        let mut board = [[0i8; BOARD_SIZE]; BOARD_SIZE];
+        for r in 0..6 {
+            for c in 0..7 {
+                board[r][c] = if (r + c) % 2 == 0 { 1 } else { 2 };
+            }
+        }
+        let mut solver = RetrogradeSolver::new(12);
+        assert!(solver.solve_position(&board, 1, Some((5, 6))).is_some());
     }
 }

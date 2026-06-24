@@ -1,4 +1,4 @@
-# Solveur complet Phase C — résolution exhaustive continue
+# Solveur distribué — filler + workers (remplace le solveur monolithique)
 # Ne bloque pas l'API prod (volume partagé tablebase.db)
 
 services:
@@ -11,6 +11,8 @@ services:
       TABLEBASE_DB_PATH: /app/data/tablebase.db
       SOLVER_STATUS_PATH: /app/data/solver_status.json
       TABLEBASE_MAX_EMPTY: "49"
+      SOLVER_API_URL: https://api-4mation.lab211.fr
+      SOLVER_WORKERS: "2"
     volumes:
       - 4mation-sessions:/app/data
     command:
@@ -27,14 +29,15 @@ services:
           if [ ! -f /app/data/tablebase.db ] && [ -f /app/script/solver/data/tablebase.db ]; then
             cp /app/script/solver/data/tablebase.db /app/data/tablebase.db
           fi
-          echo "Solveur exhaustif Phase C — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          python /app/script/solver/build_full_tablebase.py \
-            --db /app/data/tablebase.db \
-            --max-empty 12 \
-            --batch 25 \
-            --progress-interval 15 \
-            --position-timeout 30 \
-          || echo "Solveur arrêté (code $$?) — redémarrage dans 10s"
+          echo "Solveur distribué — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python /app/script/solver/work_queue_filler.py \
+            --db /app/data/tablebase.db --max-empty 12 --batch 200 --sleep 3 &
+          FILLER_PID=$$!
+          python /app/script/solver/distributed_worker.py \
+            --api-url $${SOLVER_API_URL:-http://api:8097} \
+            --workers $${SOLVER_WORKERS:-2} \
+            --position-timeout 30 || echo "Worker arrêté (code $$?)"
+          kill $$FILLER_PID 2>/dev/null || true
           sleep 10
         done
     restart: unless-stopped

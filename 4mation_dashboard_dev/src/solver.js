@@ -17,6 +17,10 @@ const statPhaseEl = document.getElementById("stat-phase");
 const statUpdatedEl = document.getElementById("stat-updated");
 const recentGridEl = document.getElementById("recent-grid");
 const messageEl = document.getElementById("message");
+const statQueuePendingEl = document.getElementById("stat-queue-pending");
+const statQueueProgressEl = document.getElementById("stat-queue-progress");
+const statWorkerCountEl = document.getElementById("stat-worker-count");
+const workersListEl = document.getElementById("workers-list");
 
 function apiUrl(path) {
   return `${API_BASE}${path}`;
@@ -153,6 +157,36 @@ function formatProgressPercent(pct, solved, unknown) {
   return `${value.toFixed(1).replace(".", ",")} %`;
 }
 
+function renderWorkers(stats) {
+  if (!stats) {
+    statQueuePendingEl.textContent = "—";
+    statQueueProgressEl.textContent = "—";
+    statWorkerCountEl.textContent = "—";
+    workersListEl.innerHTML = '<li class="muted">Stats workers indisponibles</li>';
+    return;
+  }
+
+  statQueuePendingEl.textContent = (stats.pending ?? 0).toLocaleString("fr-FR");
+  statQueueProgressEl.textContent = (stats.in_progress ?? 0).toLocaleString("fr-FR");
+  statWorkerCountEl.textContent = String(stats.active_worker_count ?? 0);
+
+  const workers = stats.active_workers || [];
+  if (!workers.length) {
+    workersListEl.innerHTML = '<li class="muted">Aucun worker actif pour l\'instant.</li>';
+    return;
+  }
+
+  workersListEl.innerHTML = "";
+  for (const w of workers) {
+    const li = document.createElement("li");
+    const last = w.last_claim
+      ? new Date(w.last_claim.replace(" ", "T") + "Z").toLocaleString("fr-FR")
+      : "—";
+    li.textContent = `${w.worker_id} — ${w.positions_in_progress} pos. (dernier claim : ${last})`;
+    workersListEl.appendChild(li);
+  }
+}
+
 function updateUI(data) {
   const solved = data.total_positions_solved ?? 0;
   const pct = data.progress_unknown ? null : data.progress_percent ?? 0;
@@ -194,6 +228,18 @@ function updateUI(data) {
     : "Base tablebase absente — démarrage du solveur requis sur le serveur.";
 }
 
+async function pollWorkers() {
+  try {
+    const response = await fetch(apiUrl("/api/solver/work/stats"));
+    const data = await response.json();
+    if (response.ok && data.success) {
+      renderWorkers(data);
+    }
+  } catch {
+    renderWorkers(null);
+  }
+}
+
 async function poll() {
   try {
     const response = await fetch(apiUrl("/api/solver/status"));
@@ -208,4 +254,6 @@ async function poll() {
 }
 
 poll();
+pollWorkers();
 setInterval(poll, POLL_MS);
+setInterval(pollWorkers, POLL_MS);

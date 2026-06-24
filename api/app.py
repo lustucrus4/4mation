@@ -29,7 +29,7 @@ for path in (str(ROOT), str(SCRIPT_DIR)):
 from flask import Flask
 from flask_cors import CORS
 
-from api.routes import game_bp, solver_bp
+from api.routes import game_bp, solver_bp, solver_workers_bp
 
 ALLOWED_ORIGINS = [
     "https://4mation.lab211.fr",
@@ -44,11 +44,12 @@ def create_app() -> Flask:
         app,
         origins=ALLOWED_ORIGINS,
         supports_credentials=True,
-        allow_headers=["Content-Type", "X-Session-Id"],
+        allow_headers=["Content-Type", "X-Session-Id", "X-Solver-Worker-Token"],
         expose_headers=["X-Session-Id"],
     )
     app.register_blueprint(game_bp)
     app.register_blueprint(solver_bp)
+    app.register_blueprint(solver_workers_bp)
     return app
 
 

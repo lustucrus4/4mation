@@ -54,6 +54,25 @@
         <p class="stat-updated">Dernière mise à jour : <span id="stat-updated">—</span></p>
       </section>
 
+      <section class="solver-panel workers-panel">
+        <h2>Workers distribués</h2>
+        <dl class="stats-grid">
+          <div class="stat">
+            <dt>En attente</dt>
+            <dd id="stat-queue-pending">—</dd>
+          </div>
+          <div class="stat">
+            <dt>En cours</dt>
+            <dd id="stat-queue-progress">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Workers actifs</dt>
+            <dd id="stat-worker-count">—</dd>
+          </div>
+        </dl>
+        <ul id="workers-list" class="workers-list muted">Chargement…</ul>
+      </section>
+
       <section class="recent-section">
         <h2>Derniers coups calculés</h2>
         <div id="recent-grid" class="recent-grid"></div>

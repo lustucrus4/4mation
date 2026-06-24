@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>4mation — Avancement solveur</title>
-    <script type="module" crossorigin src="/assets/solver-kCu9jhft.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/style-B_5_7L4P.js">
-    <link rel="stylesheet" crossorigin href="/assets/style-BTTbiDAI.css">
+    <script type="module" crossorigin src="/assets/solver-CKX9sjE_.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/style-CMM5yoI7.js">
+    <link rel="stylesheet" crossorigin href="/assets/style-aLULaFPp.css">
   </head>
   <body>
     <div class="app app-wide">
@@ -54,6 +54,25 @@
           </div>
         </dl>
         <p class="stat-updated">Dernière mise à jour : <span id="stat-updated">—</span></p>
+      </section>
+
+      <section class="solver-panel workers-panel">
+        <h2>Workers distribués</h2>
+        <dl class="stats-grid">
+          <div class="stat">
+            <dt>En attente</dt>
+            <dd id="stat-queue-pending">—</dd>
+          </div>
+          <div class="stat">
+            <dt>En cours</dt>
+            <dd id="stat-queue-progress">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Workers actifs</dt>
+            <dd id="stat-worker-count">—</dd>
+          </div>
+        </dl>
+        <ul id="workers-list" class="workers-list muted">Chargement…</ul>
       </section>
 
       <section class="recent-section">

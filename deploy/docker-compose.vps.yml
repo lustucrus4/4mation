@@ -80,9 +80,17 @@ services:
 
       SOLVER_STATUS_PATH: /app/data/solver_status.json
 
+      SOLVER_API_URL: http://api:8097
+
+      SOLVER_WORKERS: "2"
+
     volumes:
 
       - 4mation-data:/app/data
+
+    depends_on:
+
+      - api
 
     command:
 
@@ -120,14 +128,16 @@ services:
           rm -rf /tmp/repo
           git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
           cp -a /tmp/repo/script /app/
-          echo "Solveur exhaustif — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          python /app/script/solver/build_full_tablebase.py \
-            --db /app/data/tablebase.db \
-            --max-empty 12 \
-            --batch 25 \
-            --progress-interval 15 \
+          echo "Solveur distribué — $$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python /app/script/solver/work_queue_filler.py \
+            --db /app/data/tablebase.db --max-empty 12 --batch 200 --sleep 3 &
+          FILLER_PID=$$!
+          python /app/script/solver/distributed_worker.py \
+            --api-url $${SOLVER_API_URL:-http://api:8097} \
+            --workers $${SOLVER_WORKERS:-2} \
             --position-timeout 30 \
-          || echo "Solveur arrêté — redémarrage dans 10s"
+          || echo "Worker arrêté — redémarrage dans 10s"
+          kill $$FILLER_PID 2>/dev/null || true
           sleep 10
         done
 

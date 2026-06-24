@@ -41,8 +41,22 @@ CREATE TABLE IF NOT EXISTS solver_progress (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS work_queue (
+    hash TEXT PRIMARY KEY,
+    board_json TEXT NOT NULL,
+    player INTEGER NOT NULL,
+    last_move_row INTEGER,
+    last_move_col INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending',
+    worker_id TEXT,
+    claimed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_positions_depth ON positions(depth_remaining);
 CREATE INDEX IF NOT EXISTS idx_opening_ply ON opening_book(ply);
+CREATE INDEX IF NOT EXISTS idx_work_queue_status ON work_queue(status);
+CREATE INDEX IF NOT EXISTS idx_work_queue_claimed ON work_queue(claimed_at);
 """
 
 
@@ -53,6 +67,7 @@ def connect(db_path: str | Path) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=10000")
     return conn
 
 

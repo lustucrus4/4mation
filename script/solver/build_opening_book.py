@@ -62,6 +62,8 @@ def build_opening_book(
     max_ply: int = 12,
     depth: int = 10,
     time_budget_ms: int = 2000,
+    max_positions: int = 400,
+    branch_factor: int = 4,
     verbose: bool = True,
 ) -> int:
     conn = init_db(db_path)
@@ -75,7 +77,7 @@ def build_opening_book(
     board = np.zeros((7, 7), dtype=np.int8)
     queue.append((board.copy(), 1, None, 0))
 
-    while queue:
+    while queue and count < max_positions:
         board, player, last_move, ply = queue.popleft()
         if ply >= max_ply:
             continue
@@ -119,7 +121,8 @@ def build_opening_book(
         if advisor._check_winner(board) is not None:
             continue
 
-        for move in moves[:6]:
+        ordered = advisor._order_moves(board, moves, player, last_move)
+        for move in ordered[:branch_factor]:
             nb = board.copy()
             nb[move[0], move[1]] = player
             if advisor._check_winner(nb) is not None:

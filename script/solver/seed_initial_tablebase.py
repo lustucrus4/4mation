@@ -30,8 +30,8 @@ def main() -> None:
     db = Path(args.db)
     print(f"Initialisation tablebase -> {db}")
     init_db(db)
-    build_opening_book(db, max_ply=8, depth=4, time_budget_ms=1200)
-    generate_endgame_tablebase(db, max_empty=12, num_games=80)
+    build_opening_book(db, max_ply=6, depth=4, time_budget_ms=1200, max_positions=200)
+    generate_endgame_tablebase(db, max_empty=12, num_games=60)
     print("Tablebase initiale prête.")
 
 

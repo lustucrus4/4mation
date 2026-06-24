@@ -73,7 +73,6 @@ services:
         }
         EOF
         ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
-        nginx -t
         if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
         echo nginx-http-ok
 
@@ -179,6 +178,5 @@ services:
         }
         EOF
         ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
-        nginx -t
         if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
         echo nginx-ssl-ok

@@ -27,6 +27,19 @@ const controlsMessageEl = document.getElementById("controls-message");
 
 const PROCESS_POLL_MS = 3000;
 
+async function fetchJson(url, options) {
+  const response = await fetch(url, options);
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const hint = response.status === 404
+      ? " — route absente (relancez scripts\\run_local_dashboard.bat)"
+      : "";
+    throw new Error(`Réponse non-JSON (HTTP ${response.status})${hint}`);
+  }
+  const data = await response.json();
+  return { response, data };
+}
+
 function formatDuration(seconds) {
   if (seconds == null || Number.isNaN(seconds)) return "—";
   const s = Math.max(0, Math.floor(seconds));
@@ -235,8 +248,7 @@ function updateUI(data) {
 
 async function pollWorkers() {
   try {
-    const response = await fetch("/api/solver/work/stats");
-    const data = await response.json();
+    const { response, data } = await fetchJson("/api/solver/work/stats");
     if (response.ok && data.success) {
       renderWorkers(data);
     }
@@ -247,8 +259,7 @@ async function pollWorkers() {
 
 async function poll() {
   try {
-    const response = await fetch("/api/solver/status");
-    const data = await response.json();
+    const { response, data } = await fetchJson("/api/solver/status");
     if (!response.ok) {
       throw new Error(data.error || `HTTP ${response.status}`);
     }
@@ -268,16 +279,19 @@ function renderProcessStatus(data) {
 
 async function pollProcessStatus() {
   try {
-    const response = await fetch("/api/local/process-status");
-    const data = await response.json();
+    const { response, data } = await fetchJson("/api/local/process-status");
     if (response.ok && data.success) {
       renderProcessStatus(data);
+      setControlsMessage("");
+      return;
     }
-  } catch {
+    throw new Error(data.error || `HTTP ${response.status}`);
+  } catch (error) {
     processBadgeEl.textContent = "État indisponible";
     processBadgeEl.className = "status-badge status-paused";
     btnStartSolverEl.disabled = false;
     btnStopSolverEl.disabled = true;
+    setControlsMessage(error.message, true);
   }
 }
 
@@ -292,8 +306,7 @@ async function postLocalAction(url, successFallback) {
   btnStartSolverEl.disabled = true;
   btnStopSolverEl.disabled = true;
   try {
-    const response = await fetch(url, { method: "POST" });
-    const data = await response.json();
+    const { response, data } = await fetchJson(url, { method: "POST" });
     if (!response.ok || !data.success) {
       throw new Error(data.error || `HTTP ${response.status}`);
     }

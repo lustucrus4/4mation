@@ -23,6 +23,7 @@ SCRIPTS_DIR = ROOT / "scripts"
 DEFAULT_DB = ROOT / "script" / "solver" / "data" / "tablebase.db"
 DEFAULT_PORT = 8765
 SOLVER_PROCESS_NAME = "4mation-local.exe"
+LOCAL_API_VERSION = 1
 
 # Scripts autorisés — aucune commande arbitraire
 ALLOWED_LOCAL_SCRIPTS: dict[str, Path] = {
@@ -94,7 +95,7 @@ def stop_solver_process() -> bool:
 
 
 def create_app(db_path: Path):
-    from flask import Flask, abort, jsonify, request, send_from_directory
+    from flask import Flask, jsonify, request, send_from_directory
     from flask_cors import CORS
 
     from api.services.solver_progress import SolverProgressService
@@ -108,9 +109,40 @@ def create_app(db_path: Path):
     progress = SolverProgressService(db_path=db_path)
     queue = WorkQueueService(db_path=db_path)
 
+    LOCAL_API_VERSION = 1
+
     def _require_localhost():
         if not _is_localhost_request(request.remote_addr):
-            abort(403, description="Endpoints locaux réservés à 127.0.0.1")
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Endpoints locaux réservés à 127.0.0.1",
+                    }
+                ),
+                403,
+            )
+        return None
+
+    def _api_json_error(status: int, error: str):
+        if request.path.startswith("/api/"):
+            return jsonify({"success": False, "error": error}), status
+        return None
+
+    @app.errorhandler(404)
+    def not_found(exc):
+        payload = _api_json_error(404, f"Route introuvable : {request.path}")
+        return payload if payload is not None else exc
+
+    @app.errorhandler(403)
+    def forbidden(exc):
+        payload = _api_json_error(403, "Accès refusé")
+        return payload if payload is not None else exc
+
+    @app.errorhandler(500)
+    def internal_error(exc):
+        payload = _api_json_error(500, "Erreur interne du serveur")
+        return payload if payload is not None else exc
 
     @app.get("/")
     def index():
@@ -141,12 +173,16 @@ def create_app(db_path: Path):
                 "ok": True,
                 "db_path": str(db_path),
                 "db_exists": db_path.exists(),
+                "local_controls": True,
+                "local_api_version": LOCAL_API_VERSION,
             }
         )
 
     @app.get("/api/local/process-status")
     def local_process_status():
-        _require_localhost()
+        denied = _require_localhost()
+        if denied is not None:
+            return denied
         running = is_solver_running()
         return jsonify(
             {
@@ -159,7 +195,9 @@ def create_app(db_path: Path):
 
     @app.post("/api/local/start-solver")
     def local_start_solver():
-        _require_localhost()
+        denied = _require_localhost()
+        if denied is not None:
+            return denied
         if is_solver_running():
             return jsonify(
                 {
@@ -182,7 +220,9 @@ def create_app(db_path: Path):
 
     @app.post("/api/local/start-stack")
     def local_start_stack():
-        _require_localhost()
+        denied = _require_localhost()
+        if denied is not None:
+            return denied
         try:
             script_path = launch_local_script("stack", "4mation-stack")
         except (ValueError, FileNotFoundError) as exc:
@@ -197,7 +237,9 @@ def create_app(db_path: Path):
 
     @app.post("/api/local/stop-solver")
     def local_stop_solver():
-        _require_localhost()
+        denied = _require_localhost()
+        if denied is not None:
+            return denied
         if not is_solver_running():
             return jsonify(
                 {

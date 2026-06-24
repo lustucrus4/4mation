@@ -109,8 +109,6 @@ def create_app(db_path: Path):
     progress = SolverProgressService(db_path=db_path)
     queue = WorkQueueService(db_path=db_path)
 
-    LOCAL_API_VERSION = 1
-
     def _require_localhost():
         if not _is_localhost_request(request.remote_addr):
             return (

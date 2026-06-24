@@ -126,10 +126,34 @@ function renderRecent(positions) {
   }
 }
 
+function formatProgressPercent(pct, solved, unknown) {
+  const solvedCount = solved ?? 0;
+  if (unknown || pct == null) {
+    return solvedCount > 0 ? `${solvedCount.toLocaleString("fr-FR")} positions` : "—";
+  }
+  const value = Math.min(100, Math.max(0, pct));
+  if (value > 0 && value < 0.1) {
+    return value < 0.01 ? "< 0,01 %" : `${value.toFixed(2).replace(".", ",")} %`;
+  }
+  if (value === 0 && solvedCount > 0) {
+    return `${solvedCount.toLocaleString("fr-FR")} résolues`;
+  }
+  return `${value.toFixed(1).replace(".", ",")} %`;
+}
+
 function updateUI(data) {
-  const pct = Math.min(100, Math.max(0, data.progress_percent ?? 0));
-  progressBarEl.style.width = `${pct}%`;
-  progressPctEl.textContent = `${pct.toFixed(1)} %`;
+  const solved = data.total_positions_solved ?? 0;
+  const pct = data.progress_unknown ? null : data.progress_percent ?? 0;
+  const barPct = pct == null ? 0 : Math.min(100, Math.max(0, pct));
+  const displayPct = formatProgressPercent(pct, solved, data.progress_unknown);
+
+  progressBarEl.style.width = `${barPct}%`;
+  progressBarEl.setAttribute("aria-valuenow", String(barPct));
+  progressPctEl.textContent = displayPct;
+  progressPctEl.title =
+    solved > 0
+      ? `${solved.toLocaleString("fr-FR")} position${solved > 1 ? "s" : ""} résolue${solved > 1 ? "s" : ""}`
+      : "";
 
   const badge = statusLabel(data.status);
   statusBadgeEl.textContent = badge.text;

@@ -114,7 +114,7 @@ services:
 
         while true; do
 
-          python /app/script/solver/build_full_tablebase.py --db /app/data/tablebase.db --batch 200
+          python /app/script/solver/build_full_tablebase.py --db /app/data/tablebase.db --batch 25 --progress-every 5 --progress-interval 15
 
           sleep 60
 

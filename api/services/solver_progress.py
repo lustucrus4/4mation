@@ -90,9 +90,11 @@ class SolverProgressService:
                     conn2.close()
 
         total_queued = int(live.get("total_queued") or db_queued)
-        progress = live.get("progress_percent")
-        if progress is None and total_target and total_target > 0:
-            progress = min(100.0, 100.0 * total_solved / total_target)
+
+        if total_target and int(total_target) > 0:
+            progress = min(100.0, 100.0 * total_solved / int(total_target))
+        else:
+            progress = None
 
         running = is_solver_active(live, STALE_SECONDS) or db_running
         if live.get("last_update") is None and db_updated:
@@ -118,11 +120,14 @@ class SolverProgressService:
         elif total_solved > 0 and not running:
             status_label = "pause"
 
+        progress_value = round(float(progress), 4) if progress is not None else None
+
         return {
             "total_positions_solved": total_solved,
             "total_positions_target": total_target,
             "total_queued": total_queued,
-            "progress_percent": round(float(progress or 0.0), 2),
+            "progress_percent": progress_value if progress_value is not None else 0.0,
+            "progress_unknown": progress is None,
             "positions_per_second": round(rate, 2),
             "eta_seconds": eta,
             "solver_running": running,

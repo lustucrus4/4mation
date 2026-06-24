@@ -12,6 +12,7 @@ if not defined SOLVER_THREADS set "SOLVER_THREADS=16"
 if not defined TABLEBASE_MAX_EMPTY set "TABLEBASE_MAX_EMPTY=12"
 if not defined TABLEBASE_DB set "TABLEBASE_DB=script\solver\data\tablebase.db"
 if not defined SOLVER_DASHBOARD_PORT set "SOLVER_DASHBOARD_PORT=8765"
+if not defined SOLVER_MIN_PENDING set "SOLVER_MIN_PENDING=100"
 
 set "LOCAL_BIN=script\solver_rust\target\release\4mation-local.exe"
 if not exist "%LOCAL_BIN%" (
@@ -37,12 +38,13 @@ echo ========================================
 echo DB         : %TABLEBASE_DB%
 echo Threads    : %SOLVER_THREADS% (rayon)
 echo Max empty  : %TABLEBASE_MAX_EMPTY%
+echo Min pending: %SOLVER_MIN_PENDING%
 echo Dashboard  : http://127.0.0.1:%SOLVER_DASHBOARD_PORT%/
 echo Machine    : %COMPUTERNAME%
 echo.
 echo Aucun reseau requis. Ctrl+C pour arreter.
 echo.
 
-"%LOCAL_BIN%" --db "%TABLEBASE_DB%" --threads %SOLVER_THREADS% --max-empty %TABLEBASE_MAX_EMPTY% --dashboard --dashboard-port %SOLVER_DASHBOARD_PORT% %*
+"%LOCAL_BIN%" --db "%TABLEBASE_DB%" --threads %SOLVER_THREADS% --max-empty %TABLEBASE_MAX_EMPTY% --min-pending %SOLVER_MIN_PENDING% --dashboard --dashboard-port %SOLVER_DASHBOARD_PORT% %*
 
 endlocal

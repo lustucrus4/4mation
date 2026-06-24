@@ -263,46 +263,63 @@ async function refreshState() {
   return state;
 }
 
+async function requestAiMove() {
+  setBusy(true, "Réflexion de l'IA…");
+  btnAi.disabled = true;
+  try {
+    return await apiFetch("/api/ai_move", {
+      method: "POST",
+      body: JSON.stringify({ bot_id: selectedBotId }),
+    });
+  } catch (error) {
+    messageEl.textContent = `L'IA n'a pas pu jouer : ${error.message}`;
+    await refreshState().catch(() => {});
+    return null;
+  } finally {
+    setBusy(false);
+  }
+}
+
 async function playHumanMove(row, col) {
   if (isBusy) return;
+  let latestState = null;
   try {
     setBusy(true, "Coup en cours…");
     const data = await apiFetch("/api/move", {
       method: "POST",
       body: JSON.stringify({ action: { row, col } }),
     });
+    latestState = data.state;
     mctsRates = null;
-    renderBoard(data.state);
 
     if (gameMode === "learning" && !data.terminal) {
+      setBusy(false);
       await fetchMctsAnalysis();
-      renderBoard(data.state);
     } else if (autoAiAfterHuman && !data.terminal && data.next_player === 2) {
-      await playAiMove();
+      setBusy(false);
+      const aiData = await requestAiMove();
+      if (aiData?.state) {
+        latestState = aiData.state;
+      }
       return;
     }
   } catch (error) {
-    messageEl.textContent = error.message;
+    messageEl.textContent = `Erreur : ${error.message}`;
+    await refreshState().catch(() => {});
+    return;
   } finally {
     setBusy(false);
+    if (latestState) {
+      renderBoard(latestState);
+    }
   }
 }
 
 async function playAiMove() {
   if (isBusy) return;
-  try {
-    setBusy(true, "Réflexion…");
-    btnAi.disabled = true;
-    const data = await apiFetch("/api/ai_move", {
-      method: "POST",
-      body: JSON.stringify({ bot_id: selectedBotId }),
-    });
+  const data = await requestAiMove();
+  if (data?.state) {
     renderBoard(data.state);
-  } catch (error) {
-    messageEl.textContent = error.message;
-    await refreshState();
-  } finally {
-    setBusy(false);
   }
 }
 

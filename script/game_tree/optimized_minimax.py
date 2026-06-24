@@ -53,6 +53,7 @@ class OptimizedMinimaxAdvisor:
         self.cache_size = cache_size
         self.use_iterative_deepening = use_iterative_deepening
         self.time_budget_ms = time_budget_ms
+        self._search_deadline: Optional[float] = None
         
         # Cache de transposition: {hash: (score, depth, flag, best_move)}
         self.transposition_cache = OrderedDict()
@@ -70,6 +71,14 @@ class OptimizedMinimaxAdvisor:
         self.quiescence_nodes = 0
         
         self.engine = GameEngine()
+
+    def _time_exceeded(self) -> bool:
+        return self._search_deadline is not None and time.perf_counter() >= self._search_deadline
+
+    def _begin_search(self) -> None:
+        self._search_deadline = None
+        if self.time_budget_ms:
+            self._search_deadline = time.perf_counter() + self.time_budget_ms / 1000.0
     
     def _init_zobrist(self):
         """Initialise les clés Zobrist pour le hash"""
@@ -518,6 +527,8 @@ class OptimizedMinimaxAdvisor:
             Score du point de vue du joueur qui maximise (current_player)
         """
         self.nodes_searched += 1
+        if self.nodes_searched % 256 == 0 and self._time_exceeded():
+            raise TimeoutError("budget temps Minimax dépassé")
         
         # Hash Zobrist
         zobrist_hash = self._zobrist_hash(board, current_player, last_move)
@@ -663,12 +674,8 @@ class OptimizedMinimaxAdvisor:
         # Trier les coups une fois
         ordered_moves = self._order_moves(board, moves, current_player, last_move)
         
-        deadline = None
-        if self.time_budget_ms:
-            deadline = time.perf_counter() + self.time_budget_ms / 1000.0
-        
         for depth in range(1, self.max_depth + 1):
-            if deadline is not None and time.perf_counter() >= deadline:
+            if self._time_exceeded():
                 break
             try:
                 current_best_move = None
@@ -676,6 +683,8 @@ class OptimizedMinimaxAdvisor:
                 
                 # Explorer les coups dans l'ordre
                 for move in ordered_moves:
+                    if self._time_exceeded():
+                        break
                     new_board = board.copy()
                     new_board[move[0], move[1]] = current_player
                     opponent = 3 - current_player
@@ -697,6 +706,8 @@ class OptimizedMinimaxAdvisor:
                     ordered_moves.remove(best_move)
                     ordered_moves.insert(0, best_move)
                     
+            except TimeoutError:
+                break
             except Exception as e:
                 print(f"[WARNING] Erreur à profondeur {depth}: {e}")
                 break
@@ -765,7 +776,8 @@ class OptimizedMinimaxAdvisor:
         return max(-1.0, min(1.0, score / 100000.0))
     
     def analyze_position(self, board: np.ndarray, current_player: int = 1, 
-                        last_move: Tuple[int, int] = None) -> Dict:
+                        last_move: Tuple[int, int] = None,
+                        include_move_scores: bool = True) -> Dict:
         """
         Analyse une position et retourne les probabilités pour chaque coup
         
@@ -783,6 +795,7 @@ class OptimizedMinimaxAdvisor:
         # Réinitialiser les statistiques
         self.nodes_searched = 0
         self.quiescence_nodes = 0
+        self._begin_search()
         
         # Obtenir les coups valides
         valid_moves = self._get_frontier_moves(board, last_move, current_player)
@@ -824,14 +837,15 @@ class OptimizedMinimaxAdvisor:
             }
         
         # Utiliser iterative deepening si activé
+        best_move = None
+        best_score = float('-inf')
         if self.use_iterative_deepening:
             best_move, best_score = self._iterative_deepening(board, last_move, current_player)
         else:
             # Sinon, chercher à profondeur max
-            best_move = None
-            best_score = float('-inf')
-            
             for move in self._order_moves(board, valid_moves, current_player, last_move):
+                if self._time_exceeded():
+                    break
                 new_board = board.copy()
                 new_board[move[0], move[1]] = current_player
                 opponent = 3 - current_player
@@ -840,6 +854,15 @@ class OptimizedMinimaxAdvisor:
                 if score > best_score:
                     best_score = score
                     best_move = move
+
+        if not include_move_scores:
+            return {
+                'moves': [],
+                'best_move': best_move,
+                'board': board.tolist(),
+                'current_player': current_player,
+                'valid_moves_count': len(valid_moves),
+            }
         
         # Évaluer tous les coups (score estimé heuristique, pas un vrai % victoire)
         move_scores = []

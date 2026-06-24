@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
 from game.game_engine import GameEngine
 from game_tree.optimized_minimax import OptimizedMinimaxAdvisor
+
+logger = logging.getLogger(__name__)
 
 
 class RandomBot:
@@ -38,17 +41,31 @@ class MinimaxBot:
             _, last_row, last_col = state.action_history[-1]
             last_move = (int(last_row), int(last_col))
 
-        analysis = self._advisor.analyze_position(
-            state.board,
-            current_player=int(state.current_player),
-            last_move=last_move,
-        )
-        best_move = analysis.get("best_move")
-        if best_move:
-            return (int(best_move[0]), int(best_move[1]))
-
         valid_actions = engine.get_valid_actions()
-        return valid_actions[0] if valid_actions else None
+        if not valid_actions:
+            return None
+
+        try:
+            analysis = self._advisor.analyze_position(
+                state.board,
+                current_player=int(state.current_player),
+                last_move=last_move,
+                include_move_scores=False,
+            )
+            best_move = analysis.get("best_move")
+            if best_move:
+                move = (int(best_move[0]), int(best_move[1]))
+                if move in valid_actions:
+                    return move
+        except Exception as exc:
+            logger.warning(
+                "Minimax d%d timeout ou erreur (%s ms) : %s — coup fallback",
+                self.depth,
+                self.time_budget_ms,
+                exc,
+            )
+
+        return valid_actions[0]
 
 
 class BotRegistry:
@@ -71,7 +88,7 @@ class BotRegistry:
         },
         "minimax_d6": {
             "name": "Minimax (profondeur 6)",
-            "description": "Minimax optimisé, niveau intermédiaire (~500 ms)",
+            "description": "Minimax optimisé, niveau intermédiaire (~800 ms max)",
         },
         "minimax_d8": {
             "name": "Minimax (profondeur 8)",
@@ -82,7 +99,7 @@ class BotRegistry:
     _DEPTH_CONFIG: Dict[str, Tuple[int, int]] = {
         "minimax_d2": (2, 200),
         "minimax_d4": (4, 400),
-        "minimax_d6": (6, 500),
+        "minimax_d6": (6, 800),
         "minimax_d8": (8, 800),
     }
 

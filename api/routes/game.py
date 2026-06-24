@@ -343,42 +343,32 @@ def api_move():
 
 
 @game_bp.route("/api/ai_move", methods=["POST"])
-
 def api_ai_move():
-
     """Joue un coup pour l'IA selon le bot sélectionné."""
+    import logging
+    import time
 
+    logger = logging.getLogger(__name__)
     session_id, engine, mode, error = _require_engine()
-
     if error:
-
         return error
 
-
-
     if engine.is_terminal():
-
         return jsonify({"success": False, "error": "Partie terminée"}), 400
 
-
-
     data = request.get_json(silent=True) or {}
-
     bot_id = data.get("bot_id", BotRegistry.DEFAULT_BOT_ID)
-
     if not bot_registry.is_valid_bot(bot_id):
-
         return jsonify({"success": False, "error": f"Bot inconnu: {bot_id}"}), 400
 
-
-
+    started = time.perf_counter()
     try:
-
         action = bot_registry.choose_move(bot_id, engine)
-
     except Exception as exc:
-
+        logger.exception("ai_move bot=%s session=%s", bot_id, session_id)
         return jsonify({"success": False, "error": str(exc)}), 500
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    logger.info("ai_move bot=%s session=%s elapsed_ms=%d", bot_id, session_id, elapsed_ms)
 
 
 

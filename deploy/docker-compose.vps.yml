@@ -124,7 +124,7 @@ services:
         CERT=/etc/letsencrypt/live/4mation.lab211.fr
         if [ ! -f "$$CERT/fullchain.pem" ]; then CERT=/etc/letsencrypt/live/api-4mation.lab211.fr; fi
         test -f "$$CERT/fullchain.pem"
-        cat > /etc/nginx/sites-available/4mation <<EOF
+        cat > /etc/nginx/sites-available/4mation <<'NGINX_EOF'
         server {
             listen 80;
             server_name 4mation.lab211.fr;
@@ -135,20 +135,20 @@ services:
                 expires 30d;
                 add_header Cache-Control "public, immutable";
             }
-            location / { try_files \$$uri \$$uri/ /index.html; }
+            location / { try_files $$uri $$uri/ /index.html; }
         }
         server {
             listen 443 ssl;
             server_name 4mation.lab211.fr;
-            ssl_certificate $$CERT/fullchain.pem;
-            ssl_certificate_key $$CERT/privkey.pem;
+            ssl_certificate CERT_PLACEHOLDER/fullchain.pem;
+            ssl_certificate_key CERT_PLACEHOLDER/privkey.pem;
             root /var/www/4mation;
             index index.html;
             location /assets/ {
                 expires 30d;
                 add_header Cache-Control "public, immutable";
             }
-            location / { try_files \$$uri \$$uri/ /index.html; }
+            location / { try_files $$uri $$uri/ /index.html; }
         }
         server {
             listen 80;
@@ -157,29 +157,30 @@ services:
             location / {
                 proxy_pass http://127.0.0.1:8097;
                 proxy_http_version 1.1;
-                proxy_set_header Host \$$host;
-                proxy_set_header X-Real-IP \$$remote_addr;
-                proxy_set_header X-Forwarded-For \$$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$$scheme;
+                proxy_set_header Host $$host;
+                proxy_set_header X-Real-IP $$remote_addr;
+                proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $$scheme;
                 proxy_read_timeout 120s;
             }
         }
         server {
             listen 443 ssl;
             server_name api-4mation.lab211.fr;
-            ssl_certificate $$CERT/fullchain.pem;
-            ssl_certificate_key $$CERT/privkey.pem;
+            ssl_certificate CERT_PLACEHOLDER/fullchain.pem;
+            ssl_certificate_key CERT_PLACEHOLDER/privkey.pem;
             location / {
                 proxy_pass http://127.0.0.1:8097;
                 proxy_http_version 1.1;
-                proxy_set_header Host \$$host;
-                proxy_set_header X-Real-IP \$$remote_addr;
-                proxy_set_header X-Forwarded-For \$$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$$scheme;
+                proxy_set_header Host $$host;
+                proxy_set_header X-Real-IP $$remote_addr;
+                proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $$scheme;
                 proxy_read_timeout 120s;
             }
         }
-        EOF
+        NGINX_EOF
+        sed -i "s|CERT_PLACEHOLDER|$$CERT|g" /etc/nginx/sites-available/4mation
         ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
         if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
         echo nginx-ssl-ok

@@ -33,12 +33,9 @@ class GameSessionManager:
         return session_id
 
     def get_session(self, session_id: str) -> Optional[SessionData]:
-        cached = self._sessions.get(session_id)
-        if cached is not None:
-            return cached
-
         loaded = self._store.load(session_id)
         if loaded is None:
+            self._sessions.pop(session_id, None)
             return None
 
         mode, engine = loaded

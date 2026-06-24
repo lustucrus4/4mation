@@ -32,7 +32,7 @@ async function fetchJson(url, options) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     const hint = response.status === 404
-      ? " — route absente (relancez scripts\\run_local_dashboard.bat)"
+      ? " — route absente (relancez scripts\\run_local_solver_stack.bat ou run_local_dashboard.bat)"
       : "";
     throw new Error(`Réponse non-JSON (HTTP ${response.status})${hint}`);
   }

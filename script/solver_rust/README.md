@@ -22,7 +22,8 @@ Binaires produits :
 
 | Binaire | Rôle |
 |---------|------|
-| `target/release/4mation-local.exe` | **Recommandé Legion** — exploration + résolution + SQLite, zéro réseau |
+| `target/release/4mation-local.exe` | **Recommandé Legion** — exploration + résolution + SQLite + dashboard (`--dashboard`) |
+| `target/release/4mation-dashboard.exe` | Dashboard seul (lecture SQLite, sans solveur) |
 | `target/release/4mation-worker.exe` | Worker HTTP (API distribuée, conservé pour compatibilité) |
 
 ## Lancement local (Legion, 16 cœurs)
@@ -41,7 +42,8 @@ Ou directement :
   --threads 16 `
   --max-empty 12 `
   --solve-batch 500 `
-  --min-pending 5000
+  --min-pending 5000 `
+  --dashboard
 ```
 
 ### Options CLI (`4mation-local`)
@@ -55,22 +57,26 @@ Ou directement :
 | `--min-pending` | `5000` | Tampon file avant pause exploration |
 | `--max-iterations` | — | Arrêt après N résolutions (tests) |
 | `--once` | — | Un cycle puis sortie |
+| `--dashboard` | — | Serveur web intégré (port 8765) |
+| `--dashboard-port` | `8765` | Port HTTP (`SOLVER_DASHBOARD_PORT`) |
+| `--dashboard-host` | `127.0.0.1` | Interface d'écoute (`SOLVER_DASHBOARD_HOST`) |
 
-Variables d'environnement : `SOLVER_THREADS`, `TABLEBASE_MAX_EMPTY`.
+Variables d'environnement : `SOLVER_THREADS`, `TABLEBASE_MAX_EMPTY`, `SOLVER_DASHBOARD_PORT`.
 
 ## Architecture locale
 
 ```
-4mation-local
-├── explorer.rs    — BFS avant + rétrograde parents (remplace work_queue_filler.py)
-├── hasher.rs      — Hash Zobrist identique à position_hasher.py
-├── solver.rs      — Résolution rétrograde W/L/D (port retrograde_solver.py)
-├── game.rs        — Règles 7×7, frontier, victoire
-├── local_db.rs    — Schéma SQLite, inserts groupés, claim/submit bulk
-└── local_engine.rs — Boucle : explorer → claim → résoudre (rayon) → écrire
+4mation-local [--dashboard]
+├── explorer.rs     — BFS avant + rétrograde parents (remplace work_queue_filler.py)
+├── hasher.rs       — Hash Zobrist identique à position_hasher.py
+├── solver.rs       — Résolution rétrograde W/L/D (port retrograde_solver.py)
+├── game.rs         — Règles 7×7, frontier, victoire
+├── local_db.rs     — Schéma SQLite, inserts groupés, claim/submit bulk
+├── local_engine.rs — Boucle : explorer → claim → résoudre (rayon) → écrire
+└── dashboard/      — Serveur Axum (thread séparé si --dashboard)
 ```
 
-**Pas de HTTP** dans le chemin critique. Une seule machine, 16 threads.
+Une seule machine, 16 threads. Le dashboard HTTP est hors chemin critique de résolution.
 
 ## Tests
 
@@ -89,7 +95,7 @@ cargo build --release
 | Résolution | 16 workers HTTP | 16 threads rayon, cache local |
 | SQLite | VPS distant | Disque NVMe local, WAL + bulk |
 
-Ordre de grandeur : **10–30×** plus de positions/minute qu’une chaîne API+VPS+workers Python, selon profondeur des positions. CPU cible : **70–95 %** sur 16 cœurs en fin de partie.
+Ordre de grandeur : **10–30×** plus de positions/minute qu'une chaîne API+VPS+workers Python, selon profondeur des positions. CPU cible : **70–95 %** sur 16 cœurs en fin de partie.
 
 ## Worker HTTP (legacy)
 
@@ -100,39 +106,47 @@ Ordre de grandeur : **10–30×** plus de positions/minute qu’une chaîne API+
 
 ## Reste à faire (évolutions)
 
-- Symétries / canonicalisation des positions (réduction espace d’états)
+- Symétries / canonicalisation des positions (réduction espace d'états)
 - Checkpoint JSON persistant (`filler_checkpoint.json`) comme le filler Python
-- Parallélisation de l’exploration BFS (actuellement séquentielle, résolution déjà parallèle)
-- Livre d’ouverture (`opening_book`) et phases A/B Python
+- Parallélisation de l'exploration BFS (actuellement séquentielle, résolution déjà parallèle)
+- Livre d'ouverture (`opening_book`) et phases A/B Python
 - Timeout par position (budget nœuds déjà limité à 500k)
 
 ## Dashboard local (suivi avancement)
 
 Page web locale calquée sur `4mation_dashboard_dev/solver.html` : progression, débit, ETA, file de travail, mini-plateaux des 20 dernières positions.
 
-### Prérequis
-
-- Python 3 + `pip install -r api/requirements.txt` (Flask, numpy)
+**Stack 100 % Rust** — plus de Python/Flask requis pour le dashboard local.
 
 ### URL
 
 **http://127.0.0.1:8765/** (port via `SOLVER_DASHBOARD_PORT`)
 
-### Lancement
+### Lancement (recommandé — 1 commande)
 
 ```bat
-REM Dashboard seul (lecture tablebase.db)
-scripts\run_local_dashboard.bat
-
-REM Solveur 4mation-local + dashboard (2 fenêtres)
+REM Solveur + dashboard intégrés (1 fenêtre, 1 processus)
 scripts\run_local_solver_stack.bat
 ```
 
-Manuel :
+Équivalent :
+
+```bat
+scripts\run_local_solver_rust.bat
+```
+
+Le script lance `4mation-local --dashboard` par défaut.
+
+### Dashboard seul (lecture SQLite)
+
+```bat
+scripts\run_local_dashboard.bat
+```
+
+Binaire :
 
 ```powershell
-python script\solver_rust\local_dashboard.py --db script\solver\data\tablebase.db
-scripts\run_local_solver_rust.bat
+.\script\solver_rust\target\release\4mation-dashboard.exe --db script\solver\data\tablebase.db
 ```
 
 ### Fichiers
@@ -140,26 +154,27 @@ scripts\run_local_solver_rust.bat
 | Fichier | Rôle |
 |---------|------|
 | `web/index.html`, `web/style.css`, `web/solver.js` | UI (auto-refresh 2,5 s) |
-| `local_dashboard.py` | Serveur Flask : stats solveur + contrôle local (start/stop) |
-| `scripts/run_local_dashboard.bat` | Lanceur Windows |
+| `src/dashboard/` | Serveur Axum + stats SQLite |
+| `local_dashboard.py` | **Déprécié** — ancien serveur Flask (conservé pour référence) |
 
-Le dashboard lit la même base SQLite que `4mation-local` via les services Python existants (`SolverProgressService`, `WorkQueueService`). **Aucun impact** sur le dashboard prod Hostinger.
+Le dashboard lit la même base SQLite que `4mation-local`. **Aucun impact** sur le dashboard prod Hostinger.
 
 ### Contrôle depuis le navigateur (localhost uniquement)
 
 Depuis **http://127.0.0.1:8765/**, la section **Contrôle solveur** permet de :
 
 - **Démarrer le solveur** — lance `scripts\run_local_solver_rust.bat` dans une nouvelle fenêtre `cmd`
-- **Arrêter le solveur** — termine `4mation-local.exe` (`taskkill`)
-- Afficher l’état **actif** / **arrêté** (polling toutes les 3 s)
+- **Arrêter le solveur** — termine `4mation-local.exe` (`taskkill`) ou signale l'arrêt si mode `--dashboard` intégré
+- Afficher l'état **actif** / **arrêté** (polling toutes les 3 s)
 
 Endpoints réservés à `127.0.0.1` / `::1` (403 sinon) :
 
 | Méthode | Route | Rôle |
 |---------|-------|------|
+| `GET` | `/api/solver/status` | Progression, débit, ETA, positions récentes |
+| `GET` | `/api/solver/work/stats` | File de travail et workers actifs |
 | `GET` | `/api/local/process-status` | `4mation-local.exe` en cours ? |
+| `GET` | `/health` | Santé du serveur |
 | `POST` | `/api/local/start-solver` | Lance le solveur (whitelist `.bat`) |
 | `POST` | `/api/local/stop-solver` | Arrête le solveur |
-| `POST` | `/api/local/start-stack` | Lance dashboard + solveur (optionnel) |
-
-Aucune commande arbitraire : seuls les scripts listés dans `ALLOWED_LOCAL_SCRIPTS` (`local_dashboard.py`) sont exécutables.
+| `POST` | `/api/local/start-stack` | Lance stack complète (optionnel) |

@@ -2,6 +2,7 @@
 //!
 //! Remplace le trio filler VPS + API + workers HTTP sur une machine multi-cœurs.
 
+mod dashboard;
 mod explorer;
 mod game;
 mod hasher;
@@ -13,9 +14,12 @@ mod work;
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
+use dashboard::{default_dashboard_config, spawn_dashboard_thread};
 use local_db::LocalDb;
 use local_engine::{run_local_engine, LocalConfig};
 
@@ -54,6 +58,18 @@ struct Args {
     /// Un seul cycle explore+résolution puis sortie
     #[arg(long)]
     once: bool,
+
+    /// Démarre le dashboard web intégré (http://127.0.0.1:8765/)
+    #[arg(long)]
+    dashboard: bool,
+
+    /// Port du dashboard intégré
+    #[arg(long, env = "SOLVER_DASHBOARD_PORT", default_value = "8765")]
+    dashboard_port: u16,
+
+    /// Interface d'écoute du dashboard
+    #[arg(long, env = "SOLVER_DASHBOARD_HOST", default_value = "127.0.0.1")]
+    dashboard_host: String,
 }
 
 fn main() -> Result<()> {
@@ -72,6 +88,25 @@ fn main() -> Result<()> {
 
     let db = LocalDb::open(&args.db)?;
 
+    let shutdown = Arc::new(AtomicBool::new(false));
+
+    if args.dashboard {
+        let dash_cfg = default_dashboard_config(
+            args.db.clone(),
+            args.dashboard_host.clone(),
+            args.dashboard_port,
+            true,
+            Some(Arc::clone(&shutdown)),
+        );
+        let url = format!(
+            "http://{}:{}/",
+            args.dashboard_host, args.dashboard_port
+        );
+        println!("Dashboard : {url}");
+        spawn_dashboard_thread(dash_cfg)?;
+        std::thread::sleep(std::time::Duration::from_millis(300));
+    }
+
     let cfg = LocalConfig {
         threads: args.threads,
         max_empty: args.max_empty,
@@ -81,5 +116,5 @@ fn main() -> Result<()> {
         once: args.once,
     };
 
-    run_local_engine(&db, &worker_id, &cfg)
+    run_local_engine(&db, &worker_id, &cfg, Some(&shutdown))
 }

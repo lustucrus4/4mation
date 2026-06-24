@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+[DÉPRÉCIÉ] Utilisez 4mation-local --dashboard ou 4mation-dashboard (Rust).
+
 Serveur HTTP local pour visualiser l'avancement du solveur Rust.
 
 Expose les mêmes endpoints que l'API prod :

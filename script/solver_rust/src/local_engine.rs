@@ -145,7 +145,12 @@ fn explore_and_enqueue(
     Ok(total_inserted)
 }
 
-pub fn run_local_engine(db: &LocalDb, worker_id: &str, cfg: &LocalConfig) -> Result<()> {
+pub fn run_local_engine(
+    db: &LocalDb,
+    worker_id: &str,
+    cfg: &LocalConfig,
+    shutdown: Option<&std::sync::atomic::AtomicBool>,
+) -> Result<()> {
     rayon::ThreadPoolBuilder::new()
         .num_threads(cfg.threads)
         .build_global()
@@ -183,6 +188,11 @@ pub fn run_local_engine(db: &LocalDb, worker_id: &str, cfg: &LocalConfig) -> Res
     let mut idle_rounds = 0u32;
 
     loop {
+        if shutdown.is_some_and(|s| s.load(Ordering::Relaxed)) {
+            info!("Arrêt demandé via dashboard — sortie");
+            break;
+        }
+
         if let Some(max) = cfg.max_iterations {
             if stats.solved.load(Ordering::Relaxed) >= max {
                 info!("Limite {} atteinte — arrêt", max);

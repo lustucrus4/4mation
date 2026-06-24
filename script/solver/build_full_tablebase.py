@@ -412,7 +412,7 @@ def _publish_live_status(
 
     eta = int(remaining / use_rate) if use_rate > 0 and remaining > 0 else None
 
-        progress = min(100.0, 100.0 * total_solved / max(total_target, 1))
+    progress = min(100.0, 100.0 * total_solved / max(total_target, 1))
 
 
 

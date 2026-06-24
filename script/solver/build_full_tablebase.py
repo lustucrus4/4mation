@@ -22,7 +22,7 @@ import threading
 import time
 from collections import deque
 from pathlib import Path
-from typing import Deque, Optional, Set, Tuple
+from typing import Deque, Iterator, Optional, Set, Tuple
 
 import numpy as np
 
@@ -321,36 +321,21 @@ def _resolve_level_index(max_empty: int, checkpoint: dict) -> int:
     return len(MAX_EMPTY_LEVELS) - 1
 
 
-def _fill_queue_forward(
-    advisor: OptimizedMinimaxAdvisor,
-    max_empty: int,
-    known: Set[str],
-    bfs_seen: Set[str],
-    limit: int = 50_000,
-) -> Deque[Tuple]:
-    q: Deque[Tuple] = deque()
-    for pos in forward_bfs_unsolved(advisor, max_empty, known, bfs_seen):
-        q.append(pos)
-        if len(q) >= limit:
-            break
-    return q
-
-
-def _fill_queue_retrograde(
+def _iter_work_queue(
     conn,
     advisor: OptimizedMinimaxAdvisor,
     max_empty: int,
     known: Set[str],
+    bfs_seen: Set[str],
     retro_seen: Set[str],
-    limit: int = 50_000,
-) -> Deque[Tuple]:
+    exploration_mode: str,
+) -> Iterator[Tuple]:
+    """Génère les positions à résoudre une par une (sans bloquer sur un pré-remplissage)."""
+    if exploration_mode == "forward":
+        yield from forward_bfs_unsolved(advisor, max_empty, known, bfs_seen)
+        return
     seeds = load_seed_positions_from_db(conn, limit=2000)
-    q: Deque[Tuple] = deque()
-    for pos in retrograde_unsolved_parents(advisor, max_empty, known, seeds, retro_seen):
-        q.append(pos)
-        if len(q) >= limit:
-            break
-    return q
+    yield from retrograde_unsolved_parents(advisor, max_empty, known, seeds, retro_seen)
 
 
 def run_full_solver(
@@ -385,26 +370,23 @@ def run_full_solver(
     started_at = prev_status.get("started_at") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     recent: list = list(prev_status.get("recent_positions") or [])
 
-    exploration_mode = "forward"
-    queue: Deque[Tuple] = _fill_queue_forward(advisor, max_empty, known, bfs_seen)
-    if not queue:
-        exploration_mode = "retrograde"
-        queue = _fill_queue_retrograde(conn, advisor, max_empty, known, retro_seen)
+    exploration_mode = checkpoint.get("exploration_mode") or "retrograde"
+    work_iter: Optional[Iterator[Tuple]] = None
+    queued_estimate = 0
 
     current_phase = phase_for_max_empty(max_empty)
     logger.info(
-        "Solveur exhaustif — phase=%s, max_empty=%d, résolu=%d, file=%d, mode=%s",
+        "Solveur exhaustif — phase=%s, max_empty=%d, résolu=%d, mode=%s",
         current_phase,
         max_empty,
         total_solved,
-        len(queue),
         exploration_mode,
     )
 
     _flush(
         conn,
         total_solved=total_solved,
-        queued=len(queue),
+        queued=0,
         last_hash="",
         started_at=started_at,
         started_mono=started_mono,
@@ -431,7 +413,7 @@ def run_full_solver(
     heartbeat_lock = threading.Lock()
     shared = {
         "total_solved": total_solved,
-        "queued": len(queue),
+        "queued": 0,
         "last_hash": "",
         "last_progress_mono": time.monotonic(),
         "current_phase": current_phase,
@@ -468,71 +450,49 @@ def run_full_solver(
     heartbeat_thread = threading.Thread(target=_heartbeat, daemon=True)
     heartbeat_thread.start()
 
-    try:
+    def _next_position() -> Optional[Tuple]:
+        nonlocal work_iter, exploration_mode, level_idx, max_empty, current_phase, queued_estimate
         while True:
-            if not queue:
-                known = _known_hashes_from_db(conn)
-
+            if work_iter is None:
+                work_iter = _iter_work_queue(
+                    conn, advisor, max_empty, known, bfs_seen, retro_seen, exploration_mode,
+                )
+                queued_estimate = 0
+            try:
+                pos = next(work_iter)
+                queued_estimate += 1
+                return pos
+            except StopIteration:
+                work_iter = None
+                known.update(_known_hashes_from_db(conn))
                 if exploration_mode == "forward":
                     exploration_mode = "retrograde"
-                    queue = _fill_queue_retrograde(conn, advisor, max_empty, known, retro_seen)
-                    logger.info("Bascule rétrograde — file=%d", len(queue))
-                else:
-                    if level_idx + 1 < len(MAX_EMPTY_LEVELS):
-                        level_idx += 1
-                        max_empty = MAX_EMPTY_LEVELS[level_idx]
-                        solver.max_empty = max_empty
-                        current_phase = phase_for_max_empty(max_empty)
-                        exploration_mode = "forward"
-                        queue = _fill_queue_forward(advisor, max_empty, known, bfs_seen)
-                        logger.info(
-                            "Extension max_empty=%d (phase %s) — file=%d",
-                            max_empty,
-                            current_phase,
-                            len(queue),
-                        )
-                    else:
-                        exploration_mode = "forward"
-                        bfs_seen.clear()
-                        bfs_seen |= known
-                        retro_seen.clear()
-                        retro_seen |= known
-                        queue = _fill_queue_forward(advisor, max_empty, known, bfs_seen)
-                        logger.info("Nouvelle passe complète — file=%d", len(queue))
-
-                with heartbeat_lock:
-                    shared["queued"] = len(queue)
-                    shared["current_phase"] = current_phase
-                    shared["max_empty"] = max_empty
-
-                _flush(
-                    conn,
-                    total_solved=total_solved,
-                    queued=len(queue),
-                    last_hash=last_hash,
-                    started_at=started_at,
-                    started_mono=started_mono,
-                    recent=recent,
-                    solver=solver,
-                    current_phase=current_phase,
-                    max_empty=max_empty,
-                    solver_running=True,
-                    force_json=True,
-                )
-                _save_checkpoint(
-                    db_path,
-                    bfs_seen=bfs_seen,
-                    retro_seen=retro_seen,
-                    max_empty_level=level_idx,
-                    exploration_mode=exploration_mode,
-                )
-
-                if not queue:
-                    logger.info("File vide — pause 30s avant nouvelle exploration")
-                    time.sleep(30)
+                    logger.info("Bascule rétrograde")
                     continue
+                if level_idx + 1 < len(MAX_EMPTY_LEVELS):
+                    level_idx += 1
+                    max_empty = MAX_EMPTY_LEVELS[level_idx]
+                    solver.max_empty = max_empty
+                    current_phase = phase_for_max_empty(max_empty)
+                    exploration_mode = "forward"
+                    logger.info("Extension max_empty=%d (phase %s)", max_empty, current_phase)
+                    continue
+                exploration_mode = "forward"
+                bfs_seen.clear()
+                bfs_seen |= known
+                retro_seen.clear()
+                retro_seen |= known
+                logger.info("Nouvelle passe complète max_empty=%d", max_empty)
+                continue
 
-            board, player, last_move = queue.popleft()
+    try:
+        while True:
+            item = _next_position()
+            if item is None:
+                time.sleep(30)
+                continue
+
+            board, player, last_move = item
             h = HASHER.hash_key(board, player, last_move)
 
             if h in known:
@@ -569,8 +529,10 @@ def run_full_solver(
 
             with heartbeat_lock:
                 shared["total_solved"] = total_solved
-                shared["queued"] = len(queue)
+                shared["queued"] = max(queued_estimate - batch_count, 0)
                 shared["last_hash"] = last_hash
+                shared["current_phase"] = current_phase
+                shared["max_empty"] = max_empty
 
             now_mono = time.monotonic()
             should_flush = (
@@ -583,7 +545,7 @@ def run_full_solver(
                 recent = _flush(
                     conn,
                     total_solved=total_solved,
-                    queued=len(queue),
+                    queued=shared["queued"],
                     last_hash=last_hash,
                     started_at=started_at,
                     started_mono=started_mono,
@@ -609,11 +571,11 @@ def run_full_solver(
                 progress = _compute_progress_percent(total_solved, max_empty)
                 pct_str = f"{progress:.2f}%" if progress is not None else "exploration"
                 logger.info(
-                    "Progression : %d positions (%s) — %.2f pos/s, file=%d, phase=%s",
+                    "Progression : %d positions (%s) — %.2f pos/s, file~%d, phase=%s",
                     total_solved,
                     pct_str,
                     (total_solved - batch_start_solved) / batch_elapsed,
-                    len(queue),
+                    shared["queued"],
                     current_phase,
                 )
                 batch_count = 0

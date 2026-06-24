@@ -1,163 +1,329 @@
-services:
-  api:
-    image: python:3.12-slim
-    container_name: 4mation-api
-    working_dir: /app
-    ports:
-      - "127.0.0.1:8097:8097"
-    environment:
-      PYTHONPATH: /app:/app/script
-      SESSION_DB_PATH: /app/data/sessions.db
-      TABLEBASE_DB_PATH: /app/data/tablebase.db
-      SOLVER_STATUS_PATH: /app/data/solver_status.json
-    volumes:
-      - 4mation-data:/app/data
-    command:
-      - sh
-      - -c
-      - |
-        apt-get update && apt-get install -y --no-install-recommends git curl
-        rm -rf /tmp/repo
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-        cp -a /tmp/repo/api /tmp/repo/script /app/
-        pip install --no-cache-dir -r /app/api/requirements.txt
-        mkdir -p /app/logs /app/data
-        exec gunicorn -c /app/api/gunicorn_config.py --bind 0.0.0.0:8097 api.app:app
-    restart: always
-
-  solver:
-    image: python:3.12-slim
-    container_name: 4mation-solver
-    working_dir: /app
-    environment:
-      PYTHONPATH: /app/script
-      TABLEBASE_DB_PATH: /app/data/tablebase.db
-      SOLVER_STATUS_PATH: /app/data/solver_status.json
-    volumes:
-      - 4mation-data:/app/data
-    command:
-      - sh
-      - -c
-      - |
-        apt-get update && apt-get install -y --no-install-recommends git
-        rm -rf /tmp/repo
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-        cp -a /tmp/repo/script /app/
-        pip install --no-cache-dir numpy
-        mkdir -p /app/data
-        exec python /app/script/solver/build_full_tablebase.py --db /app/data/tablebase.db --batch 200
-    restart: unless-stopped
-
-  nginx-http:
-    image: alpine:3.20
-    container_name: 4mation-nginx-http
-    network_mode: host
-    pid: host
-    privileged: true
-    volumes:
-      - /etc/nginx:/etc/nginx
-      - /var/www/4mation:/var/www/4mation
-      - /var/www/certbot:/var/www/certbot
-      - /var/run:/var/run
-    restart: "no"
-    depends_on:
-      - api
-    command:
-      - /bin/sh
-      - -ec
-      - |
-        apk add --no-cache git curl unzip rsync
-        mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled /var/www/4mation /var/www/certbot
-        rm -f /etc/nginx/sites-enabled/4mation /etc/nginx/sites-available/4mation
-        rm -rf /tmp/repo
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-        rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/
-        cat > /etc/nginx/sites-available/4mation <<'EOF'
-        server {
-            listen 80;
-            server_name 4mation.lab211.fr;
-            root /var/www/4mation;
-            index index.html;
-            location /.well-known/acme-challenge/ { root /var/www/certbot; }
-            location /assets/ {
-                expires 30d;
-                add_header Cache-Control "public, immutable";
-            }
-            location / { try_files $uri $uri/ /index.html; }
-        }
-        server {
-            listen 80;
-            server_name api-4mation.lab211.fr;
-            location /.well-known/acme-challenge/ { root /var/www/certbot; }
-            location / {
-                proxy_pass http://127.0.0.1:8097;
-                proxy_http_version 1.1;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_read_timeout 120s;
-            }
-        }
-        EOF
-        ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
-        if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
-        echo nginx-http-ok
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: 4mation-certbot
-    network_mode: host
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/www/certbot:/var/www/certbot
-    restart: "no"
-    depends_on:
-      nginx-http:
-        condition: service_completed_successfully
-    entrypoint: /bin/sh
-    command:
-      - -ec
-      - |
-        certbot certonly --webroot -w /var/www/certbot \
-          -d 4mation.lab211.fr -d api-4mation.lab211.fr \
-          --email admin@lab211.fr --agree-tos --non-interactive \
-          --keep-until-expiring || certbot certonly --webroot -w /var/www/certbot \
-          -d 4mation.lab211.fr -d api-4mation.lab211.fr \
-          --email admin@lab211.fr --agree-tos --non-interactive --force-renewal
-        echo certbot-done
-
-  nginx-ssl:
-    image: alpine:3.20
-    container_name: 4mation-nginx-ssl
-    network_mode: host
-    pid: host
-    privileged: true
-    volumes:
-      - /etc/nginx:/etc/nginx
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/4mation:/var/www/4mation:ro
-      - /var/run:/var/run
-    restart: "no"
-    depends_on:
-      certbot:
-        condition: service_completed_successfully
-    command:
-      - /bin/sh
-      - -ec
-      - |
-        apk add --no-cache git curl unzip rsync
-        CERT=/etc/letsencrypt/live/4mation.lab211.fr
-        if [ ! -f "$$CERT/fullchain.pem" ]; then CERT=/etc/letsencrypt/live/api-4mation.lab211.fr; fi
-        test -f "$$CERT/fullchain.pem"
-        rm -rf /tmp/repo
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
-        sed "s|CERT_PLACEHOLDER|$$CERT|g" /tmp/repo/deploy/nginx-4mation.conf.template > /etc/nginx/sites-available/4mation
-        ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
-        if command -v nginx >/dev/null 2>&1; then nginx -t; fi
-        if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); elif command -v nginx >/dev/null 2>&1; then nginx; fi
-        echo nginx-ssl-ok
-
-volumes:
-  4mation-data:
-
+services:
+
+  api:
+
+    image: python:3.12-slim
+
+    container_name: 4mation-api
+
+    working_dir: /app
+
+    ports:
+
+      - "127.0.0.1:8097:8097"
+
+    environment:
+
+      PYTHONPATH: /app:/app/script
+
+      SESSION_DB_PATH: /app/data/sessions.db
+
+      TABLEBASE_DB_PATH: /app/data/tablebase.db
+
+      SOLVER_STATUS_PATH: /app/data/solver_status.json
+
+    volumes:
+
+      - 4mation-data:/app/data
+
+      - /var/www/4mation:/var/www/4mation
+
+    command:
+
+      - sh
+
+      - -c
+
+      - |
+
+        apt-get update && apt-get install -y --no-install-recommends git curl rsync
+
+        rm -rf /tmp/repo
+
+        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+
+        cp -a /tmp/repo/api /tmp/repo/script /app/
+
+        rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/ || true
+
+        pip install --no-cache-dir -r /app/api/requirements.txt
+
+        mkdir -p /app/logs /app/data /var/www/4mation
+
+        exec gunicorn -c /app/api/gunicorn_config.py --bind 0.0.0.0:8097 api.app:app
+
+    restart: always
+
+
+
+  solver:
+
+    image: python:3.12-slim
+
+    container_name: 4mation-solver
+
+    working_dir: /app
+
+    environment:
+
+      PYTHONPATH: /app/script
+
+      TABLEBASE_DB_PATH: /app/data/tablebase.db
+
+      SOLVER_STATUS_PATH: /app/data/solver_status.json
+
+    volumes:
+
+      - 4mation-data:/app/data
+
+    command:
+
+      - sh
+
+      - -c
+
+      - |
+
+        apt-get update && apt-get install -y --no-install-recommends git
+
+        rm -rf /tmp/repo
+
+        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+
+        cp -a /tmp/repo/script /app/
+
+        pip install --no-cache-dir numpy
+
+        mkdir -p /app/data
+
+        exec python /app/script/solver/build_full_tablebase.py --db /app/data/tablebase.db --batch 200
+
+    restart: unless-stopped
+
+
+
+  nginx-http:
+
+    image: alpine:3.20
+
+    container_name: 4mation-nginx-http
+
+    network_mode: host
+
+    pid: host
+
+    privileged: true
+
+    volumes:
+
+      - /etc/nginx:/etc/nginx
+
+      - /var/www/4mation:/var/www/4mation
+
+      - /var/www/certbot:/var/www/certbot
+
+      - /var/run:/var/run
+
+    restart: "no"
+
+    depends_on:
+
+      - api
+
+    command:
+
+      - /bin/sh
+
+      - -ec
+
+      - |
+
+        apk add --no-cache git curl unzip rsync
+
+        mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled /var/www/4mation /var/www/certbot
+
+        rm -f /etc/nginx/sites-enabled/4mation /etc/nginx/sites-available/4mation
+
+        rm -rf /tmp/repo
+
+        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+
+        rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/
+
+        cat > /etc/nginx/sites-available/4mation <<'EOF'
+
+        server {
+
+            listen 80;
+
+            server_name 4mation.lab211.fr;
+
+            root /var/www/4mation;
+
+            index index.html;
+
+            location /.well-known/acme-challenge/ { root /var/www/certbot; }
+
+            location /assets/ {
+
+                expires 30d;
+
+                add_header Cache-Control "public, immutable";
+
+            }
+
+            location / { try_files $uri $uri/ /index.html; }
+
+        }
+
+        server {
+
+            listen 80;
+
+            server_name api-4mation.lab211.fr;
+
+            location /.well-known/acme-challenge/ { root /var/www/certbot; }
+
+            location / {
+
+                proxy_pass http://127.0.0.1:8097;
+
+                proxy_http_version 1.1;
+
+                proxy_set_header Host $host;
+
+                proxy_set_header X-Real-IP $remote_addr;
+
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                proxy_read_timeout 120s;
+
+            }
+
+        }
+
+        EOF
+
+        ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
+
+        if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); fi
+
+        echo nginx-http-ok
+
+
+
+  certbot:
+
+    image: certbot/certbot:latest
+
+    container_name: 4mation-certbot
+
+    network_mode: host
+
+    volumes:
+
+      - /etc/letsencrypt:/etc/letsencrypt
+
+      - /var/www/certbot:/var/www/certbot
+
+    restart: "no"
+
+    depends_on:
+
+      nginx-http:
+
+        condition: service_completed_successfully
+
+    entrypoint: /bin/sh
+
+    command:
+
+      - -ec
+
+      - |
+
+        certbot certonly --webroot -w /var/www/certbot \
+
+          -d 4mation.lab211.fr -d api-4mation.lab211.fr \
+
+          --email admin@lab211.fr --agree-tos --non-interactive \
+
+          --keep-until-expiring || certbot certonly --webroot -w /var/www/certbot \
+
+          -d 4mation.lab211.fr -d api-4mation.lab211.fr \
+
+          --email admin@lab211.fr --agree-tos --non-interactive --force-renewal
+
+        echo certbot-done
+
+
+
+  nginx-ssl:
+
+    image: alpine:3.20
+
+    container_name: 4mation-nginx-ssl
+
+    network_mode: host
+
+    pid: host
+
+    privileged: true
+
+    volumes:
+
+      - /etc/nginx:/etc/nginx
+
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+      - /var/www/4mation:/var/www/4mation:ro
+
+      - /var/run:/var/run
+
+    restart: "no"
+
+    depends_on:
+
+      certbot:
+
+        condition: service_completed_successfully
+
+    command:
+
+      - /bin/sh
+
+      - -ec
+
+      - |
+
+        apk add --no-cache git curl unzip rsync
+
+        CERT=/etc/letsencrypt/live/4mation.lab211.fr
+
+        if [ ! -f "$$CERT/fullchain.pem" ]; then CERT=/etc/letsencrypt/live/api-4mation.lab211.fr; fi
+
+        test -f "$$CERT/fullchain.pem"
+
+        rm -rf /tmp/repo
+
+        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+
+        sed "s|CERT_PLACEHOLDER|$$CERT|g" /tmp/repo/deploy/nginx-4mation.conf.template > /etc/nginx/sites-available/4mation
+
+        ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
+
+        if command -v nginx >/dev/null 2>&1; then nginx -t; fi
+
+        if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); elif command -v nginx >/dev/null 2>&1; then nginx; fi
+
+        echo nginx-ssl-ok
+
+
+
+volumes:
+
+  4mation-data:
+
+

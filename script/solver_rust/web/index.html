@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>4mation — Solveur local</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app app-wide">
+      <header class="header">
+        <div class="header-top">
+          <h1>Avancement solveur <span class="local-badge">local</span></h1>
+        </div>
+        <p class="subtitle">
+          Suivi en direct du worker Rust sur cette machine — lecture directe de
+          <code>tablebase.db</code>
+        </p>
+      </header>
+
+      <section class="solver-panel">
+        <div class="progress-header">
+          <span id="status-badge" class="status-badge status-paused">—</span>
+          <span id="progress-pct" class="progress-pct">0 %</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+        </div>
+
+        <dl class="stats-grid">
+          <div class="stat">
+            <dt>Positions résolues</dt>
+            <dd id="stat-solved">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Espace estimé</dt>
+            <dd id="stat-target">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Vitesse</dt>
+            <dd id="stat-rate">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Temps restant</dt>
+            <dd id="stat-eta">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Durée écoulée</dt>
+            <dd id="stat-duration">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Phase</dt>
+            <dd id="stat-phase">—</dd>
+          </div>
+        </dl>
+        <p class="stat-updated">Dernière mise à jour : <span id="stat-updated">—</span></p>
+      </section>
+
+      <section class="solver-panel workers-panel">
+        <h2>File de travail locale</h2>
+        <dl class="stats-grid">
+          <div class="stat">
+            <dt>En attente</dt>
+            <dd id="stat-queue-pending">—</dd>
+          </div>
+          <div class="stat">
+            <dt>En cours</dt>
+            <dd id="stat-queue-progress">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Workers actifs</dt>
+            <dd id="stat-worker-count">—</dd>
+          </div>
+        </dl>
+        <ul id="workers-list" class="workers-list muted">Chargement…</ul>
+      </section>
+
+      <section class="recent-section">
+        <h2>Derniers coups calculés</h2>
+        <div id="recent-grid" class="recent-grid"></div>
+      </section>
+
+      <p id="message" class="message"></p>
+
+      <footer class="site-footer">
+        <span class="muted">Dashboard local — port <span id="footer-port">8765</span></span>
+      </footer>
+    </div>
+    <script src="/solver.js"></script>
+  </body>
+</html>

@@ -8,7 +8,7 @@ $VenvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 $Python = if (Test-Path $VenvPython) { $VenvPython } else { "python" }
 
 $ApiUrl = if ($env:SOLVER_API_URL) { $env:SOLVER_API_URL } else { "https://api-4mation.lab211.fr" }
-$Workers = if ($env:SOLVER_WORKERS) { $env:SOLVER_WORKERS } else { "10" }
+$Workers = if ($env:SOLVER_WORKERS) { $env:SOLVER_WORKERS } else { "12" }
 $ClaimBatch = if ($env:SOLVER_CLAIM_BATCH) { $env:SOLVER_CLAIM_BATCH } else { "25" }
 $SolveThreads = if ($env:SOLVER_SOLVE_THREADS) { $env:SOLVER_SOLVE_THREADS } else { "2" }
 

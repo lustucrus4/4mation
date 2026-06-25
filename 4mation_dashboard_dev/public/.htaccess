@@ -1,0 +1,14 @@
+# Routage SPA React : sert les fichiers existants (assets, solver.html), sinon
+# renvoie index.html pour laisser React Router gérer la route côté client.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Laisser passer la page solveur héritée et les fichiers/dossiers réels
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Tout le reste → SPA
+  RewriteRule ^ index.html [L]
+</IfModule>

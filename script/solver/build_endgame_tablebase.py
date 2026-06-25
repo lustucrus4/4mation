@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import random
 import sys
 from pathlib import Path
@@ -28,17 +29,38 @@ from solver.retrograde_solver import RetrogradeSolver, SolvedPosition
 DEFAULT_DB = SCRIPT / "solver" / "data" / "tablebase.db"
 
 
-def _store_position(conn, solved: SolvedPosition) -> None:
+def _store_position(
+    conn,
+    solved: SolvedPosition,
+    board,
+    player: int,
+    last_move,
+) -> None:
     br, bc = (-1, -1)
     if solved.best_move:
         br, bc = solved.best_move
+    lmr, lmc = (-1, -1)
+    if last_move:
+        lmr, lmc = last_move
     conn.execute(
         """
         INSERT OR REPLACE INTO positions
-        (hash, result, win_rate, best_move_row, best_move_col, depth_remaining, solved_at)
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        (hash, result, win_rate, best_move_row, best_move_col, depth_remaining,
+         board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """,
-        (solved.hash_key, solved.result, solved.win_rate, br, bc, solved.depth_remaining),
+        (
+            solved.hash_key,
+            solved.result,
+            solved.win_rate,
+            br,
+            bc,
+            solved.depth_remaining,
+            json.dumps(board.tolist()),
+            player,
+            lmr,
+            lmc,
+        ),
     )
 
 
@@ -91,7 +113,7 @@ def generate_endgame_tablebase(
             solved = solver.solve_position(board, player, last_move)
             if solved is None:
                 continue
-            _store_position(conn, solved)
+            _store_position(conn, solved, board, player, last_move)
             count += 1
 
         if verbose and (g + 1) % 50 == 0:

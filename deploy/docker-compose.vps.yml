@@ -22,6 +22,12 @@ services:
 
       TABLEBASE_DB_PATH: /app/data/tablebase.db
 
+      DATABASE_URL: postgresql://4mation:${POSTGRES_PASSWORD:-4mation_dev}@postgres:5432/4mation
+
+      LAB211_AUTH_BASE: https://auth.lab211.fr
+
+      LAB211_SITE_KEY: 4mation
+
       SOLVER_STATUS_PATH: /app/data/solver_status.json
 
       SOLVER_RATE_LIMIT_POSITIONS: "3000"
@@ -68,6 +74,98 @@ services:
         fi
 
         exec gunicorn -c /app/api/gunicorn_config.py --bind 0.0.0.0:8097 api.app:app
+
+    depends_on:
+
+      - postgres
+
+    restart: always
+
+
+
+  realtime:
+
+    image: python:3.12-slim
+
+    container_name: 4mation-realtime
+
+    working_dir: /app
+
+    ports:
+
+      - "127.0.0.1:8098:8098"
+
+    environment:
+
+      PYTHONPATH: /app:/app/script
+
+      DATABASE_URL: postgresql://4mation:${POSTGRES_PASSWORD:-4mation_dev}@postgres:5432/4mation
+
+      LAB211_AUTH_BASE: https://auth.lab211.fr
+
+      LAB211_SITE_KEY: 4mation
+
+      SESSION_DB_PATH: /app/data/sessions.db
+
+      TABLEBASE_DB_PATH: /app/data/tablebase.db
+
+    volumes:
+
+      - 4mation-data:/app/data
+
+      - /var/www/4mation:/var/www/4mation
+
+    command:
+
+      - sh
+
+      - -c
+
+      - |
+
+        sync_repo() {
+          if [ -d /tmp/repo/.git ]; then
+            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+          else
+            apt-get update && apt-get install -y --no-install-recommends git curl rsync
+            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          fi
+          cp -a /tmp/repo/api /tmp/repo/script /app/
+        }
+
+        sync_repo
+
+        pip install --no-cache-dir -r /app/api/requirements.txt
+
+        exec python /app/api/realtime_server.py --host 0.0.0.0 --port 8098
+
+    depends_on:
+
+      - postgres
+
+      - api
+
+    restart: always
+
+
+
+  postgres:
+
+    image: postgres:16-alpine
+
+    container_name: 4mation-postgres
+
+    environment:
+
+      POSTGRES_USER: 4mation
+
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-4mation_dev}
+
+      POSTGRES_DB: 4mation
+
+    volumes:
+
+      - 4mation-pg:/var/lib/postgresql/data
 
     restart: always
 
@@ -283,6 +381,22 @@ services:
 
             location /.well-known/acme-challenge/ { root /var/www/certbot; }
 
+            location /socket.io/ {
+
+                proxy_pass http://127.0.0.1:8098;
+
+                proxy_http_version 1.1;
+
+                proxy_set_header Upgrade $http_upgrade;
+
+                proxy_set_header Connection "upgrade";
+
+                proxy_set_header Host $host;
+
+                proxy_read_timeout 86400s;
+
+            }
+
             location / {
 
                 proxy_pass http://127.0.0.1:8097;
@@ -424,5 +538,7 @@ services:
 volumes:
 
   4mation-data:
+
+  4mation-pg:
 
 

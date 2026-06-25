@@ -180,9 +180,107 @@ h1 {
   outline-offset: -2px;
 }
 
+.cell.best-move {
+  outline: 3px dashed #ffd700;
+  outline-offset: -2px;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.7);
+}
+
+.cell.playable.best-move::before {
+  content: "★";
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.7rem;
+  color: #ffd700;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+}
+
+.cell {
+  position: relative;
+}
+
 .board.thinking {
   opacity: 0.75;
   pointer-events: none;
+}
+
+/* Barre de probabilité de victoire (W/L) */
+.winbar {
+  max-width: 560px;
+  margin: 18px auto 0;
+}
+
+.winbar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.winbar-label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.winbar-source {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.winbar-track {
+  position: relative;
+  height: 26px;
+  border-radius: 13px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #3742fa, #2f3542);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.winbar-fill {
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(135deg, #ff4757, #c44569);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.winbar-pct {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.85);
+}
+
+.winbar-pct-p1 {
+  left: 10px;
+}
+
+.winbar-pct-p2 {
+  right: 10px;
+}
+
+.winbar.is-exact .winbar-track {
+  box-shadow: 0 0 14px rgba(123, 237, 159, 0.55);
+  border-color: #7bed9f;
+}
+
+.winbar-legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.winbar-legend-p1 {
+  color: var(--p1);
+}
+
+.winbar-legend-p2 {
+  color: var(--p2);
 }
 
 body.is-busy .controls .btn {

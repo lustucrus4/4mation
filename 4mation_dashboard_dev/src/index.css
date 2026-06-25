@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens 4mation — repris de l'ADN visuel d'origine (dark néon, accent
+ * turquoise, joueurs rouge/bleu). Exposés à Tailwind v4 via @theme : chaque
+ * `--color-x` génère les utilitaires bg-x / text-x / border-x.
+ */
+@theme {
+  --color-night: #1a1a2e;
+  --color-midnight: #16213e;
+  --color-deep: #0f3460;
+  --color-accent: #11f1cc;
+  --color-accent-hover: #0dd4b8;
+  --color-p1: #ff4757;
+  --color-p2: #3742fa;
+  --color-gold: #ffd700;
+  --color-exact: #7bed9f;
+  --color-warn: #feca57;
+
+  --font-sans: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:root {
+  /* Tokens bruts pour les usages hors utilitaires Tailwind */
+  --cell: rgba(255, 255, 255, 0.18);
+  --cell-border: rgba(255, 255, 255, 0.3);
+  --muted: rgba(255, 255, 255, 0.7);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: #fff;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background-attachment: fixed;
+}
+
+/* Surbrillance accessible au clavier */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

@@ -10,12 +10,11 @@ use axum::{
 };
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tracing::info;
 
+use super::engine::EngineControl;
 use super::process;
 use super::stats::{
     self, get_health, get_process_status, get_solver_status, get_work_stats, resolve_web_dir,
@@ -28,7 +27,7 @@ pub struct DashboardConfig {
     pub host: String,
     pub port: u16,
     pub solver_in_process: bool,
-    pub shutdown: Option<Arc<AtomicBool>>,
+    pub engine_control: Option<EngineControl>,
 }
 
 #[derive(Clone)]
@@ -69,6 +68,7 @@ async fn solver_status_handler(State(state): State<AppState>) -> Json<stats::Sol
     Json(get_solver_status(
         &state.config.db_path,
         state.config.solver_in_process,
+        state.config.engine_control.as_ref(),
     ))
 }
 
@@ -87,7 +87,11 @@ async fn process_status_handler(
     if !is_localhost(&addr) {
         return localhost_denied().into_response();
     }
-    Json(get_process_status(state.config.solver_in_process)).into_response()
+    Json(get_process_status(
+        state.config.solver_in_process,
+        state.config.engine_control.as_ref(),
+    ))
+    .into_response()
 }
 
 async fn start_solver_handler(
@@ -97,6 +101,31 @@ async fn start_solver_handler(
     if !is_localhost(&addr) {
         return localhost_denied().into_response();
     }
+    if let Some(ctrl) = &state.config.engine_control {
+        if ctrl.is_running() {
+            return (
+                StatusCode::CONFLICT,
+                Json(serde_json::json!({
+                    "success": false,
+                    "error": "Le solveur est déjà en cours d'exécution.",
+                    "running": true
+                })),
+            )
+                .into_response();
+        }
+        if ctrl.request_start() {
+            return (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "success": true,
+                    "message": "Solveur redémarré (même processus).",
+                    "running": true
+                })),
+            )
+                .into_response();
+        }
+    }
+
     if state.config.solver_in_process || process::is_solver_running() {
         return (
             StatusCode::CONFLICT,
@@ -165,19 +194,28 @@ async fn stop_solver_handler(
         return localhost_denied().into_response();
     }
 
-    if state.config.solver_in_process {
-        if let Some(shutdown) = &state.config.shutdown {
-            shutdown.store(true, Ordering::Relaxed);
+    if let Some(ctrl) = &state.config.engine_control {
+        if ctrl.is_running() {
+            ctrl.request_stop();
             return (
                 StatusCode::OK,
                 Json(serde_json::json!({
                     "success": true,
-                    "message": "Arrêt du solveur demandé.",
+                    "message": "Arrêt du solveur demandé (dashboard reste actif).",
                     "running": false
                 })),
             )
                 .into_response();
         }
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "success": false,
+                "error": "Le solveur est déjà arrêté.",
+                "running": false
+            })),
+        )
+            .into_response();
     }
 
     if !process::is_solver_running() {
@@ -272,7 +310,7 @@ pub fn default_dashboard_config(
     host: String,
     port: u16,
     solver_in_process: bool,
-    shutdown: Option<Arc<AtomicBool>>,
+    engine_control: Option<EngineControl>,
 ) -> DashboardConfig {
     DashboardConfig {
         db_path,
@@ -280,6 +318,6 @@ pub fn default_dashboard_config(
         host,
         port,
         solver_in_process,
-        shutdown,
+        engine_control,
     }
 }

@@ -39,6 +39,22 @@ class PositionHasher:
         board: np.ndarray,
         current_player: int,
         last_move: Optional[Tuple[int, int]] = None,
+        *,
+        canonical: bool = True,
+    ) -> int:
+        if canonical:
+            from solver.symmetry import canonical_position
+
+            board, current_player, last_move = canonical_position(
+                board, current_player, last_move
+            )
+        return self.raw_zobrist_int(board, current_player, last_move)
+
+    def raw_zobrist_int(
+        self,
+        board: np.ndarray,
+        current_player: int,
+        last_move: Optional[Tuple[int, int]] = None,
     ) -> int:
         h = 0
         for row in range(BOARD_SIZE):
@@ -55,9 +71,19 @@ class PositionHasher:
         board: np.ndarray,
         current_player: int,
         last_move: Optional[Tuple[int, int]] = None,
+        *,
+        canonical: bool = True,
     ) -> str:
         """Clé hexadécimale pour SQLite."""
-        return f"{self.zobrist_int(board, current_player, last_move):016x}"
+        return f"{self.zobrist_int(board, current_player, last_move, canonical=canonical):016x}"
+
+    def raw_hash_key(
+        self,
+        board: np.ndarray,
+        current_player: int,
+        last_move: Optional[Tuple[int, int]] = None,
+    ) -> str:
+        return f"{self.raw_zobrist_int(board, current_player, last_move):016x}"
 
     def empty_cells(self, board: np.ndarray) -> int:
         return int(np.count_nonzero(board == 0))

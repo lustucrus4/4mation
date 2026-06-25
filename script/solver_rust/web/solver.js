@@ -1,40 +1,41 @@
 /**
- * Dashboard solveur local — même API que la prod (/api/solver/status, /api/solver/work/stats).
+ * Dashboard solveur local — suivi du poids de la base vers 5 Go + métriques de calcul.
  */
 
-const POLL_MS = 2500;
-
-const progressBarEl = document.getElementById("progress-bar");
-const progressPctEl = document.getElementById("progress-pct");
-const statusBadgeEl = document.getElementById("status-badge");
-const statSolvedEl = document.getElementById("stat-solved");
-const statTargetEl = document.getElementById("stat-target");
-const statRateEl = document.getElementById("stat-rate");
-const statEtaEl = document.getElementById("stat-eta");
-const statDurationEl = document.getElementById("stat-duration");
-const statPhaseEl = document.getElementById("stat-phase");
-const statUpdatedEl = document.getElementById("stat-updated");
-const recentGridEl = document.getElementById("recent-grid");
-const messageEl = document.getElementById("message");
-const statQueuePendingEl = document.getElementById("stat-queue-pending");
-const statQueueProgressEl = document.getElementById("stat-queue-progress");
-const statWorkerCountEl = document.getElementById("stat-worker-count");
-const workersListEl = document.getElementById("workers-list");
-const processBadgeEl = document.getElementById("process-badge");
-const btnStartSolverEl = document.getElementById("btn-start-solver");
-const btnStopSolverEl = document.getElementById("btn-stop-solver");
-const controlsMessageEl = document.getElementById("controls-message");
-
+const POLL_MS = 2000;
 const PROCESS_POLL_MS = 3000;
+
+const el = (id) => document.getElementById(id);
+
+const dbSizeEl = el("db-size");
+const dbLimitEl = el("db-limit");
+const dbBarEl = el("db-bar");
+const dbFillLabelEl = el("db-fill-label");
+const dbEtaEl = el("db-eta");
+const estTotalEl = el("est-total");
+const statDurationEl = el("stat-duration");
+const statSolvedEl = el("stat-solved");
+const statRateEl = el("stat-rate");
+const statEmptyEl = el("stat-empty");
+const statEtaEl = el("stat-eta");
+const statQueueEl = el("stat-queue");
+const statPhaseEl = el("stat-phase");
+const statMaxEmptyCurrentEl = el("stat-max-empty-current");
+const maxEmptyStepsEl = el("max-empty-steps");
+const statUpdatedEl = el("stat-updated");
+const statusBadgeEl = el("status-badge");
+const recentGridEl = el("recent-grid");
+const messageEl = el("message");
+const processBadgeEl = el("process-badge");
+const btnStartSolverEl = el("btn-start-solver");
+const btnStopSolverEl = el("btn-stop-solver");
+const controlsMessageEl = el("controls-message");
 
 async function fetchJson(url, options) {
   const response = await fetch(url, options);
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    const hint = response.status === 404
-      ? " — route absente (relancez scripts\\run_local_solver_stack.bat ou run_local_dashboard.bat)"
-      : "";
-    throw new Error(`Réponse non-JSON (HTTP ${response.status})${hint}`);
+    throw new Error(`Réponse non-JSON (HTTP ${response.status})`);
   }
   const data = await response.json();
   return { response, data };
@@ -43,9 +44,11 @@ async function fetchJson(url, options) {
 function formatDuration(seconds) {
   if (seconds == null || Number.isNaN(seconds)) return "—";
   const s = Math.max(0, Math.floor(seconds));
-  const h = Math.floor(s / 3600);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
+  if (d > 0) return `${d} j ${h} h`;
   if (h > 0) return `${h} h ${m} min`;
   if (m > 0) return `${m} min ${sec} s`;
   return `${sec} s`;
@@ -54,6 +57,24 @@ function formatDuration(seconds) {
 function formatEta(seconds) {
   if (seconds == null) return "—";
   return `~${formatDuration(seconds)}`;
+}
+
+function formatGo(bytes) {
+  if (bytes == null) return "—";
+  return `${(bytes / 1e9).toFixed(2).replace(".", ",")} Go`;
+}
+
+function formatCount(n) {
+  if (n == null) return "—";
+  if (n >= 1e6) return `≈ ${(n / 1e6).toFixed(1).replace(".", ",")} M`;
+  if (n >= 1e3) return `≈ ${(n / 1e3).toFixed(0)} k`;
+  return n.toLocaleString("fr-FR");
+}
+
+function formatEmptyRange(min, max) {
+  if (min == null && max == null) return "—";
+  if (max == null || min === max) return `${min} cases`;
+  return `${min} → ${max} cases`;
 }
 
 function elapsedSince(iso) {
@@ -68,6 +89,7 @@ function statusLabel(status) {
     en_cours: { text: "En cours", cls: "status-running" },
     calcul_long: { text: "Calcul long", cls: "status-running" },
     rechargement: { text: "Rechargement", cls: "status-running" },
+    en_veille: { text: "En veille (niveau complet)", cls: "status-paused" },
     pause: { text: "Pause", cls: "status-paused" },
     termine: { text: "Terminé", cls: "status-done" },
   };
@@ -111,12 +133,8 @@ function renderMiniBoard(container, pos) {
       const player = board[row][col];
       if (player === 1) cell.classList.add("player-1");
       if (player === 2) cell.classList.add("player-2");
-      if (best && best.row === row && best.col === col) {
-        cell.classList.add("best-move");
-      }
-      if (last && last.row === row && last.col === col) {
-        cell.classList.add("last-move");
-      }
+      if (best && best.row === row && best.col === col) cell.classList.add("best-move");
+      if (last && last.row === row && last.col === col) cell.classList.add("last-move");
       grid.appendChild(cell);
     }
   }
@@ -129,7 +147,6 @@ function renderRecent(positions) {
     recentGridEl.innerHTML = '<p class="muted">Aucune position récente pour l\'instant.</p>';
     return;
   }
-
   for (const pos of positions) {
     const card = document.createElement("article");
     card.className = "position-card";
@@ -153,116 +170,86 @@ function renderRecent(positions) {
   }
 }
 
-function formatProgressPercent(pct, solved, unknown) {
-  const solvedCount = solved ?? 0;
-  if (unknown || pct == null) {
-    if (solvedCount > 0) {
-      return `${solvedCount.toLocaleString("fr-FR")} résolues (exploration en cours)`;
-    }
-    return "—";
-  }
-  const value = Math.min(100, Math.max(0, pct));
-  if (value > 0 && value < 0.1) {
-    return value < 0.01 ? "< 0,01 %" : `${value.toFixed(2).replace(".", ",")} %`;
-  }
-  if (value === 0 && solvedCount > 0) {
-    return `${solvedCount.toLocaleString("fr-FR")} résolues`;
-  }
-  return `${value.toFixed(1).replace(".", ",")} %`;
+const DEFAULT_MAX_EMPTY_LEVELS = [12, 20, 30, 40, 49];
+
+function maxEmptyStepStatus(index, levelIdx) {
+  if (index < levelIdx) return "done";
+  if (index === levelIdx) return "active";
+  return "pending";
 }
 
-function renderWorkers(stats) {
-  if (!stats) {
-    statQueuePendingEl.textContent = "—";
-    statQueueProgressEl.textContent = "—";
-    statWorkerCountEl.textContent = "—";
-    workersListEl.innerHTML = '<li class="muted">Stats file indisponibles</li>';
-    return;
-  }
+function renderMaxEmptySteps(data) {
+  const levels = data.max_empty_levels?.length ? data.max_empty_levels : DEFAULT_MAX_EMPTY_LEVELS;
+  const levelIdx = Number(data.max_empty_level_idx ?? 0);
+  const current = data.max_empty ?? levels[levelIdx] ?? levels[0];
 
-  statQueuePendingEl.textContent = (stats.pending ?? 0).toLocaleString("fr-FR");
-  statQueueProgressEl.textContent = (stats.in_progress ?? 0).toLocaleString("fr-FR");
-  statWorkerCountEl.textContent = String(stats.active_worker_count ?? 0);
+  statMaxEmptyCurrentEl.textContent = String(current);
+  maxEmptyStepsEl.innerHTML = "";
 
-  const workers = stats.active_workers || [];
-  if (!workers.length) {
-    workersListEl.innerHTML =
-      '<li class="muted">Aucun worker actif — lancez <code>4mation-worker --local-db</code>.</li>';
-    return;
-  }
+  levels.forEach((value, index) => {
+    const status = maxEmptyStepStatus(index, levelIdx);
+    const step = document.createElement("div");
+    step.className = `max-empty-step ${status}`;
+    step.setAttribute("role", "listitem");
 
-  workersListEl.innerHTML = "";
-  for (const w of workers) {
-    const li = document.createElement("li");
-    const last = w.last_claim
-      ? new Date(w.last_claim.replace(" ", "T") + "Z").toLocaleString("fr-FR")
-      : "—";
-    li.textContent = `${w.worker_id} — ${w.positions_in_progress} pos. (dernier claim : ${last})`;
-    workersListEl.appendChild(li);
-  }
+    const box = document.createElement("div");
+    box.className = "max-empty-step-box";
+    box.textContent = String(value);
+
+    const label = document.createElement("span");
+    label.className = "max-empty-step-label";
+    label.textContent = index === 0 ? "endgame" : `niv. ${index + 1}`;
+
+    step.appendChild(box);
+    step.appendChild(label);
+    maxEmptyStepsEl.appendChild(step);
+  });
 }
 
 function updateUI(data) {
-  const solved = data.total_positions_solved ?? 0;
-  const pct = data.progress_unknown ? null : (data.progress_percent ?? 0);
-  const barPct = pct == null ? 0 : Math.min(100, Math.max(0, pct));
-  const displayPct = formatProgressPercent(pct, solved, data.progress_unknown);
+  // Poids de la base → 5 Go
+  const fill = Math.min(100, Math.max(0, data.db_fill_percent ?? 0));
+  dbSizeEl.textContent = formatGo(data.db_size_bytes);
+  dbLimitEl.textContent = `${Math.round((data.db_size_limit_bytes ?? 0) / 1073741824)} Go`;
+  dbBarEl.style.width = `${fill}%`;
+  dbBarEl.setAttribute("aria-valuenow", String(fill));
+  dbFillLabelEl.textContent = `${fill.toFixed(1).replace(".", ",")} %`;
+  dbEtaEl.textContent = formatEta(data.db_eta_seconds);
+  estTotalEl.textContent = formatCount(data.est_total_positions);
+  statDurationEl.textContent = formatDuration(elapsedSince(data.started_at));
 
-  progressBarEl.style.width = `${barPct}%`;
-  progressBarEl.setAttribute("aria-valuenow", String(barPct));
-  progressPctEl.textContent = displayPct;
-  progressPctEl.title =
-    solved > 0
-      ? `${solved.toLocaleString("fr-FR")} position${solved > 1 ? "s" : ""} résolue${solved > 1 ? "s" : ""}`
-      : "";
+  // Métriques
+  statSolvedEl.textContent = (data.total_positions_solved ?? 0).toLocaleString("fr-FR");
+  statRateEl.textContent =
+    data.positions_per_second > 0
+      ? `${data.positions_per_second.toLocaleString("fr-FR")} /s`
+      : "—";
+  statEmptyEl.textContent = formatEmptyRange(data.current_empty_min, data.current_empty_max);
+  statEtaEl.textContent = formatEta(data.db_eta_seconds);
+  statQueueEl.textContent = `${(data.total_queued ?? 0).toLocaleString("fr-FR")} / ${(
+    data.in_progress ?? 0
+  ).toLocaleString("fr-FR")}`;
+  statPhaseEl.textContent = phaseLabel(data.current_phase, data.phase_label);
 
   const badge = statusLabel(data.status);
   statusBadgeEl.textContent = badge.text;
   statusBadgeEl.className = `status-badge ${badge.cls}`;
 
-  statSolvedEl.textContent = (data.total_positions_solved ?? 0).toLocaleString("fr-FR");
-  const targetLabel =
-    data.progress_unknown || data.total_positions_target == null
-      ? "estimation en cours"
-      : `~${data.total_positions_target.toLocaleString("fr-FR")}`;
-  statTargetEl.textContent = targetLabel;
-  statRateEl.textContent =
-    data.positions_per_second > 0
-      ? `${data.positions_per_second.toLocaleString("fr-FR")} /s`
-      : "—";
-  statEtaEl.textContent = formatEta(data.eta_seconds);
-  statDurationEl.textContent = formatDuration(elapsedSince(data.started_at));
-  statPhaseEl.textContent = phaseLabel(data.current_phase, data.phase_label);
+  renderMaxEmptySteps(data);
   statUpdatedEl.textContent = data.last_update
     ? new Date(data.last_update).toLocaleString("fr-FR")
     : "—";
 
   renderRecent(data.recent_positions);
-  if (!data.db_available) {
-    messageEl.textContent =
-      "Base tablebase absente — initialisez-la (seed) puis lancez le worker Rust.";
-  } else {
-    messageEl.textContent = "";
-  }
-}
-
-async function pollWorkers() {
-  try {
-    const { response, data } = await fetchJson("/api/solver/work/stats");
-    if (response.ok && data.success) {
-      renderWorkers(data);
-    }
-  } catch {
-    renderWorkers(null);
-  }
+  messageEl.textContent = data.db_available
+    ? ""
+    : "Base tablebase absente — initialisez-la puis lancez le worker Rust.";
 }
 
 async function poll() {
   try {
     const { response, data } = await fetchJson("/api/solver/status");
-    if (!response.ok) {
-      throw new Error(data.error || `HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
     updateUI(data);
   } catch (error) {
     messageEl.textContent = `Impossible de joindre l'API locale : ${error.message}`;
@@ -277,28 +264,25 @@ function renderProcessStatus(data) {
   btnStopSolverEl.disabled = !running;
 }
 
+function setControlsMessage(text, isError = false) {
+  controlsMessageEl.textContent = text || "";
+  controlsMessageEl.classList.toggle("message", Boolean(isError));
+  controlsMessageEl.classList.toggle("muted", !isError);
+}
+
 async function pollProcessStatus() {
   try {
     const { response, data } = await fetchJson("/api/local/process-status");
     if (response.ok && data.success) {
       renderProcessStatus(data);
-      setControlsMessage("");
       return;
     }
     throw new Error(data.error || `HTTP ${response.status}`);
   } catch (error) {
     processBadgeEl.textContent = "État indisponible";
     processBadgeEl.className = "status-badge status-paused";
-    btnStartSolverEl.disabled = false;
-    btnStopSolverEl.disabled = true;
     setControlsMessage(error.message, true);
   }
-}
-
-function setControlsMessage(text, isError = false) {
-  controlsMessageEl.textContent = text || "";
-  controlsMessageEl.classList.toggle("message", Boolean(isError));
-  controlsMessageEl.classList.toggle("muted", !isError);
 }
 
 async function postLocalAction(url, successFallback) {
@@ -307,32 +291,28 @@ async function postLocalAction(url, successFallback) {
   btnStopSolverEl.disabled = true;
   try {
     const { response, data } = await fetchJson(url, { method: "POST" });
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || `HTTP ${response.status}`);
-    }
+    if (!response.ok || !data.success) throw new Error(data.error || `HTTP ${response.status}`);
     setControlsMessage(data.message || successFallback);
-    await pollProcessStatus();
   } catch (error) {
     setControlsMessage(error.message, true);
-    await pollProcessStatus();
+  } finally {
+    // Convergence rapide : l'arrêt du moteur peut prendre ~1 s, on rafraîchit l'état plusieurs fois.
+    for (let i = 0; i < 8; i++) {
+      await new Promise((r) => setTimeout(r, 400));
+      await pollProcessStatus();
+    }
   }
 }
 
 btnStartSolverEl.addEventListener("click", () => {
-  postLocalAction("/api/local/start-solver", "Solveur lancé.");
+  postLocalAction("/api/local/start-solver", "Solveur démarré.");
 });
 
 btnStopSolverEl.addEventListener("click", () => {
-  if (!window.confirm("Arrêter le processus 4mation-local.exe ?")) {
-    return;
-  }
-  postLocalAction("/api/local/stop-solver", "Arrêt demandé.");
+  postLocalAction("/api/local/stop-solver", "Solveur mis en pause.");
 });
 
 pollProcessStatus();
 setInterval(pollProcessStatus, PROCESS_POLL_MS);
-
 poll();
-pollWorkers();
 setInterval(poll, POLL_MS);
-setInterval(pollWorkers, POLL_MS);

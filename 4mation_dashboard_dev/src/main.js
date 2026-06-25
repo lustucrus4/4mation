@@ -25,6 +25,14 @@ let mctsRates = null;
 let analysisLabel = "Estimé (MCTS)";
 /** @type {boolean} */
 let analysisExact = false;
+/** @type {{row:number,col:number}|null} */
+let bestMove = null;
+/** @type {any} */
+let lastRenderedState = null;
+/** @type {number} */
+let analysisToken = 0;
+/** Afficher la surbrillance du meilleur coup (étoile) sur le plateau. */
+const showBestMove = true;
 
 const boardEl = document.getElementById("board");
 const messageEl = document.getElementById("message");
@@ -38,6 +46,12 @@ const btnAi = document.getElementById("btn-ai");
 const btnUndo = document.getElementById("btn-undo");
 const btnVariant = document.getElementById("btn-variant");
 const authSlotEl = document.getElementById("auth-slot");
+const winbarEl = document.getElementById("winbar");
+const winbarFillEl = document.getElementById("winbar-fill");
+const winbarLabelEl = document.getElementById("winbar-label");
+const winbarSourceEl = document.getElementById("winbar-source");
+const winbarPctP1El = document.getElementById("winbar-pct-p1");
+const winbarPctP2El = document.getElementById("winbar-pct-p2");
 
 function apiUrl(path) {
   return `${API_BASE}${path}`;
@@ -174,6 +188,10 @@ function renderBoard(state) {
         cell.classList.add("last-move");
       }
 
+      if (showBestMove && bestMove && bestMove.row === row && bestMove.col === col && !isTerminal) {
+        cell.classList.add("best-move");
+      }
+
       const isValid = validActions?.some((a) => a.row === row && a.col === col);
       if (!isTerminal && currentPlayer === 1 && isValid && !isBusy) {
         cell.classList.add("playable");
@@ -232,20 +250,28 @@ function renderBoard(state) {
   gameInfoEl.textContent = `Coup #${state.move_count} — Joueur actif : ${currentPlayer}`;
 }
 
-async function fetchMctsAnalysis() {
-  if (gameMode !== "learning") {
-    mctsRates = null;
-    analysisExact = false;
-    analysisLabel = "Estimé (MCTS)";
-    return;
-  }
+function updateWinBar(winRateP1, label, exact) {
+  const p1 = Math.max(0, Math.min(1, Number.isFinite(winRateP1) ? winRateP1 : 0.5));
+  const pct1 = Math.round(p1 * 100);
+  winbarEl.hidden = false;
+  winbarFillEl.style.width = `${pct1}%`;
+  winbarPctP1El.textContent = `${pct1}%`;
+  winbarPctP2El.textContent = `${100 - pct1}%`;
+  winbarLabelEl.textContent = "Probabilité de victoire";
+  winbarSourceEl.textContent = label || "";
+  winbarEl.classList.toggle("is-exact", Boolean(exact));
+}
+
+/** Analyse non-bloquante : met à jour la barre W/L, le meilleur coup et (mode
+ * apprentissage) les taux par case, puis redessine le plateau. */
+async function runAnalysis() {
+  const token = ++analysisToken;
   try {
-    const busyLabel = "Analyse en cours…";
-    setBusy(true, busyLabel);
     const data = await apiFetch("/api/analyze", {
       method: "POST",
       body: JSON.stringify({ time_budget_ms: MCTS_BUDGET_MS }),
     });
+    if (token !== analysisToken) return; // résultat périmé (un coup plus récent a été joué)
     const analysis = data.analysis ?? {};
     analysisExact = Boolean(analysis.exact);
     analysisLabel = analysis.label || (analysisExact ? "Exact (tablebase)" : "Estimé (MCTS)");
@@ -253,17 +279,33 @@ async function fetchMctsAnalysis() {
     for (const m of analysis.moves ?? []) {
       rates[cellKey(m.row, m.col)] = m.win_rate;
     }
-    mctsRates = rates;
-    if (!analysis.moves?.length && analysis.partial && analysis.position_win_rate !== undefined) {
-      messageEl.textContent = `Position : ${(analysis.position_win_rate * 100).toFixed(0)}% (${analysisLabel})`;
-    }
+    mctsRates = gameMode === "learning" ? rates : null;
+    bestMove = Array.isArray(analysis.best_move)
+      ? { row: analysis.best_move[0], col: analysis.best_move[1] }
+      : null;
+    const wrP1 = typeof analysis.win_rate_p1 === "number" ? analysis.win_rate_p1 : 0.5;
+    updateWinBar(wrP1, analysisLabel, analysisExact);
+    if (lastRenderedState) renderBoard(lastRenderedState);
   } catch {
-    mctsRates = null;
-    analysisExact = false;
-    analysisLabel = "Estimé (MCTS)";
-  } finally {
-    setBusy(false);
+    if (token === analysisToken) {
+      winbarSourceEl.textContent = "analyse indisponible";
+    }
   }
+}
+
+/** Applique un nouvel état : rendu immédiat propre, puis analyse asynchrone. */
+function applyState(state) {
+  if (!state) return;
+  lastRenderedState = state;
+  bestMove = null;
+  mctsRates = null;
+  renderBoard(state);
+  if (state.is_terminal) {
+    const w = state.winner;
+    updateWinBar(w === 1 ? 1 : w === 2 ? 0 : 0.5, "Partie terminée", true);
+    return;
+  }
+  runAnalysis();
 }
 
 async function refreshState() {
@@ -273,12 +315,7 @@ async function refreshState() {
     gameMode = state.mode;
     updateModeUI();
   }
-  if (gameMode === "learning") {
-    await fetchMctsAnalysis();
-  } else {
-    mctsRates = null;
-  }
-  renderBoard(state);
+  applyState(state);
   return state;
 }
 
@@ -309,12 +346,8 @@ async function playHumanMove(row, col) {
       body: JSON.stringify({ action: { row, col } }),
     });
     latestState = data.state;
-    mctsRates = null;
 
-    if (gameMode === "learning" && !data.terminal) {
-      setBusy(false);
-      await fetchMctsAnalysis();
-    } else if (autoAiAfterHuman && !data.terminal && data.next_player === 2) {
+    if (autoAiAfterHuman && !data.terminal && data.next_player === 2) {
       setBusy(false);
       const aiData = await requestAiMove();
       if (aiData?.state) {
@@ -329,7 +362,7 @@ async function playHumanMove(row, col) {
   } finally {
     setBusy(false);
     if (latestState) {
-      renderBoard(latestState);
+      applyState(latestState);
     }
   }
 }
@@ -338,7 +371,7 @@ async function playAiMove() {
   if (isBusy) return;
   const data = await requestAiMove();
   if (data?.state) {
-    renderBoard(data.state);
+    applyState(data.state);
   }
 }
 
@@ -346,16 +379,12 @@ async function newGame() {
   if (isBusy) return;
   try {
     setBusy(true, "Nouvelle partie…");
-    mctsRates = null;
     await ensureSession();
     const data = await apiFetch("/api/reset", {
       method: "POST",
       body: JSON.stringify({ mode: gameMode }),
     });
-    if (gameMode === "learning") {
-      await fetchMctsAnalysis();
-    }
-    renderBoard(data.state);
+    applyState(data.state);
   } catch (error) {
     messageEl.textContent = error.message;
   } finally {
@@ -371,11 +400,7 @@ async function undoMove() {
       method: "POST",
       body: JSON.stringify({ count: 1 }),
     });
-    mctsRates = null;
-    if (gameMode === "learning") {
-      await fetchMctsAnalysis();
-    }
-    renderBoard(data.state);
+    applyState(data.state);
   } catch (error) {
     messageEl.textContent = error.message;
   } finally {
@@ -393,11 +418,7 @@ async function newVariant() {
       method: "POST",
       body: JSON.stringify({ move_index: count }),
     });
-    mctsRates = null;
-    if (gameMode === "learning") {
-      await fetchMctsAnalysis();
-    }
-    renderBoard(data.state);
+    applyState(data.state);
     messageEl.textContent = "Nouvelle variante — rejouez à partir d'ici";
   } catch (error) {
     messageEl.textContent = error.message;

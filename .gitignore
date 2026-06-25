@@ -49,7 +49,11 @@ script/solver/data/solver_checkpoint.json
 script/solver/data/filler_checkpoint.json
 script/solver/data/tablebase.db
 script/solver/data/tablebase.db-*
+script/solver/data/tablebase*.db
+script/solver/data/_backup_*/
 script/solver/data/solver_status.json
+script/solver_rust/*.log
+data/
 
 # TensorBoard
 events.out.tfevents.*

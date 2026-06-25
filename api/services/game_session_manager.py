@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
-from typing import Dict, Optional
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 from game.game_engine import GameEngine
 
@@ -15,21 +16,40 @@ from .session_store import SessionStore
 class SessionData:
     engine: GameEngine
     mode: str = "standard"  # "standard" | "learning"
+    meta: Dict[str, Any] = field(default_factory=dict)
 
 
 class GameSessionManager:
-    """Stocke un moteur de jeu et le mode par session (mémoire + SQLite)."""
+    """Stocke un moteur de jeu, le mode et métadonnées par session."""
 
     def __init__(self, store: SessionStore | None = None) -> None:
         self._sessions: Dict[str, SessionData] = {}
         self._store = store or SessionStore()
 
-    def create_session(self, mode: str = "standard") -> str:
+    @staticmethod
+    def _fresh_meta(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        meta: Dict[str, Any] = {
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "human_color": 1,
+            "game_saved": False,
+        }
+        if extra:
+            meta.update(extra)
+        return meta
+
+    def create_session(
+        self,
+        mode: str = "standard",
+        meta: Optional[Dict[str, Any]] = None,
+    ) -> str:
         session_id = str(uuid.uuid4())
         engine = GameEngine()
         engine.reset()
-        self._sessions[session_id] = SessionData(engine=engine, mode=mode)
-        self._store.save(session_id, mode, engine)
+        session_meta = self._fresh_meta(meta)
+        self._sessions[session_id] = SessionData(
+            engine=engine, mode=mode, meta=session_meta
+        )
+        self._store.save(session_id, mode, engine, session_meta)
         return session_id
 
     def get_session(self, session_id: str) -> Optional[SessionData]:
@@ -38,8 +58,8 @@ class GameSessionManager:
             self._sessions.pop(session_id, None)
             return None
 
-        mode, engine = loaded
-        session = SessionData(engine=engine, mode=mode)
+        mode, engine, meta = loaded
+        session = SessionData(engine=engine, mode=mode, meta=meta or {})
         self._sessions[session_id] = session
         return session
 
@@ -51,6 +71,18 @@ class GameSessionManager:
         session = self.get_session(session_id)
         return session.mode if session else "standard"
 
+    def get_meta(self, session_id: str) -> Dict[str, Any]:
+        session = self.get_session(session_id)
+        return dict(session.meta) if session else {}
+
+    def update_meta(self, session_id: str, **kwargs: Any) -> bool:
+        session = self.get_session(session_id)
+        if session is None:
+            return False
+        session.meta.update(kwargs)
+        self.persist(session_id)
+        return True
+
     def set_mode(self, session_id: str, mode: str) -> bool:
         session = self.get_session(session_id)
         if session is None:
@@ -59,13 +91,19 @@ class GameSessionManager:
         self.persist(session_id)
         return True
 
-    def reset_session(self, session_id: str, mode: Optional[str] = None) -> bool:
+    def reset_session(
+        self,
+        session_id: str,
+        mode: Optional[str] = None,
+        meta: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         session = self.get_session(session_id)
         if session is None:
             return False
         session.engine.reset()
         if mode is not None:
             session.mode = mode
+        session.meta = self._fresh_meta(meta)
         self.persist(session_id)
         return True
 
@@ -73,7 +111,7 @@ class GameSessionManager:
         session = self._sessions.get(session_id)
         if session is None:
             return False
-        self._store.save(session_id, session.mode, session.engine)
+        self._store.save(session_id, session.mode, session.engine, session.meta)
         return True
 
     def delete_session(self, session_id: str) -> bool:

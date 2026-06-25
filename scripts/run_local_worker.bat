@@ -15,8 +15,9 @@ if exist ".venv\Scripts\python.exe" (
 )
 
 if not defined SOLVER_API_URL set "SOLVER_API_URL=https://api-4mation.lab211.fr"
-REM 8-12 processus : equilibre CPU local vs charge API/SQLite (eviter 16+ flood).
-if not defined SOLVER_WORKERS set "SOLVER_WORKERS=12"
+REM 8-10 processus : equilibre CPU local vs charge API/SQLite (eviter 12+ flood).
+if not defined SOLVER_WORKERS set "SOLVER_WORKERS=10"
+if not defined SOLVER_IDLE_SLEEP set "SOLVER_IDLE_SLEEP=2"
 REM Positions par claim HTTP — reduit la latence reseau (max serveur : 50).
 if not defined SOLVER_CLAIM_BATCH set "SOLVER_CLAIM_BATCH=25"
 REM Threads de resolution par processus (hybride local avant submit-batch).

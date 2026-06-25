@@ -36,6 +36,7 @@ class TablebaseHit:
     source: str  # "opening_book" | "tablebase"
     depth_remaining: int = 0
     ply: int = 0
+    exact: bool = True
 
 
 class TablebaseLookup:
@@ -95,14 +96,19 @@ class TablebaseLookup:
         best = None
         if row["best_move_row"] is not None and row["best_move_row"] >= 0:
             best = (int(row["best_move_row"]), int(row["best_move_col"]))
+        # Les positions (endgame) sont toujours exactes ; le livre d'ouverture porte un
+        # flag exact (1 = prouvé via tablebase, 0 = estimation Minimax).
+        keys = row.keys()
+        is_exact = bool(row["exact"]) if "exact" in keys else True
         return TablebaseHit(
             hash_key=row["hash"],
             result=str(row["result"]),
             win_rate=float(row["win_rate"]),
             best_move=best,
             source=source,
-            depth_remaining=int(row["depth_remaining"]) if "depth_remaining" in row.keys() else 0,
-            ply=int(row["ply"]) if "ply" in row.keys() else 0,
+            depth_remaining=int(row["depth_remaining"]) if "depth_remaining" in keys else 0,
+            ply=int(row["ply"]) if "ply" in keys else 0,
+            exact=is_exact,
         )
 
     def lookup(
@@ -120,7 +126,7 @@ class TablebaseLookup:
 
         if ply <= self.max_opening_ply:
             row = conn.execute(
-                "SELECT hash, result, win_rate, best_move_row, best_move_col, ply FROM opening_book WHERE hash=?",
+                "SELECT hash, result, win_rate, best_move_row, best_move_col, ply, exact FROM opening_book WHERE hash=?",
                 (h,),
             ).fetchone()
             if row is not None:
@@ -165,6 +171,49 @@ class TablebaseLookup:
             return None
         return self._child_win_rate(str(row["result"]), float(row["win_rate"]))
 
+    def _opening_book_analysis(
+        self,
+        board: np.ndarray,
+        current_player: int,
+        last_move: Optional[Tuple[int, int]],
+        hit: TablebaseHit,
+        start: float,
+    ) -> Dict[str, Any]:
+        """Analyse à partir d'une entrée du livre d'ouverture, en respectant son flag
+        exact (prouvé via tablebase) ou estimé (Minimax)."""
+        conn = self._get_conn()
+        moves_out: List[Dict[str, Any]] = []
+        if conn is not None:
+            for move in self._advisor._get_frontier_moves(board, last_move, current_player):
+                if self._advisor._is_winning_move(board, move, current_player):
+                    moves_out.append({
+                        "move": move, "row": move[0], "col": move[1],
+                        "win_rate": 1.0, "result": RESULT_WIN,
+                    })
+                    continue
+                child = self._lookup_child(conn, board, move, current_player)
+                if child is not None:
+                    res, wr = child
+                    moves_out.append({
+                        "move": move, "row": move[0], "col": move[1],
+                        "win_rate": wr, "result": res,
+                    })
+            moves_out.sort(key=lambda m: m["win_rate"], reverse=True)
+
+        label = "Exact (livre d'ouverture)" if hit.exact else "Estimé (livre d'ouverture)"
+        return {
+            "moves": moves_out,
+            "best_move": hit.best_move,
+            "current_player": current_player,
+            "valid_moves_count": len(moves_out),
+            "elapsed_ms": int((time.perf_counter() - start) * 1000),
+            "source": "opening_book",
+            "exact": bool(hit.exact),
+            "label": label,
+            "position_win_rate": hit.win_rate,
+            "coverage_percent": 100.0 if hit.exact else None,
+        }
+
     def analyze_position(
         self,
         board: np.ndarray,
@@ -177,6 +226,11 @@ class TablebaseLookup:
         """
         start = time.perf_counter()
         hit = self.lookup(board, current_player, last_move)
+
+        # Livre d'ouverture : on respecte le flag exact (prouvé vs estimé) plutôt que de
+        # tout étiqueter « exact ». La barre W/L et le meilleur coup viennent de l'entrée.
+        if hit is not None and hit.source == "opening_book":
+            return self._opening_book_analysis(board, current_player, last_move, hit, start)
 
         if hit is not None:
             retro = self._retrograde.analyze_moves(board, current_player, last_move)

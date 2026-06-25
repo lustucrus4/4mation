@@ -3,12 +3,16 @@
 use std::collections::{HashSet, VecDeque};
 
 use crate::game::{
-    apply_move, board_full, check_winner, empty_cells, frontier_moves, Board, Position, Move,
-    BOARD_SIZE,
+    apply_move, board_full, check_winner, empty_cells, frontier_moves, is_connected, Board,
+    Position, Move, BOARD_SIZE,
 };
 use crate::hasher::PositionHasher;
 
 pub const MAX_EMPTY_LEVELS: [usize; 5] = [12, 20, 30, 40, 49];
+
+/// Limite de nœuds BFS explorés par lot (évite de bloquer quand la base est déjà énorme).
+pub const MAX_NODES_PER_BATCH: usize = 250_000;
+pub const MAX_NODES_MATURE: usize = 40_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExplorationMode {
@@ -80,6 +84,13 @@ pub fn generate_parents(
         return Vec::new();
     }
 
+    // Invariant de légalité : une position atteignable a tous ses pions en un seul
+    // bloc 8-connexe. Si retirer ce pion déconnecte le plateau (ou isole un pion),
+    // le parent est illégal — on l'élague pour ne pas polluer la base.
+    if !is_connected(&board_parent) {
+        return Vec::new();
+    }
+
     let mut parents = Vec::new();
     for plm in parent_last_moves(&board_parent, parent_player, (lr, lc)) {
         parents.push((board_parent, parent_player, plm));
@@ -121,6 +132,42 @@ impl ExplorerState {
         }
     }
 
+    /// Sur une base déjà massive, évite de re-scanner tout le niveau 12 (déjà saturé).
+    pub fn skip_completed_levels(&mut self, known_count: usize) {
+        if known_count < 500_000 {
+            return;
+        }
+        let target_idx = if known_count >= 850_000 {
+            1
+        } else if known_count >= 650_000 {
+            1
+        } else {
+            0
+        };
+        if target_idx <= self.level_idx {
+            return;
+        }
+        self.level_idx = target_idx;
+        self.max_empty = MAX_EMPTY_LEVELS[target_idx];
+        self.mode = ExplorationMode::Retrograde;
+        self.bfs_initialized = false;
+        self.bfs_seen.clear();
+        self.retro_seen.clear();
+        self.retro_queue.clear();
+        tracing::info!(
+            "Base mature — exploration démarrée à max_empty={} ({} positions connues)",
+            self.max_empty,
+            known_count
+        );
+    }
+
+    pub fn is_exhausted(&self) -> bool {
+        match self.mode {
+            ExplorationMode::Forward => self.bfs_initialized && self.bfs_queue.is_empty(),
+            ExplorationMode::Retrograde => self.retro_queue.is_empty(),
+        }
+    }
+
     pub fn init_bfs(&mut self) {
         let start: Position = ([[0i8; BOARD_SIZE]; BOARD_SIZE], 1, None);
         let sh = PositionHasher::hash_key(&start.0, start.1, start.2);
@@ -128,6 +175,35 @@ impl ExplorerState {
         self.bfs_queue.clear();
         self.bfs_queue.push_back(start);
         self.bfs_initialized = true;
+    }
+
+    /// Mode rétrograde de frontière : étend la base connue vers l'ouverture
+    /// (parents = +1 case vide) jusqu'au plafond `cap`, sans grille de niveaux.
+    pub fn set_frontier_mode(&mut self, cap: usize) {
+        self.max_empty = cap;
+        self.mode = ExplorationMode::Retrograde;
+    }
+
+    /// Ajoute à la file rétrograde les parents (non connus) des graines fournies.
+    /// Retourne le nombre de nouveaux parents mis en file.
+    pub fn extend_retrograde(&mut self, seeds: &[Position]) -> usize {
+        let mut added = 0usize;
+        for (board, player, last_move) in seeds {
+            for parent in generate_parents(board, *player, *last_move, self.max_empty) {
+                let ph = PositionHasher::hash_key(&parent.0, parent.1, parent.2);
+                if self.known.contains(&ph) || self.retro_seen.contains(&ph) {
+                    continue;
+                }
+                self.retro_seen.insert(ph);
+                self.retro_queue.push_back(parent);
+                added += 1;
+            }
+        }
+        added
+    }
+
+    pub fn retro_queue_len(&self) -> usize {
+        self.retro_queue.len()
     }
 
     pub fn seed_retrograde(&mut self, seeds: &[Position]) {
@@ -147,16 +223,27 @@ impl ExplorerState {
 
     /// Produit jusqu'à `target` nouvelles positions à résoudre.
     pub fn next_batch(&mut self, target: usize, retro_seeds: &[Position]) -> Vec<Position> {
+        self.next_batch_limited(target, retro_seeds, MAX_NODES_PER_BATCH)
+    }
+
+    pub fn next_batch_limited(
+        &mut self,
+        target: usize,
+        retro_seeds: &[Position],
+        node_limit: usize,
+    ) -> Vec<Position> {
         let mut out = Vec::with_capacity(target.min(4096));
 
         if self.mode == ExplorationMode::Forward {
             if !self.bfs_initialized {
                 self.init_bfs();
             }
-            while out.len() < target {
+            let mut nodes_scanned = 0usize;
+            while out.len() < target && nodes_scanned < node_limit {
                 let Some((board, player, last_move)) = self.bfs_queue.pop_front() else {
                     break;
                 };
+                nodes_scanned += 1;
                 let h = PositionHasher::hash_key(&board, player, last_move);
 
                 if empty_cells(&board) <= self.max_empty && !self.known.contains(&h) {
@@ -196,7 +283,9 @@ impl ExplorerState {
                     continue;
                 }
 
-                if empty_cells(&board) <= self.max_empty {
+                // Garde de légalité : on n'émet jamais une position non-connexe (illégale),
+                // quelle que soit la provenance (graine, cascade, backlog).
+                if empty_cells(&board) <= self.max_empty && is_connected(&board) {
                     self.known.insert(h.clone());
                     out.push((board, player, last_move));
                     if out.len() >= target {

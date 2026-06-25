@@ -111,3 +111,39 @@ docker compose -f deploy/docker-compose.solver.yml up -d --force-recreate solver
 ```
 
 L'API et le solveur partagent le volume `4mation-sessions` (`/app/data`).
+
+## Solveur local Rust (100 % hors réseau)
+
+Lancement interactif avec dashboard intégré :
+
+```bat
+cd 4mation
+lancer_solveur.bat
+```
+
+Dashboard : http://127.0.0.1:8765/
+
+### Exploration rétrograde de frontière (base mature)
+
+Au-delà de ~600 000 positions connues, l'explorateur bascule en **rétrograde de frontière** :
+
+- il recharge depuis la DB les positions connues ayant le **plus de cases vides** (la frontière vers l'ouverture) ;
+- il génère leurs **parents** (un coup en arrière = +1 case vide) jusqu'à `max_empty=20` (zone solvable) ;
+- il alimente la file en continu et se recharge dès qu'elle se vide.
+
+Cela évite le blocage de l'ancien BFS « forward » (qui, partant du plateau vide, ne pouvait jamais atteindre les positions profondes). La progression vers le milieu de partie (cases vides 18→20) est plus lente que l'endgame car les arbres de jeu sont exponentiellement plus grands — c'est attendu, le CPU reste saturé.
+
+Le solveur utilise par défaut **tous les threads logiques** de la machine (`SOLVER_THREADS=%NUMBER_OF_PROCESSORS%`).
+
+### Boucle de test / optimisation automatique
+
+Script PowerShell qui compile, lance le solveur, attend la fin d'un lot, puis valide les métriques (delta DB, taux ok/relâché) :
+
+```powershell
+cd 4mation
+.\scripts\solver_feedback_loop.ps1 -MaxRounds 5 -RunSeconds 600
+```
+
+Paramètres utiles : `-MaxRounds`, `-RunSeconds` (timeout par round), `-MaxIterations`.
+
+La boucle s'arrête dès qu'un round réussit (positions résolues, fail rate < 50 %). Les positions `in_progress` orphelines sont recyclées avant chaque round.

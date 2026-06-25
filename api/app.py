@@ -29,7 +29,10 @@ for path in (str(ROOT), str(SCRIPT_DIR)):
 from flask import Flask
 from flask_cors import CORS
 
-from api.routes import game_bp, solver_bp, solver_workers_bp
+from api.realtime.extensions import socketio
+import api.realtime  # noqa: F401 — enregistre les handlers Socket.IO
+from api.routes import account_bp, game_bp, learn_bp, solver_bp, solver_workers_bp
+from api.services.postgres import init_schema, is_configured
 
 ALLOWED_ORIGINS = [
     "https://4mation.lab211.fr",
@@ -48,8 +51,15 @@ def create_app() -> Flask:
         expose_headers=["X-Session-Id"],
     )
     app.register_blueprint(game_bp)
+    app.register_blueprint(account_bp)
+    app.register_blueprint(learn_bp)
     app.register_blueprint(solver_bp)
     app.register_blueprint(solver_workers_bp)
+
+    if is_configured():
+        init_schema()
+
+    socketio.init_app(app)
     return app
 
 
@@ -65,7 +75,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"API 4mation — http://{args.host}:{args.port}")
-    app.run(host=args.host, port=args.port, debug=False, load_dotenv=False)
+    socketio.run(app, host=args.host, port=args.port, debug=False, allow_unsafe_werkzeug=True)
 
 
 if __name__ == "__main__":

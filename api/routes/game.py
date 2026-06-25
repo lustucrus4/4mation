@@ -14,7 +14,9 @@ from flask import Blueprint, jsonify, request
 
 
 
+from api.middleware.auth import get_lab211_user, optional_auth
 from api.services import BotRegistry, GameSessionManager, serialize_board_state
+from api.services.game_persistence import try_save_finished_game
 from api.services.tablebase_lookup import get_tablebase_lookup
 
 from api.routes.session_utils import get_session_id, json_with_session
@@ -149,23 +151,40 @@ def _play_coach_move(session_id: str, engine) -> Optional[Dict[str, Any]]:
 
 
 
+def _meta_from_request(data: dict) -> dict:
+    meta: dict = {}
+    bot_id = data.get("bot_id")
+    if bot_id:
+        meta["bot_id"] = str(bot_id)
+    return meta
+
+
+def _maybe_persist_game(session_id: str, engine, mode: str) -> dict | None:
+    session = session_manager.get_session(session_id)
+    if session is None:
+        return None
+    saved = try_save_finished_game(
+        get_lab211_user(),
+        mode=mode,
+        bot_id=session.meta.get("bot_id"),
+        meta=session.meta,
+        engine=engine,
+    )
+    if saved:
+        session_manager.persist(session_id)
+    return saved
+
+
 @game_bp.route("/api/session", methods=["POST"])
-
+@optional_auth
 def create_session():
-
     """Crée une nouvelle session de partie."""
-
     data = request.get_json(silent=True) or {}
-
     mode = data.get("mode", "standard")
-
     if mode not in ("standard", "learning"):
-
         return jsonify({"success": False, "error": "Mode invalide"}), 400
 
-
-
-    session_id = session_manager.create_session(mode=mode)
+    session_id = session_manager.create_session(mode=mode, meta=_meta_from_request(data))
 
     engine = session_manager.get_engine(session_id)
 
@@ -194,7 +213,7 @@ def create_session():
 
 
 @game_bp.route("/api/state", methods=["GET"])
-
+@optional_auth
 def api_state():
 
     """Retourne l'état courant sans recalcul Minimax/MCTS."""
@@ -212,24 +231,20 @@ def api_state():
 
 
 @game_bp.route("/api/reset", methods=["POST"])
-
+@optional_auth
 def api_reset():
-
     """Réinitialise la partie de la session courante."""
-
     session_id, engine, mode, error = _require_engine()
-
     if error:
-
         return error
 
-
-
     data = request.get_json(silent=True) or {}
-
     new_mode = data.get("mode", mode)
-
-    session_manager.reset_session(session_id, mode=new_mode)
+    session_manager.reset_session(
+        session_id,
+        mode=new_mode,
+        meta=_meta_from_request(data),
+    )
 
     engine = session_manager.get_engine(session_id)
 
@@ -247,8 +262,21 @@ def api_reset():
 
 
 
-@game_bp.route("/api/move", methods=["POST"])
+def _saved_payload(saved: dict | None) -> dict | None:
+    if not saved:
+        return None
+    game = saved.get("game") or {}
+    return {
+        "game_id": str(game.get("id", "")),
+        "elo_before": saved.get("elo_before"),
+        "elo_after": saved.get("elo_after"),
+        "elo_delta": saved.get("elo_delta"),
+        "result": game.get("result"),
+    }
 
+
+@game_bp.route("/api/move", methods=["POST"])
+@optional_auth
 def api_move():
 
     """Joue un coup humain."""
@@ -319,32 +347,20 @@ def api_move():
 
     session_manager.persist(session_id)
 
-
-
     winner_result = engine.get_winner()
-
     winner_int = int(winner_result) if winner_result is not None else None
-
-
+    saved = _maybe_persist_game(session_id, engine, mode) if engine.is_terminal() else None
 
     return jsonify(
-
         {
-
             "success": True,
-
             "terminal": bool(engine.is_terminal()),
-
             "winner": winner_int,
-
             "next_player": int(engine.get_current_player()),
-
             "coach_action": coach_action,
-
             "state": _serialize(session_id, engine),
-
+            "saved_game": _saved_payload(saved),
         }
-
     )
 
 
@@ -352,6 +368,7 @@ def api_move():
 
 
 @game_bp.route("/api/ai_move", methods=["POST"])
+@optional_auth
 def api_ai_move():
     """Joue un coup pour l'IA selon le bot sélectionné."""
     import logging
@@ -369,6 +386,8 @@ def api_ai_move():
     bot_id = data.get("bot_id", BotRegistry.DEFAULT_BOT_ID)
     if not bot_registry.is_valid_bot(bot_id):
         return jsonify({"success": False, "error": f"Bot inconnu: {bot_id}"}), 400
+
+    session_manager.update_meta(session_id, bot_id=bot_id)
 
     started = time.perf_counter()
     try:
@@ -405,36 +424,22 @@ def api_ai_move():
 
     session_manager.persist(session_id)
 
-
-
     winner_result = engine.get_winner()
-
     winner_int = int(winner_result) if winner_result is not None else None
-
     state = engine.get_state()
-
-
+    saved = _maybe_persist_game(session_id, engine, mode) if engine.is_terminal() else None
 
     return jsonify(
-
         {
-
             "success": True,
-
             "bot_id": bot_id,
-
             "action": {"row": int(action[0]), "col": int(action[1])},
-
             "action_encoded": int(action[0] * state.board_width + action[1]),
-
             "terminal": bool(engine.is_terminal()),
-
             "winner": winner_int,
-
             "state": _serialize(session_id, engine),
-
+            "saved_game": _saved_payload(saved),
         }
-
     )
 
 
@@ -495,7 +500,16 @@ def api_analyze():
         analysis["exact"] = False
         analysis["label"] = "Estimé (MCTS)"
 
-
+    # Normalisation : toujours exposer position_win_rate (perspective du joueur au
+    # trait) + win_rate_p1 (perspective stable du joueur 1, pour la barre W/L côté UI).
+    cp = int(state.current_player)
+    pwr = analysis.get("position_win_rate")
+    if pwr is None:
+        _moves = analysis.get("moves") or []
+        pwr = float(_moves[0]["win_rate"]) if _moves else 0.5
+        analysis["position_win_rate"] = pwr
+    analysis["current_player"] = cp
+    analysis["win_rate_p1"] = pwr if cp == 1 else 1.0 - pwr
 
     return jsonify({
 
@@ -622,9 +636,13 @@ def api_health():
     """Point de santé pour vérifier que l'API répond."""
 
     tb_stats = get_tablebase_lookup().stats()
+    from api.services.postgres import is_configured, init_schema
+
+    db_ok = is_configured() and init_schema()
     return jsonify({
         "status": "ok",
         "service": "4mation-api",
         "tablebase": tb_stats,
+        "postgres": {"configured": is_configured(), "ready": db_ok},
     })
 

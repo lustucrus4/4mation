@@ -1,95 +1,20 @@
 <!doctype html>
-
 <html lang="fr">
-
   <head>
-
     <meta charset="UTF-8" />
-
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>4mation — Jeu</title>
-
-
-    <script type="module" crossorigin src="/assets/main-DSSsA-ml.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/style-CMM5yoI7.js">
-    <link rel="stylesheet" crossorigin href="/assets/style-aLULaFPp.css">
+    <meta
+      name="description"
+      content="4mation — jouer, apprendre et analyser. Alignez 4 pions sur un plateau 7×7."
+    />
+    <title>4mation — Jouer & Apprendre</title>
+    <script src="https://auth.lab211.fr/sdk/lab211-auth.js" defer></script>
+    <script type="module" crossorigin src="/assets/main-B8k2qOG-.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-Dezn_h7o.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-BPMM4bus.css">
   </head>
-
   <body>
-
-    <div class="app">
-
-      <header class="header">
-
-        <div class="header-top">
-
-          <h1>4mation</h1>
-
-          <div id="auth-slot" aria-label="Compte Lab211"></div>
-
-        </div>
-
-        <p class="subtitle">Alignez 4 pions adjacents sur un plateau 7×7</p>
-
-      </header>
-
-
-
-      <section class="controls">
-
-        <label class="field">
-
-          <span>Mode</span>
-
-          <select id="mode-select">
-
-            <option value="standard">Partie classique</option>
-
-            <option value="learning">Apprentissage</option>
-
-          </select>
-
-        </label>
-
-        <label class="field field-bot" id="bot-field">
-
-          <span>Adversaire IA</span>
-
-          <select id="bot-select"></select>
-
-        </label>
-
-        <button id="btn-new" class="btn" type="button">Nouvelle partie</button>
-
-        <button id="btn-ai" class="btn btn-secondary" type="button">Coup de l'IA</button>
-
-        <button id="btn-undo" class="btn btn-ghost" type="button" disabled>Annuler coup</button>
-
-        <button id="btn-variant" class="btn btn-ghost" type="button" disabled>Nouvelle variante</button>
-
-      </section>
-
-
-
-      <div id="board" class="board" aria-label="Plateau 7 par 7"></div>
-
-
-
-      <p id="message" class="message">Chargement…</p>
-
-      <p id="game-info" class="game-info">—</p>
-
-      <ol id="timeline" class="timeline" aria-label="Historique des coups"></ol>
-
-      <footer class="site-footer">
-        <a href="/solver.html">Avancement solveur</a>
-      </footer>
-    </div>
-
-    <script src="https://auth.lab211.fr/sdk/lab211-auth.js" defer></script>
-
+    <div id="root"></div>
   </body>
-
 </html>
-

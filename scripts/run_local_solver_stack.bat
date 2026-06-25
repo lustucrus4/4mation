@@ -7,7 +7,7 @@ cd /d "%~dp0.."
 
 if not defined SOLVER_DASHBOARD_PORT set "SOLVER_DASHBOARD_PORT=8765"
 if not defined TABLEBASE_DB set "TABLEBASE_DB=script\solver\data\tablebase.db"
-if not defined SOLVER_THREADS set "SOLVER_THREADS=16"
+if not defined SOLVER_THREADS set "SOLVER_THREADS=%NUMBER_OF_PROCESSORS%"
 
 echo ========================================
 echo  4mation - Stack solveur LOCAL complet

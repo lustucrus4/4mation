@@ -104,9 +104,29 @@ Ordre de grandeur : **10–30×** plus de positions/minute qu'une chaîne API+VP
 .\target\release\4mation-worker.exe --local-db ..\solver\data\tablebase.db --threads 16
 ```
 
+## Symétries (miroir + rotation)
+
+Activé **par défaut** : chaque position est ramenée à sa **forme canonique** parmi les **8 symétries** du carré (groupe D₄ : 4 rotations × miroir horizontal). Les positions équivalentes partagent le même hash → réduction ~4–8× de l'espace exploré.
+
+```bat
+REM Défaut : symétries ON
+scripts\run_local_solver_stack.bat
+
+REM Ancienne base sans symétries (compatibilité)
+script\solver_rust\target\release\4mation-local.exe --no-symmetry --dashboard ...
+```
+
+**Migration** : une base remplie sans symétries n'est pas compatible. Pour activer les symétries sur une base existante, repartir de zéro :
+
+```bat
+scripts\run_bootstrap_endgame.bat
+scripts\run_local_solver_stack.bat
+```
+
+Modules : `src/symmetry.rs` (Rust), `script/solver/symmetry.py` (Python).
+
 ## Reste à faire (évolutions)
 
-- Symétries / canonicalisation des positions (réduction espace d'états)
 - Checkpoint JSON persistant (`filler_checkpoint.json`) comme le filler Python
 - Parallélisation de l'exploration BFS (actuellement séquentielle, résolution déjà parallèle)
 - Livre d'ouverture (`opening_book`) et phases A/B Python

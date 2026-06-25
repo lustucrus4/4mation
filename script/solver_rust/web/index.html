@@ -3,92 +3,107 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>4mation — Solveur local</title>
-    <link rel="stylesheet" href="/style.css" />
+    <title>4mation — Avancement solveur</title>
+    <link rel="stylesheet" href="/style.css?v=3" />
   </head>
   <body>
     <div class="app app-wide">
       <header class="header">
         <div class="header-top">
           <h1>Avancement solveur <span class="local-badge">local</span></h1>
+          <span id="process-badge" class="status-badge status-paused">—</span>
         </div>
         <p class="subtitle">
-          Suivi en direct du worker Rust sur cette machine — lecture directe de
-          <code>tablebase.db</code>
+          Suivi en direct du worker Rust — lecture directe de <code>tablebase.db</code>
         </p>
       </header>
 
+      <!-- Contrôles -->
       <section class="solver-panel controls-panel">
-        <h2>Contrôle solveur</h2>
         <div class="controls-row">
-          <span id="process-badge" class="status-badge status-paused">—</span>
           <div class="controls-buttons">
-            <button id="btn-start-solver" type="button" class="btn">Démarrer le solveur</button>
+            <button id="btn-start-solver" type="button" class="btn btn-primary">
+              ▶ Démarrer
+            </button>
             <button id="btn-stop-solver" type="button" class="btn btn-danger" disabled>
-              Arrêter le solveur
+              ⏸ Arrêter
             </button>
           </div>
+          <span id="status-badge" class="status-badge status-paused">—</span>
         </div>
         <p id="controls-message" class="controls-message muted"></p>
       </section>
 
-      <section class="solver-panel">
-        <div class="progress-header">
-          <span id="status-badge" class="status-badge status-paused">—</span>
-          <span id="progress-pct" class="progress-pct">0 %</span>
-        </div>
-        <div class="progress-track" aria-hidden="true">
-          <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
-        </div>
-
-        <dl class="stats-grid">
-          <div class="stat">
-            <dt>Positions résolues</dt>
-            <dd id="stat-solved">—</dd>
+      <!-- HERO : poids de la base vers 5 Go -->
+      <section class="solver-panel hero-panel">
+        <div class="hero-head">
+          <h2>Poids de la base</h2>
+          <div class="hero-size">
+            <strong id="db-size">— Go</strong>
+            <span class="hero-size-limit">/ <span id="db-limit">5 Go</span></span>
           </div>
-          <div class="stat">
-            <dt>Espace estimé</dt>
-            <dd id="stat-target">—</dd>
+        </div>
+        <div class="progress-track progress-track-lg" aria-hidden="true">
+          <div id="db-bar" class="progress-bar db-bar" style="width: 0%"></div>
+          <span id="db-fill-label" class="progress-inline-label">0 %</span>
+        </div>
+        <div class="hero-sub">
+          <div class="hero-sub-item">
+            <span class="hero-sub-label">Temps estimé → 5 Go</span>
+            <strong id="db-eta">—</strong>
+          </div>
+          <div class="hero-sub-item">
+            <span class="hero-sub-label">Positions estimées au total</span>
+            <strong id="est-total">—</strong>
+          </div>
+          <div class="hero-sub-item">
+            <span class="hero-sub-label">Durée écoulée</span>
+            <strong id="stat-duration">—</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Métriques principales -->
+      <section class="solver-panel">
+        <dl class="stats-grid stats-grid-lg">
+          <div class="stat stat-hl">
+            <dt>Positions calculées</dt>
+            <dd id="stat-solved">—</dd>
           </div>
           <div class="stat">
             <dt>Vitesse</dt>
             <dd id="stat-rate">—</dd>
           </div>
           <div class="stat">
-            <dt>Temps restant</dt>
+            <dt>Cases vides en cours</dt>
+            <dd id="stat-empty">—</dd>
+          </div>
+          <div class="stat">
+            <dt>Temps restant (→ 5 Go)</dt>
             <dd id="stat-eta">—</dd>
           </div>
           <div class="stat">
-            <dt>Durée écoulée</dt>
-            <dd id="stat-duration">—</dd>
+            <dt>En file / en cours</dt>
+            <dd id="stat-queue">—</dd>
           </div>
           <div class="stat">
             <dt>Phase</dt>
             <dd id="stat-phase">—</dd>
           </div>
         </dl>
+
+        <div class="max-empty-panel" aria-label="Progression des niveaux max vide">
+          <div class="max-empty-header">
+            <span class="max-empty-title">Niveau max vide exploré</span>
+            <strong id="stat-max-empty-current" class="max-empty-current">—</strong>
+          </div>
+          <div id="max-empty-steps" class="max-empty-steps" role="list"></div>
+        </div>
+
         <p class="stat-updated">Dernière mise à jour : <span id="stat-updated">—</span></p>
       </section>
 
-      <section class="solver-panel workers-panel">
-        <h2>File de travail locale</h2>
-        <dl class="stats-grid">
-          <div class="stat">
-            <dt>En attente</dt>
-            <dd id="stat-queue-pending">—</dd>
-          </div>
-          <div class="stat">
-            <dt>En cours</dt>
-            <dd id="stat-queue-progress">—</dd>
-          </div>
-          <div class="stat">
-            <dt>Workers actifs</dt>
-            <dd id="stat-worker-count">—</dd>
-          </div>
-        </dl>
-        <ul id="workers-list" class="workers-list muted">Chargement…</ul>
-      </section>
-
+      <!-- Derniers coups -->
       <section class="recent-section">
         <h2>Derniers coups calculés</h2>
         <div id="recent-grid" class="recent-grid"></div>
@@ -100,6 +115,6 @@
         <span class="muted">Dashboard local — port <span id="footer-port">8765</span></span>
       </footer>
     </div>
-    <script src="/solver.js"></script>
+    <script src="/solver.js?v=3"></script>
   </body>
 </html>

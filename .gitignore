@@ -11,6 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!4mation_dashboard_dev/src/lib/
 lib64/
 parts/
 sdist/

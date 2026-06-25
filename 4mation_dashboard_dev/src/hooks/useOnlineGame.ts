@@ -179,10 +179,15 @@ export function useOnlineGame(guestName?: string) {
       setBusy(false);
     };
 
-    const onConnectError = () => {
+    const onConnectError = (err?: Error) => {
       if (!mounted.current) return;
       setPhase("idle");
-      setError("Impossible de joindre le serveur en ligne.");
+      const detail = err?.message?.trim();
+      setError(
+        detail
+          ? `Impossible de joindre le serveur en ligne (${detail}).`
+          : "Impossible de joindre le serveur en ligne."
+      );
       setMessage("");
     };
 

@@ -467,7 +467,7 @@ services:
 
           -d 4mation.lab211.fr -d api-4mation.lab211.fr \
 
-          --email admin@lab211.fr --agree-tos --non-interactive --force-renewal
+          --email admin@lab211.fr --agree-tos --non-interactive --force-renewal || true
 
         echo certbot-done
 
@@ -499,9 +499,7 @@ services:
 
     depends_on:
 
-      certbot:
-
-        condition: service_completed_successfully
+      - api
 
     command:
 

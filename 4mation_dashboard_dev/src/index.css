@@ -50,3 +50,33 @@ body {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+@keyframes matchFoundIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.match-found-progress > div {
+  animation: matchFoundBar 3s linear forwards;
+  transform-origin: left center;
+}
+
+@keyframes matchFoundBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.game-over-progress > div {
+  animation: matchFoundBar 10s linear forwards;
+  transform-origin: left center;
+}

@@ -1,7 +1,7 @@
 //! Lecture des statistiques solveur depuis SQLite (équivalent SolverProgressService + WorkQueueService).
 
 use anyhow::{Context, Result};
-use super::engine::EngineControl;
+use super::engine::{BuildControl, EngineControl};
 use super::process;
 use rusqlite::{Connection, OptionalExtension};
 use serde::Serialize;
@@ -12,8 +12,10 @@ const RATE_WINDOWS_SEC: [i64; 3] = [60, 120, 300];
 const CLAIM_TIMEOUT_SEC: i64 = 300;
 const LOCAL_API_VERSION: i32 = 1;
 pub const MAX_EMPTY_LEVELS: [i64; 5] = [12, 20, 30, 40, 49];
-/// Plafond de stockage visé (miroir de `local_engine::MAX_DB_BYTES`).
+/// Plafond de stockage visé pour l'endgame (miroir de `local_engine::MAX_DB_BYTES`).
 pub const MAX_DB_BYTES: i64 = 5 * 1024 * 1024 * 1024;
+/// Cible du livre d'ouverture longue durée (build_opening_book_full.py).
+pub const OPENING_BOOK_MAX_BYTES: i64 = 2 * 1024 * 1024 * 1024;
 
 /// Taille totale de la base sur disque (fichier principal + WAL + SHM), en octets.
 fn db_size_bytes(db_path: &Path) -> i64 {
@@ -59,6 +61,10 @@ pub struct SolverStatusPayload {
     pub current_empty_min: Option<i64>,
     pub current_empty_max: Option<i64>,
     pub in_progress: i64,
+    /// `endgame` | `opening_book`
+    pub build_mode: String,
+    pub opening_book_exact: i64,
+    pub opening_book_estimated: i64,
 }
 
 #[derive(Debug, Serialize)]
@@ -113,6 +119,7 @@ pub struct ProcessStatusPayload {
     pub running: bool,
     pub process_name: &'static str,
     pub status_label: String,
+    pub build_mode: String,
 }
 
 fn open_conn(db_path: &Path) -> Result<Connection> {
@@ -123,11 +130,66 @@ fn open_conn(db_path: &Path) -> Result<Connection> {
     Ok(conn)
 }
 
+fn opening_book_counts(conn: &Connection) -> (i64, i64) {
+    let exact: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM opening_book WHERE exact = 1",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    let estimated: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM opening_book WHERE exact = 0",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    (exact, estimated)
+}
+
+fn read_opening_book_flags(conn: &Connection) -> (bool, i64, i64, i64) {
+    let phase: Option<String> = conn
+        .query_row(
+            "SELECT current_phase FROM solver_progress WHERE id = 1",
+            [],
+            |r| r.get(0),
+        )
+        .optional()
+        .ok()
+        .flatten();
+    let running_flag: i64 = conn
+        .query_row(
+            "SELECT COALESCE(solver_running, 0) FROM solver_progress WHERE id = 1",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    let exact: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM opening_book WHERE exact = 1",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    let estimated: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM opening_book WHERE exact = 0",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    let total: i64 = exact + estimated;
+    let is_ob = phase.as_deref() == Some("opening_book");
+    (is_ob && running_flag != 0, exact, estimated, total)
+}
+
 fn phase_label(phase: &str) -> String {
     match phase {
         "endgame" => "Fin de partie".into(),
         "midgame" => "Milieu de partie".into(),
         "opening" => "Ouverture".into(),
+        "opening_book" => "Livre d'ouverture".into(),
         "complet" => "Complet".into(),
         "full" => "Exploration".into(),
         other => other.to_string(),
@@ -148,6 +210,31 @@ fn rate_from_db(conn: &Connection) -> f64 {
         }
     }
     0.0
+}
+
+fn rate_from_opening_book(conn: &Connection) -> f64 {
+    for window in RATE_WINDOWS_SEC {
+        let cnt: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM opening_book WHERE solved_at >= datetime('now', ?)",
+                [format!("-{window} seconds")],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+        if cnt > 0 {
+            return cnt as f64 / window as f64;
+        }
+    }
+    0.0
+}
+
+fn opening_book_table_bytes(conn: &Connection) -> i64 {
+    conn.query_row(
+        "SELECT COALESCE(SUM(pgsize), 0) FROM dbstat WHERE name = 'opening_book'",
+        [],
+        |r| r.get(0),
+    )
+    .unwrap_or(0)
 }
 
 fn workers_active(conn: &Connection) -> bool {
@@ -276,10 +363,78 @@ fn recent_from_db(conn: &Connection) -> Vec<RecentPosition> {
     out
 }
 
+fn recent_from_opening_book(conn: &Connection) -> Vec<RecentPosition> {
+    let mut stmt = match conn.prepare(
+        "SELECT hash, result, win_rate, best_move_row, best_move_col,
+                board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at
+         FROM opening_book
+         WHERE board_json IS NOT NULL
+         ORDER BY solved_at DESC
+         LIMIT 20",
+    ) {
+        Ok(s) => s,
+        Err(_) => return Vec::new(),
+    };
+
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, f64>(2)?,
+            row.get::<_, Option<i32>>(3)?,
+            row.get::<_, Option<i32>>(4)?,
+            row.get::<_, Option<String>>(5)?,
+            row.get::<_, Option<i32>>(6)?,
+            row.get::<_, Option<i32>>(7)?,
+            row.get::<_, Option<i32>>(8)?,
+            row.get::<_, Option<String>>(9)?,
+        ))
+    });
+
+    let Ok(rows) = rows else {
+        return Vec::new();
+    };
+
+    let mut out = Vec::new();
+    for row in rows.flatten() {
+        let (hash, result, win_rate, bmr, bmc, board_json, current_player, lmr, lmc, solved_at) =
+            row;
+        let board: Value = board_json
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .and_then(|s| serde_json::from_str(s).ok())
+            .unwrap_or(Value::Null);
+        let best_move = bmr
+            .filter(|&r| r >= 0)
+            .map(|row| MoveCoord {
+                row,
+                col: bmc.unwrap_or(-1),
+            });
+        let last_move = lmr
+            .filter(|&r| r >= 0)
+            .map(|row| MoveCoord {
+                row,
+                col: lmc.unwrap_or(-1),
+            });
+        out.push(RecentPosition {
+            hash,
+            board,
+            current_player,
+            last_move,
+            best_move,
+            result,
+            win_rate,
+            solved_at,
+        });
+    }
+    out
+}
+
 pub fn get_solver_status(
     db_path: &Path,
     solver_in_process: bool,
     engine_control: Option<&EngineControl>,
+    build_control: Option<&BuildControl>,
 ) -> SolverStatusPayload {
     let db_available = db_path.exists();
     let db_path_str = db_path.display().to_string();
@@ -318,6 +473,9 @@ pub fn get_solver_status(
             current_empty_min: None,
             current_empty_max: None,
             in_progress: 0,
+            build_mode: "endgame".into(),
+            opening_book_exact: 0,
+            opening_book_estimated: 0,
         };
     }
 
@@ -354,12 +512,19 @@ pub fn get_solver_status(
                 current_empty_min: None,
                 current_empty_max: None,
                 in_progress: 0,
+                build_mode: "endgame".into(),
+                opening_book_exact: 0,
+                opening_book_estimated: 0,
             };
         }
     };
 
+    let (ob_running_db, ob_exact, ob_estimated, _ob_total) = read_opening_book_flags(&conn);
     let positions_count: i64 = conn
         .query_row("SELECT COUNT(*) FROM positions", [], |r| r.get(0))
+        .unwrap_or(0);
+    let opening_book_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM opening_book", [], |r| r.get(0))
         .unwrap_or(0);
     let pending_count: i64 = conn
         .query_row(
@@ -398,10 +563,16 @@ pub fn get_solver_status(
     let (db_solved, db_queued, db_phase, db_started, db_running_flag, db_updated, db_target, _db_progress, db_max_empty, db_level_idx) =
         if let Some(r) = row {
             let cached_solved = r.0.unwrap_or(0);
+            let phase = r.2.clone().unwrap_or_else(|| "full".into());
+            let solved = if phase == "opening_book" {
+                opening_book_count.max(cached_solved)
+            } else {
+                positions_count.max(cached_solved)
+            };
             (
-                positions_count.max(cached_solved),
+                solved,
                 pending_count,
-                r.2.unwrap_or_else(|| "full".into()),
+                phase,
                 r.3,
                 r.4.unwrap_or(0) != 0,
                 r.5,
@@ -425,12 +596,23 @@ pub fn get_solver_status(
             )
         };
 
+    let is_opening_book = db_phase == "opening_book";
+
     let workers = workers_active(&conn);
-    let db_rate = rate_from_db(&conn);
+    let db_rate = if is_opening_book {
+        rate_from_opening_book(&conn)
+    } else {
+        rate_from_db(&conn)
+    };
     let db_recent = db_recently_updated(&conn, 300);
 
     let engine_active = engine_control.map(|c| c.is_running()).unwrap_or(false);
-    let running = engine_active || (!solver_in_process && (db_running_flag || workers));
+    let build_active = build_control.map(|c| c.is_active()).unwrap_or(false);
+    let running = engine_active
+        || build_active
+        || ob_running_db
+        || (is_opening_book && db_running_flag)
+        || (!solver_in_process && (db_running_flag || workers));
     let started_at = db_started.clone();
     let mut last_update = db_updated.clone();
     if (workers || db_recent) && db_updated.is_some() {
@@ -440,8 +622,29 @@ pub fn get_solver_status(
     let stale_age = stale_age_seconds(&conn, &last_update);
 
     let total_target = db_target;
-    let progress_unknown = total_target.is_none();
-    let progress = if progress_unknown {
+    let progress_unknown = total_target.is_none() && !is_opening_book;
+
+    let size_limit = if is_opening_book {
+        OPENING_BOOK_MAX_BYTES
+    } else {
+        MAX_DB_BYTES
+    };
+
+    let db_size = if is_opening_book {
+        let table_bytes = opening_book_table_bytes(&conn);
+        if table_bytes > 0 {
+            table_bytes
+        } else {
+            (opening_book_count as f64 * 420.0) as i64
+        }
+    } else {
+        db_size_bytes(db_path)
+    };
+    let db_fill = (100.0 * db_size as f64 / size_limit as f64).min(100.0);
+
+    let progress = if is_opening_book {
+        Some(db_fill)
+    } else if progress_unknown {
         None
     } else if let Some(target) = total_target {
         if target > 0 {
@@ -468,9 +671,11 @@ pub fn get_solver_status(
     };
 
     let status = if running {
-        if db_queued == 0 && rate == 0.0 {
+        if is_opening_book && rate == 0.0 {
+            "calcul_long"
+        } else if db_queued == 0 && rate == 0.0 && !is_opening_book {
             "en_veille"
-        } else if stale_age.is_some_and(|a| a > 60.0) {
+        } else if stale_age.is_some_and(|a| a > 60.0) && !build_active && !ob_running_db {
             "calcul_long"
         } else {
             "en_cours"
@@ -487,24 +692,30 @@ pub fn get_solver_status(
         "pause"
     };
 
-    let recent_positions = recent_from_db(&conn);
+    let recent_positions = if is_opening_book {
+        recent_from_opening_book(&conn)
+    } else {
+        recent_from_db(&conn)
+    };
     let phase_display = phase_label(&db_phase);
 
-    // Poids de la base et projection vers le plafond 5 Go.
-    let db_size = db_size_bytes(db_path);
-    let db_fill = (100.0 * db_size as f64 / MAX_DB_BYTES as f64).min(100.0);
-    let bytes_per_pos = if positions_count > 0 {
-        db_size as f64 / positions_count as f64
+    let count_for_estimate = if is_opening_book {
+        opening_book_count
+    } else {
+        positions_count
+    };
+    let bytes_per_pos = if count_for_estimate > 0 {
+        db_size as f64 / count_for_estimate as f64
     } else {
         0.0
     };
     let est_total_positions = if bytes_per_pos > 0.0 {
-        Some((MAX_DB_BYTES as f64 / bytes_per_pos) as i64)
+        Some((size_limit as f64 / bytes_per_pos) as i64)
     } else {
         None
     };
-    let db_eta_seconds = if rate > 0.0 && bytes_per_pos > 0.0 && db_size < MAX_DB_BYTES {
-        let remaining_pos = (MAX_DB_BYTES as f64 - db_size as f64) / bytes_per_pos;
+    let db_eta_seconds = if rate > 0.0 && bytes_per_pos > 0.0 && db_size < size_limit {
+        let remaining_pos = (size_limit as f64 - db_size as f64) / bytes_per_pos;
         Some((remaining_pos / rate) as i64)
     } else {
         None
@@ -537,11 +748,17 @@ pub fn get_solver_status(
         )
         .unwrap_or(0);
 
+    let (live_exact, live_estimated) = if is_opening_book {
+        opening_book_counts(&conn)
+    } else {
+        (ob_exact, ob_estimated)
+    };
+
     SolverStatusPayload {
         success: true,
         total_positions_solved: db_solved,
         total_positions_target: total_target,
-        total_queued: db_queued,
+        total_queued: if is_opening_book { 0 } else { db_queued },
         progress_percent: progress.map(|p| (p * 10000.0).round() / 10000.0),
         progress_unknown: progress.is_none(),
         max_empty: db_max_empty.or(Some(MAX_EMPTY_LEVELS[0])),
@@ -559,13 +776,20 @@ pub fn get_solver_status(
         db_path: db_path_str,
         db_available: true,
         db_size_bytes: db_size,
-        db_size_limit_bytes: MAX_DB_BYTES,
+        db_size_limit_bytes: size_limit,
         db_fill_percent: (db_fill * 100.0).round() / 100.0,
         db_eta_seconds,
         est_total_positions,
         current_empty_min: ce_min,
         current_empty_max: ce_max,
         in_progress,
+        build_mode: if is_opening_book {
+            "opening_book".into()
+        } else {
+            "endgame".into()
+        },
+        opening_book_exact: live_exact,
+        opening_book_estimated: live_estimated,
     }
 }
 
@@ -689,7 +913,34 @@ pub fn get_health(db_path: &Path) -> HealthPayload {
 pub fn get_process_status(
     solver_in_process: bool,
     engine_control: Option<&EngineControl>,
+    db_path: Option<&Path>,
+    build_control: Option<&BuildControl>,
 ) -> ProcessStatusPayload {
+    if build_control.is_some_and(|c| c.is_active()) {
+        return ProcessStatusPayload {
+            success: true,
+            running: true,
+            process_name: "4mation-local.exe",
+            status_label: "livre d'ouverture actif".into(),
+            build_mode: "opening_book".into(),
+        };
+    }
+
+    if let Some(db) = db_path {
+        if let Ok(conn) = open_conn(db) {
+            let (ob_running, _, _, _) = read_opening_book_flags(&conn);
+            if ob_running {
+                return ProcessStatusPayload {
+                    success: true,
+                    running: true,
+                    process_name: "4mation-local.exe",
+                    status_label: "livre d'ouverture actif".into(),
+                    build_mode: "opening_book".into(),
+                };
+            }
+        }
+    }
+
     let running = if let Some(ctrl) = engine_control {
         ctrl.is_running()
     } else if solver_in_process {
@@ -706,6 +957,7 @@ pub fn get_process_status(
         } else {
             "arrêté".into()
         },
+        build_mode: "endgame".into(),
     }
 }
 

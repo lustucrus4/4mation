@@ -171,6 +171,66 @@ fn decide(child_results: &[(Move, char, u32)]) -> Option<SolvedPosition> {
     })
 }
 
+/// Estimation rapide : utilise uniquement les enfants déjà connus de l'oracle.
+/// Les coups inconnus sont ignorés (contrairement à `resolve_via_children`).
+/// Retourne `None` si aucun enfant n'est connu et aucun coup gagnant immédiat.
+pub fn estimate_via_partial_oracle(
+    board: &Board,
+    player: i8,
+    last_move: Option<Move>,
+    oracle: &dyn ChildOracle,
+) -> Option<SolvedPosition> {
+    if let Some(term) = terminal_position(board, last_move, player) {
+        return Some(term);
+    }
+
+    let moves = frontier_moves(board, last_move, player);
+    let mut child_results: Vec<(Move, char, u32)> = Vec::new();
+
+    for mv in moves {
+        if is_winning_move(board, mv, player) {
+            child_results.push((mv, RESULT_LOSS, 0));
+            return decide(&child_results);
+        }
+        let opponent = 3 - player;
+        let nb = apply_move(board, mv, player);
+        if let Some(cv) = oracle.lookup(&nb, opponent, Some(mv)) {
+            if cv.result == RESULT_LOSS {
+                child_results.push((mv, RESULT_LOSS, cv.depth));
+                return decide(&child_results);
+            }
+            child_results.push((mv, cv.result, cv.depth));
+        }
+    }
+
+    if child_results.is_empty() {
+        None
+    } else {
+        decide(&child_results)
+    }
+}
+
+/// Heuristique instantanée (centre, nul) quand l'oracle ne couvre aucun enfant.
+pub fn estimate_heuristic(board: &Board, player: i8, last_move: Option<Move>) -> SolvedPosition {
+    if let Some(term) = terminal_position(board, last_move, player) {
+        return term;
+    }
+    let moves = frontier_moves(board, last_move, player);
+    let mut ordered = moves;
+    ordered.sort_by_key(|&(r, c)| {
+        let dr = (r as i32 - 3).abs();
+        let dc = (c as i32 - 3).abs();
+        dr.max(dc)
+    });
+    let best_move = ordered.into_iter().next();
+    SolvedPosition {
+        result: RESULT_DRAW,
+        win_rate: 0.5,
+        best_move,
+        depth_remaining: 0,
+    }
+}
+
 /// Résolution 1 coup : tous les enfants doivent être connus de l'oracle (sinon `None` -> repli).
 ///
 /// Court-circuit sur coup gagnant : dès qu'un coup gagne (ligne directe ou enfant perdant

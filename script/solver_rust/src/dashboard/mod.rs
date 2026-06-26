@@ -5,7 +5,7 @@ mod process;
 mod server;
 mod stats;
 
-pub use engine::EngineControl;
+pub use engine::{BuildControl, EngineControl};
 pub use server::{
     default_dashboard_config, run_dashboard_server, spawn_dashboard_thread, DashboardConfig,
 };

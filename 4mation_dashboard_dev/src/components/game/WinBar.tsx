@@ -1,14 +1,32 @@
+import {
+  formatBarWinRate,
+  type PositionStatus,
+} from "../../lib/winRateDisplay";
+
 interface WinBarProps {
   /** Probabilité de victoire du joueur 1 (0..1). */
   winRateP1: number;
   label?: string;
   source?: string;
   exact?: boolean;
+  positionStatus?: PositionStatus;
 }
 
-export default function WinBar({ winRateP1, label, source, exact = false }: WinBarProps) {
+export default function WinBar({
+  winRateP1,
+  label,
+  source,
+  exact = false,
+  positionStatus,
+}: WinBarProps) {
   const p1 = Math.max(0, Math.min(1, Number.isFinite(winRateP1) ? winRateP1 : 0.5));
-  const pct1 = Math.round(p1 * 100);
+  const displayPct = formatBarWinRate(p1, exact, positionStatus);
+  const barPct =
+    positionStatus === "proven_losing"
+      ? 0
+      : positionStatus === "proven_winning"
+        ? 100
+        : Math.round(p1 * 100);
 
   return (
     <section className="mx-auto mt-4 w-full max-w-[560px]" aria-label="Probabilité de victoire">
@@ -27,20 +45,24 @@ export default function WinBar({ winRateP1, label, source, exact = false }: WinB
         <div
           className="h-full transition-[width] duration-500 ease-out"
           style={{
-            width: `${pct1}%`,
+            width: `${barPct}%`,
             background: "linear-gradient(135deg, #ff4757, #c44569)",
           }}
         />
         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold drop-shadow-[0_0_4px_rgba(0,0,0,0.85)]">
-          {pct1}%
+          {displayPct}
         </span>
         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold drop-shadow-[0_0_4px_rgba(0,0,0,0.85)]">
-          {100 - pct1}%
+          {positionStatus === "proven_losing"
+            ? "100%"
+            : positionStatus === "proven_winning"
+              ? "0%"
+              : `${100 - barPct}%`}
         </span>
       </div>
       <div className="mt-1 flex justify-between text-[0.72rem] text-white/60">
         <span className="text-p1">Vous</span>
-        <span className="text-p2">Adversaire</span>
+        <span className="text-p2">Coach</span>
       </div>
     </section>
   );

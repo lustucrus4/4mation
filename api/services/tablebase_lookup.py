@@ -55,9 +55,71 @@ class TablebaseLookup:
         self._lock = threading.Lock()
         self._advisor = OptimizedMinimaxAdvisor(depth=4, use_iterative_deepening=False)
         self._retrograde = RetrogradeSolver(max_empty=self.max_endgame_empty)
+        self._mcts = None
+        self._mcts_budget_ms = int(os.environ.get("TABLEBASE_MCTS_MS", "600"))
         self._last_mtime: float = 0.0
         self._conn: Optional[sqlite3.Connection] = None
         self._ensure_db()
+
+    def _get_mcts(self):
+        if self._mcts is None:
+            from game_tree.mcts_advisor import MCTSAdvisor
+
+            self._mcts = MCTSAdvisor(time_budget_ms=self._mcts_budget_ms)
+        return self._mcts
+
+    def _enrich_analysis_meta(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Ajoute position_status et flags proven_* sur chaque coup."""
+        moves = analysis.get("moves") or []
+        exact = bool(analysis.get("exact"))
+        if not moves:
+            analysis["position_status"] = "estimated"
+            return analysis
+
+        best_wr = max(float(m["win_rate"]) for m in moves)
+        worst_wr = min(float(m["win_rate"]) for m in moves)
+        for m in moves:
+            wr = float(m["win_rate"])
+            m["proven_loss"] = exact and wr <= 0.005
+            m["proven_win"] = exact and wr >= 0.995
+
+        if exact and best_wr <= 0.005:
+            analysis["position_status"] = "proven_losing"
+        elif exact and worst_wr >= 0.995:
+            analysis["position_status"] = "proven_winning"
+        elif exact and all(abs(float(m["win_rate"]) - 0.5) < 0.01 for m in moves):
+            analysis["position_status"] = "proven_draw"
+        else:
+            analysis["position_status"] = "estimated"
+        return analysis
+
+    def _build_mcts_analysis(
+        self,
+        board: np.ndarray,
+        current_player: int,
+        last_move: Optional[Tuple[int, int]],
+        start: float,
+        *,
+        label: str = "Estimé (MCTS)",
+    ) -> Dict[str, Any]:
+        """Analyse MCTS complète (toutes les cases jouables)."""
+        raw = self._get_mcts().analyze_position(board, current_player, last_move)
+        moves = raw.get("moves") or []
+        best = raw.get("best_move")
+        best_wr = float(moves[0]["win_rate"]) if moves else 0.5
+        analysis: Dict[str, Any] = {
+            "moves": moves,
+            "best_move": best,
+            "current_player": current_player,
+            "valid_moves_count": int(raw.get("valid_moves_count") or len(moves)),
+            "elapsed_ms": int((time.perf_counter() - start) * 1000),
+            "source": "mcts",
+            "exact": False,
+            "label": label,
+            "position_win_rate": best_wr,
+            "coverage_percent": 100.0 if moves else 0.0,
+        }
+        return self._enrich_analysis_meta(analysis)
 
     def _ensure_db(self) -> None:
         if not self.db_path.exists():
@@ -142,11 +204,16 @@ class TablebaseLookup:
         return None
 
     def _child_win_rate(self, child_result: str, child_wr: float) -> Tuple[str, float]:
-        if child_result == RESULT_WIN:
-            return RESULT_LOSS, 0.0
-        if child_result == RESULT_LOSS:
-            return RESULT_WIN, 1.0
-        return RESULT_DRAW, 0.5
+        """Valeur du coup parent : inverse le taux enfant (perspective adverse).
+
+        On utilise 1 - child_wr pour conserver la calibration des estimations
+        (exact=0). Se baser uniquement sur W/L/D donnerait 0 % ou 50 % partout."""
+        wr = max(0.0, min(1.0, 1.0 - child_wr))
+        if wr > 0.55:
+            return RESULT_WIN, wr
+        if wr < 0.45:
+            return RESULT_LOSS, wr
+        return RESULT_DRAW, wr
 
     def _lookup_child(
         self,
@@ -170,6 +237,18 @@ class TablebaseLookup:
         if row is None:
             return None
         return self._child_win_rate(str(row["result"]), float(row["win_rate"]))
+
+    def opening_book_coach_analysis(
+        self,
+        board: np.ndarray,
+        current_player: int,
+        last_move: Optional[Tuple[int, int]],
+        hit: TablebaseHit,
+    ) -> Dict[str, Any]:
+        """Analyse livre d'ouverture pour le coach (coups frontier légaux uniquement)."""
+        return self._opening_book_analysis(
+            board, current_player, last_move, hit, time.perf_counter()
+        )
 
     def _opening_book_analysis(
         self,
@@ -200,18 +279,25 @@ class TablebaseLookup:
                     })
             moves_out.sort(key=lambda m: m["win_rate"], reverse=True)
 
+        valid_moves = self._advisor._get_frontier_moves(board, last_move, current_player)
         label = "Exact (livre d'ouverture)" if hit.exact else "Estimé (livre d'ouverture)"
+        position_wr = moves_out[0]["win_rate"] if moves_out else hit.win_rate
+        best_move = moves_out[0]["move"] if moves_out else hit.best_move
+        coverage = (
+            100.0 * len(moves_out) / len(valid_moves) if valid_moves else 100.0
+        )
         return {
             "moves": moves_out,
-            "best_move": hit.best_move,
+            "best_move": best_move,
             "current_player": current_player,
-            "valid_moves_count": len(moves_out),
+            "valid_moves_count": len(valid_moves),
             "elapsed_ms": int((time.perf_counter() - start) * 1000),
             "source": "opening_book",
             "exact": bool(hit.exact),
             "label": label,
-            "position_win_rate": hit.win_rate,
-            "coverage_percent": 100.0 if hit.exact else None,
+            "position_win_rate": position_wr,
+            "coverage_percent": coverage,
+            "partial": coverage < 99.9,
         }
 
     def analyze_position(
@@ -227,10 +313,29 @@ class TablebaseLookup:
         start = time.perf_counter()
         hit = self.lookup(board, current_player, last_move)
 
-        # Livre d'ouverture : on respecte le flag exact (prouvé vs estimé) plutôt que de
-        # tout étiqueter « exact ». La barre W/L et le meilleur coup viennent de l'entrée.
+        # Livre d'ouverture estimé (exact=0) : MCTS sur toutes les cases pour éviter
+        # des 0 % trompeurs et des sauts livre → MCTS au coup suivant.
         if hit is not None and hit.source == "opening_book":
-            return self._opening_book_analysis(board, current_player, last_move, hit, start)
+            if not hit.exact:
+                return self._build_mcts_analysis(
+                    board,
+                    current_player,
+                    last_move,
+                    start,
+                    label="Estimé (MCTS)",
+                )
+            book = self._opening_book_analysis(
+                board, current_player, last_move, hit, start
+            )
+            if book.get("partial") or not book.get("moves"):
+                return self._build_mcts_analysis(
+                    board,
+                    current_player,
+                    last_move,
+                    start,
+                    label="Estimé (MCTS — couverture partielle)",
+                )
+            return self._enrich_analysis_meta(book)
 
         if hit is not None:
             retro = self._retrograde.analyze_moves(board, current_player, last_move)
@@ -240,7 +345,7 @@ class TablebaseLookup:
                 retro["label"] = "Exact (tablebase)"
                 retro["elapsed_ms"] = int((time.perf_counter() - start) * 1000)
                 retro["coverage_percent"] = 100.0
-                return retro
+                return self._enrich_analysis_meta(retro)
 
         if HASHER.empty_cells(board) <= self.max_endgame_empty:
             retro = self._retrograde.analyze_moves(board, current_player, last_move)
@@ -249,7 +354,7 @@ class TablebaseLookup:
                 retro["exact"] = True
                 retro["label"] = "Exact (tablebase)"
                 retro["elapsed_ms"] = int((time.perf_counter() - start) * 1000)
-                return retro
+                return self._enrich_analysis_meta(retro)
 
         conn = self._get_conn()
         if conn is None:
@@ -287,23 +392,24 @@ class TablebaseLookup:
             })
 
         if not all_found:
-            if hit is not None and hit.best_move is not None:
+            if moves_out:
                 elapsed_ms = int((time.perf_counter() - start) * 1000)
                 found_count = len(moves_out)
                 coverage = 100.0 * found_count / len(valid_moves) if valid_moves else 0.0
-                return {
+                moves_out.sort(key=lambda m: m["win_rate"], reverse=True)
+                return self._enrich_analysis_meta({
                     "moves": moves_out,
-                    "best_move": hit.best_move,
+                    "best_move": moves_out[0]["move"],
                     "current_player": current_player,
                     "valid_moves_count": len(valid_moves),
                     "elapsed_ms": elapsed_ms,
-                    "source": hit.source,
+                    "source": hit.source if hit else "tablebase",
                     "exact": True,
-                    "label": f"Exact ({hit.source})",
-                    "position_win_rate": hit.win_rate,
+                    "label": f"Exact ({hit.source if hit else 'tablebase'})",
+                    "position_win_rate": moves_out[0]["win_rate"],
                     "partial": True,
                     "coverage_percent": coverage,
-                }
+                })
             return None
 
         moves_out.sort(key=lambda m: m["win_rate"], reverse=True)
@@ -311,7 +417,7 @@ class TablebaseLookup:
         source = hit.source if hit else "tablebase"
         elapsed_ms = int((time.perf_counter() - start) * 1000)
 
-        return {
+        return self._enrich_analysis_meta({
             "moves": moves_out,
             "best_move": best_move,
             "current_player": current_player,
@@ -322,7 +428,7 @@ class TablebaseLookup:
             "label": f"Exact ({source})",
             "position_win_rate": hit.win_rate if hit else moves_out[0]["win_rate"],
             "coverage_percent": 100.0,
-        }
+        })
 
     def choose_move(
         self,

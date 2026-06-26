@@ -4,6 +4,10 @@ version = "0.2.0"
 edition = "2021"
 description = "Solveur 4mation haute performance (local + worker HTTP optionnel)"
 
+[lib]
+name = "formation_worker"
+path = "src/lib.rs"
+
 [[bin]]
 name = "4mation-worker"
 path = "src/main.rs"

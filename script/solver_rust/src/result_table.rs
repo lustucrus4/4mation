@@ -100,7 +100,7 @@ impl ResultTable {
 
     /// Clé de lookup cohérente avec `PositionHasher::hash_key` (canonique si symétries actives).
     #[inline]
-    fn key_for(board: &Board, player: i8, last_move: Option<Move>) -> u64 {
+    pub fn key_for(board: &Board, player: i8, last_move: Option<Move>) -> u64 {
         if PositionHasher::symmetry_enabled() {
             let (b, p, lm) = crate::symmetry::canonical_position(board, player, last_move);
             PositionHasher::raw_zobrist_int(&b, p, lm)

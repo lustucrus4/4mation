@@ -18,6 +18,8 @@ mod local_db;
 
 mod local_engine;
 
+mod opening_book;
+
 mod result_table;
 
 mod solver;
@@ -42,13 +44,15 @@ use tracing_subscriber::EnvFilter;
 
 
 
-use dashboard::{default_dashboard_config, spawn_dashboard_thread, EngineControl};
+use dashboard::{default_dashboard_config, spawn_dashboard_thread, BuildControl, EngineControl};
 
 use hasher::PositionHasher;
 
 use local_db::LocalDb;
 
 use local_engine::{run_local_engine, LocalConfig};
+
+use opening_book::{run_opening_book_build, OpeningBookConfig, OpeningEstimateMode};
 
 
 
@@ -169,6 +173,70 @@ struct Args {
     #[arg(long)]
 
     compact: bool,
+
+
+
+    /// Construit le livre d'ouverture (Rust, parallèle) au lieu du solveur endgame
+
+    #[arg(long)]
+
+    opening_book: bool,
+
+
+
+    /// Ply max pour le BFS d'ouverture
+
+    #[arg(long, default_value = "18")]
+
+    opening_max_ply: i32,
+
+
+
+    /// Nombre max de positions par vague
+
+    #[arg(long, default_value = "200000")]
+
+    opening_max_positions: usize,
+
+
+
+    /// Cible de taille du livre en Go
+
+    #[arg(long, default_value = "2")]
+
+    opening_target_gb: f64,
+
+
+
+    /// Vide opening_book avant reconstruction
+
+    #[arg(long)]
+
+    opening_fresh: bool,
+
+
+
+    /// Recalcule les estimations existantes (sinon promotions exactes seulement)
+
+    #[arg(long)]
+
+    opening_refresh_estimates: bool,
+
+
+
+    /// Estimation : `fast` (oracle partiel + heuristique), `deep` (RetrogradeSolver), `exact-only`
+
+    #[arg(long, default_value = "fast")]
+
+    opening_estimate: String,
+
+
+
+    /// Largeur réduite (lignes principales) au lieu de tous les coups frontier
+
+    #[arg(long)]
+
+    opening_selective_breadth: bool,
 
 }
 
@@ -491,6 +559,111 @@ fn main() -> Result<()> {
 
 
 
+    if args.opening_book {
+
+        let build_control = BuildControl::new();
+        build_control.set_active(true);
+
+        if args.dashboard {
+
+            let dash_cfg = default_dashboard_config(
+
+                args.db.clone(),
+
+                args.dashboard_host.clone(),
+
+                args.dashboard_port,
+
+                true,
+
+                None,
+
+                Some(build_control.clone()),
+
+            );
+
+            let url = format!(
+
+                "http://{}:{}/",
+
+                args.dashboard_host, args.dashboard_port
+
+            );
+
+            println!("Dashboard : {url}");
+
+            spawn_dashboard_thread(dash_cfg)?;
+
+            std::thread::sleep(std::time::Duration::from_millis(300));
+
+        }
+
+        let target_bytes = (args.opening_target_gb * 1024.0 * 1024.0 * 1024.0) as u64;
+
+        let estimate_mode = match args.opening_estimate.as_str() {
+            "deep" => OpeningEstimateMode::Deep,
+            "exact-only" | "exact" | "none" => OpeningEstimateMode::ExactOnly,
+            _ => OpeningEstimateMode::Fast,
+        };
+
+        info!(
+
+            "Mode livre d'ouverture Rust — ply≤{}, max={} positions, cible {:.1} Go, {} threads, estimate={}, breadth={}",
+
+            args.opening_max_ply,
+
+            args.opening_max_positions,
+
+            args.opening_target_gb,
+
+            args.threads,
+
+            args.opening_estimate,
+
+            if args.opening_selective_breadth {
+                "selective"
+            } else {
+                "full"
+            }
+
+        );
+
+        let result = run_opening_book_build(
+
+            &db,
+
+            OpeningBookConfig {
+
+                max_ply: args.opening_max_ply,
+
+                max_positions: args.opening_max_positions,
+
+                target_bytes,
+
+                threads: args.threads,
+
+                refresh_estimates: args.opening_refresh_estimates,
+
+                fresh: args.opening_fresh,
+
+                estimate_mode,
+
+                full_breadth: !args.opening_selective_breadth,
+
+                build_control: Some(build_control.clone()),
+
+            },
+
+        );
+
+        build_control.set_active(false);
+
+        return result;
+
+    }
+
+
+
     let engine_control = EngineControl::new();
 
 
@@ -508,6 +681,8 @@ fn main() -> Result<()> {
             true,
 
             Some(engine_control.clone()),
+
+            None,
 
         );
 

@@ -3,15 +3,28 @@
 use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
 use serde_json::Value;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use tracing::info;
 
 use crate::game::Board;
 use crate::game::{
-    board_from_blob, board_to_blob, board_to_value, empty_cells, parse_board, Position,
+    board_from_blob, board_to_blob, board_to_value, empty_cells, parse_board, Move, Position,
 };
 use crate::work::{ClaimedPosition, LastMove, SubmitPayload};
+
+/// Ligne à insérer dans `opening_book`.
+pub struct OpeningBookRow {
+    pub hash: String,
+    pub result: char,
+    pub win_rate: f64,
+    pub best_move: Option<Move>,
+    pub ply: i32,
+    pub exact: i32,
+    pub board_json: String,
+    pub current_player: i8,
+    pub last_move: Option<Move>,
+}
 
 const SCHEMA_SQL: &str = r#"
 CREATE TABLE IF NOT EXISTS positions (
@@ -91,6 +104,12 @@ const MIGRATIONS: &[&str] = &[
     "CREATE INDEX IF NOT EXISTS idx_work_queue_empty ON work_queue(empty_cells)",
     "CREATE INDEX IF NOT EXISTS idx_positions_empty ON positions(empty_cells)",
     "CREATE INDEX IF NOT EXISTS idx_positions_solved_at ON positions(solved_at)",
+    "ALTER TABLE opening_book ADD COLUMN exact INTEGER DEFAULT 0",
+    "ALTER TABLE opening_book ADD COLUMN board_json TEXT",
+    "ALTER TABLE opening_book ADD COLUMN current_player INTEGER",
+    "ALTER TABLE opening_book ADD COLUMN pos_last_move_row INTEGER",
+    "ALTER TABLE opening_book ADD COLUMN pos_last_move_col INTEGER",
+    "CREATE INDEX IF NOT EXISTS idx_opening_solved_at ON opening_book(solved_at)",
 ];
 
 /// Lot maximal de claim (aligné solve_batch turbo).
@@ -222,6 +241,164 @@ impl LocalDb {
         let conn = self.conn()?;
         let n: i64 = conn.query_row("SELECT COUNT(*) FROM positions", [], |r| r.get(0))?;
         Ok(n)
+    }
+
+    pub fn count_opening_book(&self) -> Result<i64> {
+        let conn = self.conn()?;
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM opening_book", [], |r| r.get(0))?;
+        Ok(n)
+    }
+
+    pub fn count_opening_exact(&self) -> Result<i64> {
+        let conn = self.conn()?;
+        let n: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM opening_book WHERE exact=1",
+            [],
+            |r| r.get(0),
+        )?;
+        Ok(n)
+    }
+
+    pub fn opening_book_table_bytes(&self) -> Result<i64> {
+        let conn = self.conn()?;
+        let n: i64 = conn
+            .query_row(
+                "SELECT COALESCE(SUM(pgsize), 0) FROM dbstat WHERE name='opening_book'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+        Ok(n)
+    }
+
+    pub fn clear_opening_book(&self) -> Result<()> {
+        let conn = self.conn()?;
+        conn.execute("DELETE FROM opening_book", [])?;
+        Ok(())
+    }
+
+    /// Clés u64 des entrées exactes du livre (pour oracle en mémoire).
+    pub fn load_exact_opening_packed(&self) -> Result<HashMap<u64, u8>> {
+        let conn = self.conn()?;
+        let mut stmt =
+            conn.prepare("SELECT hash, result, COALESCE(ply, 0) FROM opening_book WHERE exact=1")?;
+        let rows = stmt.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, i32>(2)?))
+        })?;
+        let mut out = HashMap::new();
+        for row in rows {
+            let (hash, result, _ply) = row?;
+            if let Ok(key) = u64::from_str_radix(&hash, 16) {
+                let res = result.chars().next().unwrap_or('D');
+                let code = match res {
+                    'W' => 2u8,
+                    'D' => 1,
+                    _ => 0,
+                };
+                out.insert(key, code);
+            }
+        }
+        Ok(out)
+    }
+
+    /// Clés des entrées estimées (exact=0) à conserver si refresh=false.
+    pub fn load_non_exact_opening_keys(&self) -> Result<HashSet<u64>> {
+        let conn = self.conn()?;
+        let mut stmt = conn.prepare("SELECT hash FROM opening_book WHERE exact=0")?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+        let mut out = HashSet::new();
+        for h in rows {
+            if let Ok(key) = u64::from_str_radix(&h?, 16) {
+                out.insert(key);
+            }
+        }
+        Ok(out)
+    }
+
+    pub fn bulk_insert_opening_book(&self, rows: &[OpeningBookRow]) -> Result<usize> {
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        let conn = self.conn()?;
+        conn.execute("BEGIN IMMEDIATE", [])?;
+        let mut stmt = conn.prepare(
+            "INSERT OR REPLACE INTO opening_book
+             (hash, result, win_rate, best_move_row, best_move_col, ply, exact,
+              board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,CURRENT_TIMESTAMP)",
+        )?;
+        let mut n = 0usize;
+        for row in rows {
+            let (br, bc) = row
+                .best_move
+                .map(|(r, c)| (r as i64, c as i64))
+                .unwrap_or((-1, -1));
+            let (lmr, lmc) = row
+                .last_move
+                .map(|(r, c)| (r as i64, c as i64))
+                .unwrap_or((-1, -1));
+            stmt.execute(params![
+                row.hash,
+                row.result.to_string(),
+                row.win_rate,
+                br,
+                bc,
+                row.ply,
+                row.exact,
+                row.board_json,
+                row.current_player as i64,
+                lmr,
+                lmc,
+            ])?;
+            n += 1;
+        }
+        drop(stmt);
+        conn.execute(
+            "UPDATE solver_progress SET
+               total_solved = (SELECT COUNT(*) FROM opening_book),
+               current_phase = 'opening_book',
+               updated_at = CURRENT_TIMESTAMP
+             WHERE id = 1",
+            [],
+        )?;
+        conn.execute("COMMIT", [])?;
+        // Checkpoint WAL pour que le dashboard lise les compteurs à jour immédiatement.
+        let _ = conn.execute("PRAGMA wal_checkpoint(PASSIVE)", []);
+        Ok(n)
+    }
+
+    pub fn set_opening_book_progress(
+        &self,
+        total_solved: i64,
+        total_target: i64,
+        progress_pct: f64,
+        running: bool,
+        started_at: Option<&str>,
+    ) -> Result<()> {
+        let conn = self.conn()?;
+        conn.execute(
+            "INSERT INTO solver_progress
+             (id, total_queued, total_solved, current_phase, solver_running,
+              total_target, progress_percent, started_at, updated_at)
+             VALUES (1, 0, ?1, 'opening_book', ?2, ?3, ?4, COALESCE(?5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
+             ON CONFLICT(id) DO UPDATE SET
+               total_solved=excluded.total_solved,
+               total_queued=0,
+               current_phase='opening_book',
+               solver_running=excluded.solver_running,
+               total_target=excluded.total_target,
+               progress_percent=excluded.progress_percent,
+               started_at=COALESCE(solver_progress.started_at, excluded.started_at),
+               updated_at=CURRENT_TIMESTAMP",
+            params![
+                total_solved,
+                if running { 1i64 } else { 0i64 },
+                total_target,
+                progress_pct,
+                started_at,
+            ],
+        )?;
+        Ok(())
     }
 
     /// Taille totale de la base sur disque (fichier principal + WAL + SHM), en octets.

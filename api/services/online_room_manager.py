@@ -30,6 +30,7 @@ class OnlineRoom:
     finished: bool = False
     winner: Optional[int] = None
     resign_by: Optional[int] = None
+    end_reason: Optional[str] = None
 
     def player_by_sid(self, sid: str) -> Optional[RoomPlayer]:
         for p in self.players.values():
@@ -78,9 +79,13 @@ class OnlineRoomManager:
         room_id: str,
         white: RoomPlayer,
         black: RoomPlayer,
+        *,
+        starting_player: int = 1,
     ) -> OnlineRoom:
         engine = GameEngine()
         engine.reset()
+        if starting_player in (1, 2):
+            engine.get_state().current_player = starting_player
         room = OnlineRoom(
             room_id=room_id,
             engine=engine,

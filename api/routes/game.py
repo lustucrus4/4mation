@@ -17,6 +17,7 @@ from flask import Blueprint, jsonify, request
 from api.middleware.auth import get_lab211_user, optional_auth
 from api.services import BotRegistry, GameSessionManager, serialize_board_state
 from api.services.game_persistence import try_save_finished_game
+from api.services.coach_move_resolver import choose_coach_move
 from api.services.tablebase_lookup import get_tablebase_lookup
 
 from api.routes.session_utils import get_session_id, json_with_session
@@ -87,63 +88,74 @@ def _last_move_from_engine(engine) -> Optional[Tuple[int, int]]:
 
 
 
-def _play_coach_move(session_id: str, engine) -> Optional[Dict[str, Any]]:
+def _normalize_move(raw: Any) -> Optional[Tuple[int, int]]:
+    """Convertit best_move / coup API en (row, col)."""
+    if raw is None:
+        return None
+    if isinstance(raw, (list, tuple)) and len(raw) >= 2:
+        return (int(raw[0]), int(raw[1]))
+    if isinstance(raw, dict) and "row" in raw and "col" in raw:
+        return (int(raw["row"]), int(raw["col"]))
+    return None
 
-    """En mode learning, joue le meilleur coup (tablebase ou MCTS)."""
+
+def _resolve_coach_action(engine, analysis: Dict[str, Any]) -> Optional[Tuple[int, int]]:
+    """Choisit un coup coach légal à partir de l'analyse (best_move ou liste moves)."""
+    valid = list(engine.get_valid_actions())
+    if not valid:
+        return None
+    valid_set = set(valid)
+
+    best = _normalize_move(analysis.get("best_move"))
+    if best is not None and best in valid_set:
+        return best
+
+    for m in analysis.get("moves") or []:
+        action = _normalize_move(m.get("move", m))
+        if action is not None and action in valid_set:
+            return action
+
+    return None
+
+
+def _play_coach_move(session_id: str, engine) -> Optional[Dict[str, Any]]:
+    """En mode learning, joue le meilleur coup (livre, tablebase, secours Minimax 6 plies)."""
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     if engine.is_terminal():
-
         return None
-
-
 
     state = engine.get_state()
-
     last_move = _last_move_from_engine(engine)
+    valid = list(engine.get_valid_actions())
+    if not valid:
+        logger.warning("Coach: aucun coup légal session=%s", session_id)
+        return None
 
-    tablebase = get_tablebase_lookup()
-    tb_analysis = tablebase.analyze_position(
+    action, meta = choose_coach_move(
         state.board,
-        current_player=int(state.current_player),
-        last_move=last_move,
+        int(state.current_player),
+        last_move,
+        valid,
     )
-    if tb_analysis and tb_analysis.get("best_move"):
-        analysis = tb_analysis
-    else:
-        analysis = mcts_advisor.analyze_position(
-            state.board,
-            current_player=int(state.current_player),
-            last_move=last_move,
+    if action is None:
+        logger.warning("Coach: impossible de choisir un coup session=%s", session_id)
+        return None
+
+    if meta.get("source") == "backup_minimax":
+        logger.info(
+            "Coach: secours Minimax session=%s move=%s label=%s",
+            session_id,
+            action,
+            meta.get("label"),
         )
-        analysis["source"] = "mcts"
-        analysis["exact"] = False
-        analysis["label"] = "Estimé (MCTS)"
-
-    best = analysis.get("best_move")
-
-    if best is None:
-
-        return None
-
-
-
-    action = (int(best[0]), int(best[1]))
-
-    valid_actions = engine.get_valid_actions()
-
-    if action not in valid_actions:
-
-        return None
-
-
 
     _, success, _ = engine.step(action)
-
     if not success:
-
+        logger.warning("Coach: step échoué session=%s move=%s", session_id, action)
         return None
-
-
 
     return {"row": action[0], "col": action[1]}
 
@@ -321,6 +333,19 @@ def api_move():
 
     action = (int(action[0]), int(action[1]))
 
+    cp = int(engine.get_current_player())
+    if mode == "learning" and cp == 2:
+        recovered = _play_coach_move(session_id, engine)
+        if recovered is None:
+            return jsonify({
+                "success": False,
+                "error": "Session bloquée (tour du coach). Nouvelle partie ou Annuler.",
+            }), 409
+        cp = int(engine.get_current_player())
+
+    if mode == "learning" and cp != 1:
+        return jsonify({"success": False, "error": "Ce n'est pas votre tour."}), 400
+
     valid_actions = engine.get_valid_actions()
 
     if action not in valid_actions:
@@ -388,6 +413,9 @@ def api_ai_move():
         return jsonify({"success": False, "error": f"Bot inconnu: {bot_id}"}), 400
 
     session_manager.update_meta(session_id, bot_id=bot_id)
+    cached = session_manager.get_cached_session(session_id)
+    if cached is not None:
+        engine = cached.engine
 
     started = time.perf_counter()
     try:
@@ -499,6 +527,8 @@ def api_analyze():
         analysis["source"] = "mcts"
         analysis["exact"] = False
         analysis["label"] = "Estimé (MCTS)"
+
+    tablebase._enrich_analysis_meta(analysis)
 
     # Normalisation : toujours exposer position_win_rate (perspective du joueur au
     # trait) + win_rate_p1 (perspective stable du joueur 1, pour la barre W/L côté UI).

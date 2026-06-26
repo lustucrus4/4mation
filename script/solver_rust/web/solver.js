@@ -1,5 +1,5 @@
 /**
- * Dashboard solveur local — suivi du poids de la base vers 5 Go + métriques de calcul.
+ * Dashboard solveur local — endgame (5 Go) ou livre d'ouverture (2 Go).
  */
 
 const POLL_MS = 2000;
@@ -7,6 +7,14 @@ const PROCESS_POLL_MS = 3000;
 
 const el = (id) => document.getElementById(id);
 
+const pageTitleEl = el("page-title");
+const pageSubtitleEl = el("page-subtitle");
+const controlsPanelEl = el("controls-panel");
+const openingBannerEl = el("opening-book-banner");
+const openingBookStatsEl = el("opening-book-stats");
+const heroTitleEl = el("hero-title");
+const heroEtaLabelEl = el("hero-eta-label");
+const heroEstLabelEl = el("hero-est-label");
 const dbSizeEl = el("db-size");
 const dbLimitEl = el("db-limit");
 const dbBarEl = el("db-bar");
@@ -14,22 +22,34 @@ const dbFillLabelEl = el("db-fill-label");
 const dbEtaEl = el("db-eta");
 const estTotalEl = el("est-total");
 const statDurationEl = el("stat-duration");
+const statSolvedLabelEl = el("stat-solved-label");
 const statSolvedEl = el("stat-solved");
 const statRateEl = el("stat-rate");
+const statExtraLabelEl = el("stat-extra-label");
 const statEmptyEl = el("stat-empty");
+const statEtaLabelEl = el("stat-eta-label");
 const statEtaEl = el("stat-eta");
+const statQueueWrapEl = el("stat-queue-wrap");
 const statQueueEl = el("stat-queue");
 const statPhaseEl = el("stat-phase");
+const statExactWrapEl = el("stat-exact-wrap");
+const statExactEl = el("stat-exact");
+const statEstimatedWrapEl = el("stat-estimated-wrap");
+const statEstimatedEl = el("stat-estimated");
 const statMaxEmptyCurrentEl = el("stat-max-empty-current");
+const maxEmptyPanelEl = el("max-empty-panel");
 const maxEmptyStepsEl = el("max-empty-steps");
 const statUpdatedEl = el("stat-updated");
 const statusBadgeEl = el("status-badge");
+const recentTitleEl = el("recent-title");
 const recentGridEl = el("recent-grid");
 const messageEl = el("message");
 const processBadgeEl = el("process-badge");
 const btnStartSolverEl = el("btn-start-solver");
 const btnStopSolverEl = el("btn-stop-solver");
 const controlsMessageEl = el("controls-message");
+
+let lastBuildMode = null;
 
 async function fetchJson(url, options) {
   const response = await fetch(url, options);
@@ -84,10 +104,14 @@ function elapsedSince(iso) {
   return (Date.now() - start) / 1000;
 }
 
+function isOpeningBookMode(data) {
+  return data.build_mode === "opening_book" || data.current_phase === "opening_book";
+}
+
 function statusLabel(status) {
   const map = {
     en_cours: { text: "En cours", cls: "status-running" },
-    calcul_long: { text: "Calcul long", cls: "status-running" },
+    calcul_long: { text: "Calcul en cours…", cls: "status-running" },
     rechargement: { text: "Rechargement", cls: "status-running" },
     en_veille: { text: "En veille (niveau complet)", cls: "status-paused" },
     pause: { text: "Pause", cls: "status-paused" },
@@ -102,6 +126,7 @@ function phaseLabel(phase, phaseLabelFromApi) {
     endgame: "Fin de partie",
     midgame: "Milieu de partie",
     opening: "Ouverture",
+    opening_book: "Livre d'ouverture",
     complet: "Complet",
     full: "Exploration",
   };
@@ -111,6 +136,48 @@ function phaseLabel(phase, phaseLabelFromApi) {
 function resultLabel(result) {
   const map = { W: "Victoire", L: "Défaite", D: "Nul" };
   return map[result] || result;
+}
+
+function applyLayoutMode(openingBook) {
+  if (openingBook === lastBuildMode) return;
+  lastBuildMode = openingBook;
+
+  if (openingBook) {
+    pageTitleEl.innerHTML = 'Livre d\'ouverture <span class="local-badge">local</span>';
+    pageSubtitleEl.textContent =
+      "Construction Rust parallèle — promotions exactes depuis la tablebase endgame";
+    controlsPanelEl.classList.add("hidden");
+    openingBannerEl.classList.remove("hidden");
+    heroTitleEl.textContent = "Taille du livre d'ouverture";
+    heroEtaLabelEl.textContent = "Temps estimé → 2 Go";
+    heroEstLabelEl.textContent = "Entrées estimées (2 Go)";
+    statSolvedLabelEl.textContent = "Entrées livre";
+    statExtraLabelEl.textContent = "Ply max vague";
+    statEtaLabelEl.textContent = "Temps restant (→ 2 Go)";
+    statQueueWrapEl.classList.add("hidden");
+    statExactWrapEl.classList.remove("hidden");
+    statEstimatedWrapEl.classList.remove("hidden");
+    maxEmptyPanelEl.classList.add("hidden");
+    recentTitleEl.textContent = "Dernières ouvertures calculées";
+    dbBarEl.classList.add("opening-bar");
+  } else {
+    pageTitleEl.innerHTML = 'Avancement solveur <span class="local-badge">local</span>';
+    pageSubtitleEl.textContent = "Suivi en direct du worker Rust endgame — lecture de tablebase.db";
+    controlsPanelEl.classList.remove("hidden");
+    openingBannerEl.classList.add("hidden");
+    heroTitleEl.textContent = "Poids de la base";
+    heroEtaLabelEl.textContent = "Temps estimé → 5 Go";
+    heroEstLabelEl.textContent = "Positions estimées au total";
+    statSolvedLabelEl.textContent = "Positions calculées";
+    statExtraLabelEl.textContent = "Cases vides en cours";
+    statEtaLabelEl.textContent = "Temps restant (→ 5 Go)";
+    statQueueWrapEl.classList.remove("hidden");
+    statExactWrapEl.classList.add("hidden");
+    statEstimatedWrapEl.classList.add("hidden");
+    maxEmptyPanelEl.classList.remove("hidden");
+    recentTitleEl.textContent = "Derniers coups calculés";
+    dbBarEl.classList.remove("opening-bar");
+  }
 }
 
 function renderMiniBoard(container, pos) {
@@ -144,7 +211,7 @@ function renderMiniBoard(container, pos) {
 function renderRecent(positions) {
   recentGridEl.innerHTML = "";
   if (!positions?.length) {
-    recentGridEl.innerHTML = '<p class="muted">Aucune position récente pour l\'instant.</p>';
+    recentGridEl.innerHTML = '<p class="muted">Aucune entrée récente pour l\'instant.</p>';
     return;
   }
   for (const pos of positions) {
@@ -207,35 +274,53 @@ function renderMaxEmptySteps(data) {
 }
 
 function updateUI(data) {
-  // Poids de la base → 5 Go
-  const fill = Math.min(100, Math.max(0, data.db_fill_percent ?? 0));
+  const openingBook = isOpeningBookMode(data);
+  applyLayoutMode(openingBook);
+
+  const fill = Math.min(100, Math.max(0, data.db_fill_percent ?? data.progress_percent ?? 0));
   dbSizeEl.textContent = formatGo(data.db_size_bytes);
   dbLimitEl.textContent = `${Math.round((data.db_size_limit_bytes ?? 0) / 1073741824)} Go`;
   dbBarEl.style.width = `${fill}%`;
   dbBarEl.setAttribute("aria-valuenow", String(fill));
   dbFillLabelEl.textContent = `${fill.toFixed(1).replace(".", ",")} %`;
   dbEtaEl.textContent = formatEta(data.db_eta_seconds);
-  estTotalEl.textContent = formatCount(data.est_total_positions);
+  estTotalEl.textContent = formatCount(data.est_total_positions ?? data.total_positions_target);
   statDurationEl.textContent = formatDuration(elapsedSince(data.started_at));
 
-  // Métriques
   statSolvedEl.textContent = (data.total_positions_solved ?? 0).toLocaleString("fr-FR");
   statRateEl.textContent =
     data.positions_per_second > 0
       ? `${data.positions_per_second.toLocaleString("fr-FR")} /s`
-      : "—";
-  statEmptyEl.textContent = formatEmptyRange(data.current_empty_min, data.current_empty_max);
+      : openingBook && data.solver_running
+        ? "calcul…"
+        : "—";
+
+  if (openingBook) {
+    statEmptyEl.textContent = data.max_empty != null ? `≤ ${data.max_empty} (vague)` : "—";
+    const exact = data.opening_book_exact ?? 0;
+    const estimated = data.opening_book_estimated ?? 0;
+    statExactEl.textContent = exact.toLocaleString("fr-FR");
+    statEstimatedEl.textContent = estimated.toLocaleString("fr-FR");
+    if (openingBookStatsEl) {
+      const total = data.total_positions_solved ?? exact + estimated;
+      const pct = total > 0 ? ((100 * exact) / total).toFixed(1).replace(".", ",") : "0";
+      openingBookStatsEl.textContent = `Exactes : ${exact.toLocaleString("fr-FR")} · Estimées : ${estimated.toLocaleString("fr-FR")} · ${pct} % exact (sur ${total.toLocaleString("fr-FR")} entrées)`;
+    }
+  } else {
+    statEmptyEl.textContent = formatEmptyRange(data.current_empty_min, data.current_empty_max);
+    statQueueEl.textContent = `${(data.total_queued ?? 0).toLocaleString("fr-FR")} / ${(
+      data.in_progress ?? 0
+    ).toLocaleString("fr-FR")}`;
+    renderMaxEmptySteps(data);
+  }
+
   statEtaEl.textContent = formatEta(data.db_eta_seconds);
-  statQueueEl.textContent = `${(data.total_queued ?? 0).toLocaleString("fr-FR")} / ${(
-    data.in_progress ?? 0
-  ).toLocaleString("fr-FR")}`;
   statPhaseEl.textContent = phaseLabel(data.current_phase, data.phase_label);
 
   const badge = statusLabel(data.status);
   statusBadgeEl.textContent = badge.text;
   statusBadgeEl.className = `status-badge ${badge.cls}`;
 
-  renderMaxEmptySteps(data);
   statUpdatedEl.textContent = data.last_update
     ? new Date(data.last_update).toLocaleString("fr-FR")
     : "—";
@@ -244,6 +329,24 @@ function updateUI(data) {
   messageEl.textContent = data.db_available
     ? ""
     : "Base tablebase absente — initialisez-la puis lancez le worker Rust.";
+
+  syncProcessFromStatus(data);
+}
+
+function syncProcessFromStatus(data) {
+  const openingBook = isOpeningBookMode(data);
+  const running = Boolean(data.solver_running);
+  if (openingBook) {
+    processBadgeEl.textContent = running ? "Livre d'ouverture actif" : "Build terminé";
+    processBadgeEl.className = `status-badge ${running ? "status-running" : "status-done"}`;
+    btnStartSolverEl.disabled = true;
+    btnStopSolverEl.disabled = true;
+    return;
+  }
+  processBadgeEl.textContent = running ? "Solveur actif" : "Solveur arrêté";
+  processBadgeEl.className = `status-badge ${running ? "status-running" : "status-paused"}`;
+  btnStartSolverEl.disabled = running;
+  btnStopSolverEl.disabled = !running;
 }
 
 async function poll() {
@@ -257,6 +360,10 @@ async function poll() {
 }
 
 function renderProcessStatus(data) {
+  if (isOpeningBookMode(data) || data.build_mode === "opening_book") {
+    syncProcessFromStatus({ ...data, solver_running: data.running, build_mode: "opening_book" });
+    return;
+  }
   const running = Boolean(data?.running);
   processBadgeEl.textContent = running ? "Solveur actif" : "Solveur arrêté";
   processBadgeEl.className = `status-badge ${running ? "status-running" : "status-paused"}`;
@@ -278,10 +385,8 @@ async function pollProcessStatus() {
       return;
     }
     throw new Error(data.error || `HTTP ${response.status}`);
-  } catch (error) {
-    processBadgeEl.textContent = "État indisponible";
-    processBadgeEl.className = "status-badge status-paused";
-    setControlsMessage(error.message, true);
+  } catch {
+    /* statut principal via /api/solver/status */
   }
 }
 
@@ -296,10 +401,10 @@ async function postLocalAction(url, successFallback) {
   } catch (error) {
     setControlsMessage(error.message, true);
   } finally {
-    // Convergence rapide : l'arrêt du moteur peut prendre ~1 s, on rafraîchit l'état plusieurs fois.
     for (let i = 0; i < 8; i++) {
       await new Promise((r) => setTimeout(r, 400));
       await pollProcessStatus();
+      await poll();
     }
   }
 }
@@ -312,7 +417,7 @@ btnStopSolverEl.addEventListener("click", () => {
   postLocalAction("/api/local/stop-solver", "Solveur mis en pause.");
 });
 
-pollProcessStatus();
-setInterval(pollProcessStatus, PROCESS_POLL_MS);
 poll();
+pollProcessStatus();
 setInterval(poll, POLL_MS);
+setInterval(pollProcessStatus, PROCESS_POLL_MS);

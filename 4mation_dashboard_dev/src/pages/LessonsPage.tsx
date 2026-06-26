@@ -21,7 +21,7 @@ export default function LessonsPage() {
       <header>
         <h1 className="text-2xl font-black text-accent">Leçons</h1>
         <p className="mt-1 text-sm text-white/60">
-          Principes fondamentaux du 4mation, du débutant à l'intermédiaire.
+          Principes fondamentaux du 4mation, du débutant à l'expert.
         </p>
       </header>
 

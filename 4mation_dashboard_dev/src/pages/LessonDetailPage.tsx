@@ -65,6 +65,24 @@ export default function LessonDetailPage() {
           Ouvrir l'explorateur d'ouvertures →
         </Link>
       )}
+
+      {lesson.id === "lire-coach" && (
+        <Link
+          to="/learn/trainer"
+          className="inline-block rounded-lg bg-accent/15 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/25"
+        >
+          Lancer l'entraîneur →
+        </Link>
+      )}
+
+      {lesson.id === "menaces" && (
+        <Link
+          to="/learn/rules"
+          className="inline-block rounded-lg bg-accent/15 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/25"
+        >
+          Voir les menaces illustrées →
+        </Link>
+      )}
     </article>
   );
 }

@@ -29,6 +29,7 @@ After=network.target
 User=www-data
 WorkingDirectory=/opt/4mation/src
 Environment=PYTHONPATH=/opt/4mation/src:/opt/4mation/src/script
+Environment=GUNICORN_BIND=127.0.0.1:8097
 ExecStart=/opt/4mation/venv/bin/gunicorn -c api/gunicorn_config.py api.app:app
 Restart=always
 
@@ -38,6 +39,26 @@ UNIT
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now 4mation-api
+
+# 3b. Service realtime Socket.IO (matchmaking / salles privées — 1 seul processus)
+sudo tee /etc/systemd/system/4mation-realtime.service > /dev/null <<'UNIT'
+[Unit]
+Description=4mation Realtime Socket.IO
+After=network.target 4mation-api.service
+
+[Service]
+User=www-data
+WorkingDirectory=/opt/4mation/src
+Environment=PYTHONPATH=/opt/4mation/src:/opt/4mation/src/script
+ExecStart=/opt/4mation/venv/bin/python api/realtime_server.py --host 127.0.0.1 --port 8098
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now 4mation-realtime
 
 # 4. Nginx
 sudo cp "${REPO_DIR}/nginx_4mation.conf" /etc/nginx/sites-available/4mation

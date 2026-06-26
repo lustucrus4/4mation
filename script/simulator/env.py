@@ -46,12 +46,17 @@ class FourMationEnv(gym.Env):
             win_length=game_cfg.win_length
         )
         
-        # Espace d'observation: état du plateau (flattened)
-        # On encode le plateau avec des canaux séparés pour chaque joueur
-        observation_size = game_cfg.board_width * game_cfg.board_height * game_cfg.num_players
+        # Espace d'observation: plateau + dernier coup + masque d'actions
+        board_channels = game_cfg.board_width * game_cfg.board_height * game_cfg.num_players
+        last_move_dims = 2
+        action_mask_dims = game_cfg.board_width * game_cfg.board_height
+        observation_size = board_channels + last_move_dims + action_mask_dims
+        self._board_channels = board_channels
+        self._last_move_dims = last_move_dims
+        self._action_mask_dims = action_mask_dims
         self.observation_space = spaces.Box(
-            low=0, high=1, 
-            shape=(observation_size,), 
+            low=-1, high=1,
+            shape=(observation_size,),
             dtype=np.float32
         )
         
@@ -62,6 +67,22 @@ class FourMationEnv(gym.Env):
         # État interne
         self.current_observation = None
     
+    def _encode_last_move(self, state) -> np.ndarray:
+        """Encode la position du dernier coup (normalisée) ou (-1, -1) si absent."""
+        if state.last_move_position is None:
+            return np.array([-1.0, -1.0], dtype=np.float32)
+        row, col = state.last_move_position
+        max_row = max(self.engine.board_height - 1, 1)
+        max_col = max(self.engine.board_width - 1, 1)
+        return np.array([row / max_row, col / max_col], dtype=np.float32)
+
+    def _encode_action_mask(self) -> np.ndarray:
+        """Masque binaire des actions légales (index = row * width + col)."""
+        mask = np.zeros(self._action_mask_dims, dtype=np.float32)
+        for row, col in self.engine.get_valid_actions():
+            mask[row * self.engine.board_width + col] = 1.0
+        return mask
+
     def _get_observation(self) -> np.ndarray:
         """
         Construit l'observation à partir de l'état du jeu.
@@ -73,7 +94,6 @@ class FourMationEnv(gym.Env):
         board = state.board
         
         # Encoder le plateau avec des canaux séparés pour chaque joueur
-        # Pour chaque case, on a un vecteur one-hot: [joueur1, joueur2, vide]
         observation = np.zeros(
             (self.engine.board_height, self.engine.board_width, self.engine.num_players),
             dtype=np.float32
@@ -85,12 +105,10 @@ class FourMationEnv(gym.Env):
                 if player > 0:
                     observation[row, col, player - 1] = 1.0
         
-        # Aplatir l'observation
-        observation = observation.flatten()
-        
-        # Ajouter des informations supplémentaires si nécessaire
-        # (par exemple, le joueur actuel)
-        return observation
+        board_flat = observation.flatten()
+        last_move = self._encode_last_move(state)
+        action_mask = self._encode_action_mask()
+        return np.concatenate([board_flat, last_move, action_mask])
     
     def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[np.ndarray, Dict]:
         """

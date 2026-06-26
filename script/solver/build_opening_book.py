@@ -27,11 +27,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import sqlite3
 import sys
 from collections import deque
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -52,11 +53,21 @@ DEFAULT_DB = SCRIPT / "solver" / "data" / "tablebase.db"
 DECISIVE = 50000
 
 
-def _search_params(ply: int) -> Tuple[int, int, int]:
+def _search_params(ply: int, *, quality: str = "normal") -> Tuple[int, int, int]:
     """(profondeur Minimax, budget Minimax ms, budget MCTS ms) selon le ply.
 
     On investit BEAUCOUP plus sur les premiers coups (peu nombreux mais réellement
     joués) et on allège en profondeur (positions exponentiellement plus nombreuses)."""
+    if quality == "full":
+        if ply <= 1:
+            return 22, 30000, 5000
+        if ply == 2:
+            return 20, 12000, 3000
+        if ply <= 4:
+            return 16, 5000, 1200
+        if ply <= 8:
+            return 14, 3000, 800
+        return 12, 2000, 500
     if ply <= 1:
         return 18, 15000, 3000
     if ply == 2:
@@ -66,9 +77,19 @@ def _search_params(ply: int) -> Tuple[int, int, int]:
     return 10, 1500, 400
 
 
-def _branch_for_ply(ply: int) -> int:
+def _branch_for_ply(ply: int, *, quality: str = "normal") -> int:
     """Largeur d'exploration : large sur les premiers coups (couvrir toutes les
     réponses raisonnables), étroite ensuite (suivre les lignes principales)."""
+    if quality == "full":
+        if ply == 0:
+            return 49
+        if ply <= 2:
+            return 12
+        if ply <= 6:
+            return 10
+        if ply <= 10:
+            return 8
+        return 6
     if ply == 0:
         return 49
     if ply <= 2:
@@ -109,15 +130,27 @@ def _store_opening(
     best_move: Optional[Tuple[int, int]],
     ply: int,
     exact: int,
+    *,
+    board: Optional[np.ndarray] = None,
+    current_player: int = 1,
+    last_move: Optional[Tuple[int, int]] = None,
+    store_board: bool = False,
 ) -> None:
     br, bc = (best_move[0], best_move[1]) if best_move else (-1, -1)
+    board_json = None
+    lmr, lmc = (-1, -1)
+    if last_move is not None:
+        lmr, lmc = last_move
+    if store_board and board is not None:
+        board_json = json.dumps(board.tolist())
     conn.execute(
         """
         INSERT OR REPLACE INTO opening_book
-        (hash, result, win_rate, best_move_row, best_move_col, ply, exact, solved_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        (hash, result, win_rate, best_move_row, best_move_col, ply, exact,
+         board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """,
-        (h, result, wr, br, bc, ply, exact),
+        (h, result, wr, br, bc, ply, exact, board_json, current_player, lmr, lmc),
     )
 
 
@@ -225,6 +258,8 @@ def _collect_positions(
     advisor: OptimizedMinimaxAdvisor,
     max_ply: int,
     max_positions: int,
+    *,
+    quality: str = "normal",
 ) -> List[Tuple[np.ndarray, int, Optional[Tuple[int, int]], int, str]]:
     """BFS depuis le plateau vide ; largeur dépendante du ply. Renvoie une liste
     dédupliquée de positions (board, player, last_move, ply, hash)."""
@@ -243,7 +278,7 @@ def _collect_positions(
             continue
         moves = advisor._get_frontier_moves(board, last_move, player)
         ordered = advisor._order_moves(board, moves, player, last_move)
-        for move in ordered[: _branch_for_ply(ply)]:
+        for move in ordered[: _branch_for_ply(ply, quality=quality)]:
             nb = board.copy()
             nb[move[0], move[1]] = player
             if advisor._check_winner(nb) is not None:
@@ -258,6 +293,12 @@ def build_opening_book(
     max_positions: int = 5000,
     refresh_estimates: bool = False,
     verbose: bool = True,
+    *,
+    quality: str = "normal",
+    store_board: bool = False,
+    progress_hook: Optional[Callable[[dict], None]] = None,
+    stop_check: Optional[Callable[[], bool]] = None,
+    commit_every: int = 25,
 ) -> Tuple[int, int]:
     """Construit / met à jour le livre d'ouverture.
 
@@ -280,7 +321,7 @@ def build_opening_book(
             ).fetchall()
         }
 
-    positions = _collect_positions(advisor, max_ply, max_positions)
+    positions = _collect_positions(advisor, max_ply, max_positions, quality=quality)
     # Plus profond d'abord : les enfants (ply+1) sont traités avant leurs parents, donc
     # les entrées exact=1 nouvellement écrites peuvent prouver les parents dans la foulée.
     positions.sort(key=lambda p: p[3], reverse=True)
@@ -292,29 +333,70 @@ def build_opening_book(
     n_estimate = 0
     n_kept = 0
     for i, (board, player, last_move, ply, h) in enumerate(positions):
+        if stop_check and stop_check():
+            break
+
+        stored = False
+        last_result: Optional[str] = None
+        last_wr: Optional[float] = None
+        last_best: Optional[Tuple[int, int]] = None
+        last_exact_flag = 0
+
         exact = _try_exact(conn, advisor, board, player, last_move)
         if exact is not None:
-            result, wr, best = exact
-            _store_opening(conn, h, result, wr, best, ply, exact=1)
+            last_result, last_wr, last_best = exact
+            _store_opening(
+                conn, h, last_result, last_wr, last_best, ply, exact=1,
+                board=board, current_player=player, last_move=last_move,
+                store_board=store_board,
+            )
             n_exact += 1
+            stored = True
+            last_exact_flag = 1
         elif not refresh_estimates and h in existing_estimates:
             n_kept += 1
             continue
         else:
-            depth, mm_ms, mcts_ms = _search_params(ply)
+            depth, mm_ms, mcts_ms = _search_params(ply, quality=quality)
             best, raw = _minimax_search(advisor, board, player, last_move, depth, mm_ms)
             if best is None:
                 continue
-            result, wr = _calibrated_winrate(mcts, board, player, last_move, raw, mcts_ms)
-            _store_opening(conn, h, result, wr, best, ply, exact=0)
-            n_estimate += 1
-
-        if verbose and (i + 1) % 25 == 0:
-            conn.commit()
-            print(
-                f"  {i + 1}/{len(positions)} traitées "
-                f"(exact={n_exact}, estimé={n_estimate}, conservées={n_kept})"
+            last_result, last_wr = _calibrated_winrate(mcts, board, player, last_move, raw, mcts_ms)
+            last_best = best
+            _store_opening(
+                conn, h, last_result, last_wr, last_best, ply, exact=0,
+                board=board, current_player=player, last_move=last_move,
+                store_board=store_board,
             )
+            n_estimate += 1
+            stored = True
+
+        if not stored:
+            continue
+
+        if (i + 1) % commit_every == 0:
+            conn.commit()
+            if progress_hook:
+                progress_hook({
+                    "processed": i + 1,
+                    "wave_total": len(positions),
+                    "exact": n_exact,
+                    "estimate": n_estimate,
+                    "kept": n_kept,
+                    "last_board": board,
+                    "last_player": player,
+                    "last_move": last_move,
+                    "last_hash": h,
+                    "last_result": last_result,
+                    "last_win_rate": last_wr,
+                    "last_best": last_best,
+                    "last_exact": last_exact_flag,
+                })
+            if verbose:
+                print(
+                    f"  {i + 1}/{len(positions)} traitées "
+                    f"(exact={n_exact}, estimé={n_estimate}, conservées={n_kept})"
+                )
 
     conn.commit()
     conn.close()

@@ -31,7 +31,7 @@ from flask_cors import CORS
 
 from api.realtime.extensions import socketio
 import api.realtime  # noqa: F401 — enregistre les handlers Socket.IO
-from api.routes import account_bp, game_bp, learn_bp, solver_bp, solver_workers_bp
+from api.routes import account_bp, game_bp, learn_bp, rl_bp, solver_bp, solver_workers_bp
 from api.services.postgres import init_schema, is_configured
 
 ALLOWED_ORIGINS = [
@@ -53,6 +53,7 @@ def create_app() -> Flask:
     app.register_blueprint(game_bp)
     app.register_blueprint(account_bp)
     app.register_blueprint(learn_bp)
+    app.register_blueprint(rl_bp)
     app.register_blueprint(solver_bp)
     app.register_blueprint(solver_workers_bp)
 

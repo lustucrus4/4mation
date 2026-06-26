@@ -4,6 +4,7 @@
 # Dépendances entraînement / scripts (Phase 2+)
 gymnasium>=0.29.0
 stable-baselines3>=2.1.0
+sb3-contrib>=2.1.0
 matplotlib>=3.7.0
 tensorboard>=2.13.0
 torch>=2.0.0

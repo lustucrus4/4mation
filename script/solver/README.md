@@ -85,6 +85,37 @@ python script/solver/build_opening_book.py
 python script/solver/seed_initial_tablebase.py
 ```
 
+### Livre d'ouverture longue durée (~2 Go) — **Rust** (recommandé)
+
+Construction parallèle (rayon) adossée à la tablebase en mémoire :
+
+```bat
+cd 4mation
+scripts\run_opening_book_full.bat
+```
+
+Équivalent manuel :
+
+```bat
+script\solver_rust\target\release\4mation-local.exe ^
+  --opening-book --opening-fresh --opening-target-gb 2 ^
+  --opening-max-ply 18 --opening-max-positions 200000 ^
+  --threads %NUMBER_OF_PROCESSORS% --dashboard --db script\solver\data\tablebase.db
+```
+
+**Algorithme Rust** (remplace Python pour la vitesse) :
+- Chargement `ResultTable` (~24M positions) en RAM
+- BFS ouverture + tri par ply (enfants avant parents)
+- Promotion **exacte** via `resolve_via_children` (lookup O(1))
+- Estimations via `RetrogradeSolver` alpha-bêta parallélisé
+- Phase dashboard `opening_book`, cible **2 Go**
+
+Version Python legacy (Minimax+MCTS, plus lente) :
+
+```bash
+python script/solver/build_opening_book_full.py --target-gb 2 --fresh
+```
+
 ## API de suivi (dashboard)
 
 | Route | Description |

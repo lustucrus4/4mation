@@ -1,12 +1,171 @@
-"""Génération de puzzles tactiques (positions à coup décisif)."""
+"""Puzzles tactiques (1 coup) et pack de victoires forcées (multi-coups)."""
 
 from __future__ import annotations
 
+import json
 import random
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from api.services.tablebase_lookup import get_tablebase_lookup
 from game.game_engine import GameEngine
+
+HUMAN = 1
+PACK_PATH = Path(__file__).resolve().parent.parent / "data" / "puzzles.json"
+
+
+def _engine_from_history(history: List[Dict[str, int]]) -> GameEngine:
+    engine = GameEngine()
+    engine.reset()
+    for h in history:
+        engine.step((int(h["row"]), int(h["col"])))
+    return engine
+
+
+def _history_moves(engine: GameEngine) -> List[Dict[str, int]]:
+    return [
+        {"player": int(e["player"]), "row": int(e["row"]), "col": int(e["col"])}
+        for e in engine.get_move_history()
+    ]
+
+
+def _move_key(move: Dict[str, int]) -> Tuple[int, int, int]:
+    return (int(move["player"]), int(move["row"]), int(move["col"]))
+
+
+@lru_cache(maxsize=1)
+def _load_pack_raw() -> List[Dict[str, Any]]:
+    if not PACK_PATH.is_file():
+        return []
+    return json.loads(PACK_PATH.read_text(encoding="utf-8"))
+
+
+def reload_puzzle_pack() -> None:
+    _load_pack_raw.cache_clear()
+
+
+def list_pack_puzzles() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": p["id"],
+            "difficulty": p["difficulty"],
+            "human_moves": p["human_moves"],
+            "title": p["title"],
+            "theme": p.get("theme", "Victoire forcée"),
+        }
+        for p in _load_pack_raw()
+    ]
+
+
+def get_pack_puzzle(puzzle_id: str, *, include_line: bool = False) -> Optional[Dict[str, Any]]:
+    for p in _load_pack_raw():
+        if p["id"] != puzzle_id:
+            continue
+        out: Dict[str, Any] = {
+            "id": p["id"],
+            "difficulty": p["difficulty"],
+            "human_moves": p["human_moves"],
+            "title": p["title"],
+            "theme": p.get("theme", "Victoire forcée"),
+            "history": p["history"],
+            "player_to_move": int(p.get("player_to_move", HUMAN)),
+        }
+        if include_line:
+            out["line"] = p["line"]
+        return out
+    return None
+
+
+def _normalize_history(history: List[Dict[str, int]]) -> List[Dict[str, int]]:
+    return [
+        {"player": int(h["player"]), "row": int(h["row"]), "col": int(h["col"])}
+        for h in history
+    ]
+
+
+def check_pack_puzzle_move(
+    puzzle_id: str,
+    history: List[Dict[str, int]],
+    row: int,
+    col: int,
+) -> Dict[str, Any]:
+    """Valide un coup humain et renvoie la réponse adverse automatique si besoin."""
+    puzzle = get_pack_puzzle(puzzle_id, include_line=True)
+    if puzzle is None:
+        return {"correct": False, "reason": "Puzzle introuvable"}
+
+    setup = _normalize_history(puzzle["history"])
+    line: List[Dict[str, int]] = _normalize_history(puzzle["line"])
+    history = _normalize_history(history)
+    setup_len = len(setup)
+
+    if len(history) < setup_len:
+        return {"correct": False, "reason": "Historique incomplet"}
+
+    if history[:setup_len] != setup:
+        return {"correct": False, "reason": "Position de départ invalide"}
+
+    played = history[setup_len:]
+    engine = _engine_from_history(history)
+    if engine.is_terminal():
+        return {"correct": False, "reason": "Partie terminée", "solved": True}
+
+    if int(engine.get_current_player()) != HUMAN:
+        return {"correct": False, "reason": "Ce n'est pas votre tour"}
+
+    step = len(played)
+    if step >= len(line):
+        return {"correct": False, "reason": "Puzzle déjà résolu"}
+
+    expected = line[step]
+    if int(expected["player"]) != HUMAN:
+        return {"correct": False, "reason": "Étape invalide"}
+
+    played_move = {"player": HUMAN, "row": int(row), "col": int(col)}
+    if _move_key(played_move) != _move_key(expected):
+        return {
+            "correct": False,
+            "reason": "Ce n'est pas le bon coup",
+            "expected_step": sum(1 for m in played if int(m["player"]) == HUMAN) + 1,
+            "human_moves": puzzle["human_moves"],
+        }
+
+    new_history = list(history) + [played_move]
+    engine = _engine_from_history(new_history)
+
+    opponent_move: Optional[Dict[str, int]] = None
+    solved = False
+
+    if engine.is_terminal():
+        solved = engine.get_winner() == HUMAN
+    elif step + 1 < len(line):
+        opp = line[step + 1]
+        if int(opp["player"]) != 2:
+            return {"correct": False, "reason": "Ligne de solution invalide"}
+        opponent_move = {
+            "player": 2,
+            "row": int(opp["row"]),
+            "col": int(opp["col"]),
+        }
+        new_history.append(opponent_move)
+        engine = _engine_from_history(new_history)
+        if engine.is_terminal():
+            solved = engine.get_winner() == HUMAN
+    elif step + 1 == len(line):
+        solved = engine.is_terminal() and engine.get_winner() == HUMAN
+
+    human_done = sum(1 for m in new_history[setup_len:] if int(m["player"]) == HUMAN)
+
+    return {
+        "correct": True,
+        "history": new_history,
+        "opponent_move": opponent_move,
+        "solved": solved,
+        "step": human_done,
+        "human_moves": puzzle["human_moves"],
+        "player_to_move": int(engine.get_current_player()) if not solved else HUMAN,
+    }
 
 
 def _last_move(engine: GameEngine) -> Optional[Tuple[int, int]]:
@@ -36,7 +195,6 @@ def _try_puzzle_at_engine(engine: GameEngine) -> Optional[Dict[str, Any]]:
     second_wr = float(moves[1]["win_rate"]) if len(moves) > 1 else 0.0
     gap = best_wr - second_wr
 
-    # Puzzle = un coup nettement supérieur (tactique).
     if best_wr < 0.55 or gap < 0.12:
         return None
 
@@ -75,7 +233,6 @@ def random_puzzle(*, max_attempts: int = 40) -> Optional[Dict[str, Any]]:
             puzzle["id"] = f"gen-{random.randint(100000, 999999)}"
             return puzzle
 
-    # Fallback : position de départ (premier coup)
     engine = GameEngine()
     engine.reset()
     puzzle = _try_puzzle_at_engine(engine)

@@ -5,6 +5,9 @@ Callbacks personnalisés pour améliorer le feedback pendant l'entraînement
 from stable_baselines3.common.callbacks import BaseCallback
 import time
 
+from agent.bot_eval import DEFAULT_EVAL_BOTS, run_model_vs_bots
+from simulator.env import FourMationEnv
+
 
 class TrainingProgressCallback(BaseCallback):
     """
@@ -101,4 +104,50 @@ class VerboseTrainingCallback(BaseCallback):
             print(f"Progression: {self.num_timesteps:,} / {self.locals.get('total_timesteps', '?')} steps")
             self.last_print = self.num_timesteps
         return True
+
+
+class EvalBotsCallback(BaseCallback):
+    """
+    Évalue périodiquement le modèle contre les bots Minimax (level_1/3/5).
+    """
+
+    def __init__(
+        self,
+        eval_freq: int = 5000,
+        num_games: int = 10,
+        bot_ids=None,
+        seed: int = 42,
+        verbose: int = 1,
+    ):
+        super().__init__(verbose)
+        self.eval_freq = eval_freq
+        self.num_games = num_games
+        self.bot_ids = bot_ids or list(DEFAULT_EVAL_BOTS)
+        self.seed = seed
+        self._eval_env = FourMationEnv(opponent_type="none")
+        self._last_eval_step = 0
+
+    def _run_eval(self) -> None:
+        if self.verbose:
+            print(f"\n[EvalBots] Step {self.num_timesteps:,} — benchmark vs {', '.join(self.bot_ids)}")
+        run_model_vs_bots(
+            self.model,
+            self._eval_env,
+            num_games=self.num_games,
+            bot_ids=self.bot_ids,
+            seed=self.seed + self.num_timesteps,
+            verbose=self.verbose > 0,
+        )
+
+    def _on_step(self) -> bool:
+        if self.eval_freq <= 0:
+            return True
+        if self.num_timesteps - self._last_eval_step >= self.eval_freq:
+            self._last_eval_step = self.num_timesteps
+            self._run_eval()
+        return True
+
+    def _on_training_end(self) -> None:
+        if self.eval_freq > 0:
+            self._run_eval()
 

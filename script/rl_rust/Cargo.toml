@@ -1,0 +1,26 @@
+[package]
+name = "formation-rl"
+version = "0.1.0"
+edition = "2021"
+description = "Entraînement RL 4mation haute performance (self-play parallèle, policy linéaire + MCTS-lite)"
+
+[[bin]]
+name = "train"
+path = "src/bin/train.rs"
+
+[dependencies]
+formation-worker = { path = "../solver_rust" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+rayon = "1"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3

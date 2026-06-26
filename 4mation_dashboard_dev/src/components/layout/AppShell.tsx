@@ -13,6 +13,10 @@ export default function AppShell() {
         <a className="hover:text-accent" href="/solver.html">
           Avancement solveur
         </a>
+        {" · "}
+        <a className="hover:text-accent" href="/analyze/rl">
+          Entraînement RL
+        </a>
       </footer>
     </div>
   );

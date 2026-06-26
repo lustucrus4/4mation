@@ -555,3 +555,28 @@ h1 {
   color: var(--accent);
   font-size: 1.35rem;
 }
+
+.hidden {
+  display: none !important;
+}
+
+.opening-banner {
+  border-color: rgba(17, 241, 204, 0.35);
+  background: linear-gradient(135deg, rgba(17, 241, 204, 0.08), rgba(99, 102, 241, 0.06));
+}
+
+.opening-banner p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.opening-book-stats {
+  margin-top: 10px !important;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar.opening-bar {
+  background: linear-gradient(90deg, #11f1cc, #6366f1);
+}

@@ -54,3 +54,23 @@ impl EngineControl {
         self.restart.store(false, Ordering::Relaxed);
     }
 }
+
+/// Signal partagé dashboard ↔ build livre d'ouverture (thread principal bloqué).
+#[derive(Clone, Debug, Default)]
+pub struct BuildControl {
+    active: Arc<AtomicBool>,
+}
+
+impl BuildControl {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn set_active(&self, value: bool) {
+        self.active.store(value, Ordering::Relaxed);
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active.load(Ordering::Relaxed)
+    }
+}

@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 DEFAULT_DB = (
     Path(__file__).resolve().parent.parent.parent / "script" / "solver" / "data" / "tablebase.db"
 )
+OPENING_BOOK_MAX_BYTES = 2 * 1024 * 1024 * 1024
+ENDGAME_MAX_BYTES = 5 * 1024 * 1024 * 1024
 
 # Fenêtres glissantes pour estimer le débit en mode workers distribués.
 RATE_WINDOWS_SEC = (60, 120, 300)
@@ -60,13 +62,14 @@ class SolverProgressService:
         except sqlite3.Error:
             return False
 
-    def _rate_from_db(self, conn: sqlite3.Connection) -> float:
+    def _rate_from_db(self, conn: sqlite3.Connection, phase: str = "full") -> float:
         """Débit moyen (positions/s) sur les dernières résolutions enregistrées en base."""
+        table = "opening_book" if phase == "opening_book" else "positions"
         for window in RATE_WINDOWS_SEC:
             try:
                 cnt = conn.execute(
-                    """
-                    SELECT COUNT(*) FROM positions
+                    f"""
+                    SELECT COUNT(*) FROM {table}
                     WHERE solved_at >= datetime('now', ?)
                     """,
                     (f"-{window} seconds",),
@@ -125,13 +128,21 @@ class SolverProgressService:
             else:
                 db_solved = conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0]
             workers_active = self._workers_active(conn)
-            db_rate = self._rate_from_db(conn)
+            db_rate = self._rate_from_db(conn, db_phase)
             db_recent = self._db_recently_updated(conn)
+            opening_count = conn.execute("SELECT COUNT(*) FROM opening_book").fetchone()[0]
             conn.close()
         else:
             db_recent = False
+            opening_count = 0
 
-        total_solved = max(int(live.get("total_positions_solved") or 0), db_solved)
+        raw_phase = live.get("current_phase") or db_phase
+        is_opening_book = str(raw_phase) == "opening_book"
+
+        if is_opening_book:
+            total_solved = max(int(live.get("total_positions_solved") or 0), opening_count, db_solved)
+        else:
+            total_solved = max(int(live.get("total_positions_solved") or 0), db_solved)
         total_target = live.get("total_positions_target")
         if total_target is None and db_target is not None:
             total_target = db_target
@@ -139,7 +150,10 @@ class SolverProgressService:
         total_queued = int(live.get("total_queued") or db_queued)
 
         progress_unknown = bool(live.get("progress_unknown", total_target is None))
-        if live.get("progress_percent") is None or progress_unknown:
+        if is_opening_book and live.get("progress_percent") is not None:
+            progress = min(100.0, float(live["progress_percent"]))
+            progress_unknown = False
+        elif live.get("progress_percent") is None or progress_unknown:
             progress = None
         elif total_target and int(total_target) > 0:
             progress = min(100.0, 100.0 * total_solved / int(total_target))
@@ -188,7 +202,11 @@ class SolverProgressService:
 
         recent: List[Dict[str, Any]] = list(live.get("recent_positions") or [])
         if not recent:
-            recent = self._recent_from_db()
+            recent = (
+                self._recent_from_opening_book()
+                if is_opening_book
+                else self._recent_from_db()
+            )
 
         status_label = "termine"
         if running:
@@ -210,11 +228,22 @@ class SolverProgressService:
             "endgame": "Fin de partie",
             "midgame": "Milieu de partie",
             "opening": "Ouverture",
+            "opening_book": "Livre d'ouverture",
             "complet": "Complet",
             "full": "Exploration",
         }
-        raw_phase = live.get("current_phase") or db_phase
         phase_display = phase_labels.get(str(raw_phase), str(raw_phase))
+
+        size_limit = (
+            int(live.get("opening_book_target_bytes") or live.get("db_size_limit_bytes") or OPENING_BOOK_MAX_BYTES)
+            if is_opening_book
+            else ENDGAME_MAX_BYTES
+        )
+        fill_pct = live.get("db_fill_percent")
+        if fill_pct is None and is_opening_book and size_limit > 0:
+            ob_bytes = live.get("opening_book_bytes")
+            if ob_bytes:
+                fill_pct = min(100.0, 100.0 * float(ob_bytes) / size_limit)
 
         return {
             "total_positions_solved": total_solved,
@@ -234,6 +263,8 @@ class SolverProgressService:
             "recent_positions": recent[:20],
             "db_path": str(self.db_path),
             "db_available": self.db_path.exists(),
+            "db_size_limit_bytes": size_limit,
+            "db_fill_percent": fill_pct,
         }
 
     def _recent_from_db(self) -> List[Dict[str, Any]]:
@@ -246,6 +277,52 @@ class SolverProgressService:
                 SELECT hash, result, win_rate, best_move_row, best_move_col,
                        board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at
                 FROM positions
+                WHERE board_json IS NOT NULL
+                ORDER BY solved_at DESC
+                LIMIT 20
+                """
+            ).fetchall()
+        except sqlite3.Error:
+            return []
+        finally:
+            conn.close()
+
+        out: List[Dict[str, Any]] = []
+        import json
+
+        for row in rows:
+            try:
+                board = json.loads(row["board_json"])
+            except (json.JSONDecodeError, TypeError):
+                continue
+            bm = None
+            if row["best_move_row"] is not None and row["best_move_row"] >= 0:
+                bm = {"row": row["best_move_row"], "col": row["best_move_col"]}
+            lm = None
+            if row["pos_last_move_row"] is not None and row["pos_last_move_row"] >= 0:
+                lm = {"row": row["pos_last_move_row"], "col": row["pos_last_move_col"]}
+            out.append({
+                "hash": row["hash"],
+                "board": board,
+                "current_player": row["current_player"],
+                "last_move": lm,
+                "best_move": bm,
+                "result": row["result"],
+                "win_rate": row["win_rate"],
+                "solved_at": row["solved_at"],
+            })
+        return out
+
+    def _recent_from_opening_book(self) -> List[Dict[str, Any]]:
+        conn = self._get_conn()
+        if conn is None:
+            return []
+        try:
+            rows = conn.execute(
+                """
+                SELECT hash, result, win_rate, best_move_row, best_move_col,
+                       board_json, current_player, pos_last_move_row, pos_last_move_col, solved_at
+                FROM opening_book
                 WHERE board_json IS NOT NULL
                 ORDER BY solved_at DESC
                 LIMIT 20

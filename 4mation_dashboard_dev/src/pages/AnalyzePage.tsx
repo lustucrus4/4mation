@@ -32,6 +32,11 @@ export default function AnalyzePage() {
           Historique de vos parties enregistrées — cliquez sur une partie pour la revue détaillée
           (précision, classification des coups, relecture).
         </p>
+        <p className="mt-2 text-sm">
+          <a href="/analyze/rl" className="font-semibold text-accent hover:underline">
+            Entraînement RL Rust →
+          </a>
+        </p>
       </header>
 
       {!authLoading && !authenticated && (

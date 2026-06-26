@@ -102,6 +102,10 @@ _MIGRATIONS = [
     # les feuilles atteintes sont dans la tablebase / terminales) et ESTIMÉE (exact=0,
     # évaluation Minimax limitée en profondeur). Permet la convergence vers le parfait.
     "ALTER TABLE opening_book ADD COLUMN exact INTEGER DEFAULT 0",
+    "ALTER TABLE opening_book ADD COLUMN board_json TEXT",
+    "ALTER TABLE opening_book ADD COLUMN current_player INTEGER",
+    "ALTER TABLE opening_book ADD COLUMN pos_last_move_row INTEGER",
+    "ALTER TABLE opening_book ADD COLUMN pos_last_move_col INTEGER",
 ]
 
 

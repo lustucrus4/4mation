@@ -75,12 +75,20 @@ class GameSessionManager:
         session = self.get_session(session_id)
         return dict(session.meta) if session else {}
 
+    def get_cached_session(self, session_id: str) -> Optional[SessionData]:
+        """Session en mémoire (sans rechargement SQLite)."""
+        return self._sessions.get(session_id)
+
     def update_meta(self, session_id: str, **kwargs: Any) -> bool:
-        session = self.get_session(session_id)
+        # Ne pas recharger depuis SQLite si la session est déjà en mémoire :
+        # un rechargement recrée le moteur et désynchronise les références
+        # (ex. api/ai_move qui joue sur un engine orphelin).
+        session = self._sessions.get(session_id)
+        if session is None:
+            session = self.get_session(session_id)
         if session is None:
             return False
         session.meta.update(kwargs)
-        self.persist(session_id)
         return True
 
     def set_mode(self, session_id: str, mode: str) -> bool:

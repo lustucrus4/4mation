@@ -36,24 +36,35 @@ const turnExample = withPieces(empty, [
   { row: 2, col: 3, player: 1 },
 ]);
 
-const connectivityBase = withPieces(empty, [{ row: 3, col: 3, player: 1 }]);
-const connectivityHighlights = {
+const frontierBase = withPieces(empty, [{ row: 3, col: 3, player: 1 }]);
+const frontierHighlights = {
   ...neighborHighlights(3, 3),
-  "3,3": "focus" as const,
+  "3,3": "last" as const,
   "1,1": "invalid" as const,
   "5,5": "invalid" as const,
 };
 
-const validMoveExample = withPieces(empty, [
+const midGameExample = withPieces(empty, [
   { row: 3, col: 3, player: 1 },
   { row: 3, col: 4, player: 2 },
 ]);
-const validMoveHighlights = {
-  ...neighborHighlights(3, 3),
+const midGameHighlights = {
   ...neighborHighlights(3, 4),
-  "3,3": "focus" as const,
-  "3,4": "focus" as const,
+  "3,4": "last" as const,
+  "3,2": "invalid" as const,
   "0,0": "invalid" as const,
+};
+
+const threatExample = withPieces(empty, [
+  { row: 3, col: 1, player: 1 },
+  { row: 3, col: 2, player: 1 },
+  { row: 3, col: 3, player: 1 },
+  { row: 3, col: 4, player: 2 },
+]);
+const threatHighlights = {
+  "3,4": "last" as const,
+  "3,5": "valid" as const,
+  "3,0": "focus" as const,
 };
 
 export default function RulesPage() {
@@ -181,42 +192,60 @@ export default function RulesPage() {
       </Card>
 
       <Card>
-        <h2 className="text-lg font-bold text-accent">5. Règle de connexité</h2>
+        <h2 className="text-lg font-bold text-accent">5. Règle de la frontière</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
-          À partir du deuxième coup, chaque pion posé doit être{" "}
-          <strong>adjacent</strong> (touchant) à au moins un pion déjà sur le plateau — en
-          horizontal, vertical ou diagonal (8 directions). Un pion « isolé » est interdit.
+          À partir du deuxième coup, vous devez poser sur l'une des{" "}
+          <strong>8 cases adjacentes au dernier coup joué</strong> (horizontal, vertical ou
+          diagonal). Ce n'est pas n'importe quel pion du plateau qui compte — seule la case du
+          coup précédent définit la frontière.
         </p>
         <div className="mt-4 flex justify-center">
           <RuleDiagram
-            board={connectivityBase}
-            highlights={connectivityHighlights}
-            caption="Vert = cases valides · ✕ = isolées (interdites)"
+            board={frontierBase}
+            highlights={frontierHighlights}
+            caption="Dernier coup rouge (3,3) — vert = cases valides pour le bleu"
           />
         </div>
         <p className="mt-3 text-xs text-white/50">
-          Le pion rouge central (encadré turquoise) autorise les 8 voisins immédiats. Les
-          coins éloignés restent illégaux tant qu'aucun pion n'est posé à proximité.
+          Si les 8 voisins du dernier coup sont tous occupés, vous pouvez alors jouer sur une
+          case vide adjacente à un pion adverse (règle de secours).
         </p>
       </Card>
 
       <Card>
         <h2 className="text-lg font-bold text-accent">6. Coup valide en milieu de partie</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
-          Une fois plusieurs pions posés, seules les cases qui touchent au moins un pion existant
-          sont jouables. Ici, le coin (0,0) est trop loin du groupe — il est refusé.
+          Ici le bleu vient de jouer en (3,4) : seules les cases qui touchent{" "}
+          <strong>ce dernier coup</strong> sont légales pour le rouge. La case (3,2) touche un
+          pion rouge plus ancien mais pas le dernier coup — elle est refusée.
         </p>
         <div className="mt-4 flex justify-center">
           <RuleDiagram
-            board={validMoveExample}
-            highlights={validMoveHighlights}
-            caption="Cases vertes = légales · coin ✕ = trop isolé"
+            board={midGameExample}
+            highlights={midGameHighlights}
+            caption="Dernier coup bleu (3,4) — vert = légal · ✕ = hors frontière"
           />
         </div>
       </Card>
 
       <Card>
-        <h2 className="text-lg font-bold text-accent">7. Fin de partie</h2>
+        <h2 className="text-lg font-bold text-accent">7. Menaces et blocages</h2>
+        <p className="mt-2 text-sm leading-relaxed text-white/80">
+          Trois pions alignés avec une case libre pour compléter le 4 constituent une{" "}
+          <strong>menace</strong>. L'adversaire doit bloquer sur cette case s'il peut légalement y jouer.
+          Priorité tactique : gagner tout de suite, bloquer une victoire adverse, puis créer une menace.
+        </p>
+        <div className="mt-4 flex justify-center">
+          <RuleDiagram
+            board={threatExample}
+            highlights={threatHighlights}
+            caption="Rouge menace (3,5) — bleu doit bloquer si la case est sur la frontière"
+          />
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="text-lg font-bold text-accent">8. Fin de partie</h2>
         <ul className="mt-2 space-y-2 text-sm text-white/80">
           <li>
             <strong className="text-accent">Victoire</strong> — 4 pions alignés (voir section 2).

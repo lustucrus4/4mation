@@ -9,11 +9,19 @@ import {
   playMove,
   resetGame,
   undoMove,
+  undoTo,
   type Bot,
   type GameMode,
   type GameState,
   type SavedGameInfo,
 } from "../lib/gameApi";
+import { gameStateToIntro } from "../lib/gameOverHelpers";
+import { useGameOverOverlay } from "./useGameOverOverlay";
+
+import {
+  AFTER_PROVEN_LOSS_CAP,
+  type PositionStatus,
+} from "../lib/winRateDisplay";
 
 const MCTS_BUDGET_MS = 600;
 const BOT_KEY = "4mation_bot_id";
@@ -27,6 +35,10 @@ export interface AnalysisView {
   bestMove: { row: number; col: number } | null;
   /** Clé "row,col" → taux de victoire (0..1), pour le mode apprentissage. */
   rates: Record<string, number>;
+  ratesProvenLoss: Record<string, boolean>;
+  positionStatus: PositionStatus;
+  /** Après un coup à défaite prouvée : estimations plafonnées. */
+  afterProvenBlunder: boolean;
 }
 
 function loadMode(): GameMode {
@@ -71,12 +83,22 @@ export function useGame() {
 
   const [savedGame, setSavedGame] = useState<SavedGameInfo | null>(null);
 
+  const {
+    intro: gameOverOverlay,
+    show: showGameOverOverlay,
+    dismiss: dismissGameOverOverlay,
+  } = useGameOverOverlay();
+
   const analysisToken = useRef(0);
+  const afterProvenBlunderRef = useRef(false);
   const initStarted = useRef(false);
+  const wasTerminalRef = useRef(false);
+  const botsRef = useRef(bots);
   const modeRef = useRef(mode);
   const botIdRef = useRef(selectedBotId);
   modeRef.current = mode;
   botIdRef.current = selectedBotId;
+  botsRef.current = bots;
 
   const botIdForMode = useCallback(
     (m: GameMode) => (m === "standard" ? botIdRef.current : undefined),
@@ -93,6 +115,9 @@ export function useGame() {
         source: "",
         bestMove: null,
         rates: {},
+        ratesProvenLoss: {},
+        positionStatus: w === 1 ? "proven_winning" : w === 2 ? "proven_losing" : "proven_draw",
+        afterProvenBlunder: false,
       });
       return;
     }
@@ -101,17 +126,50 @@ export function useGame() {
       const { analysis: a } = await analyze(MCTS_BUDGET_MS);
       if (token !== analysisToken.current) return;
       const exact = Boolean(a.exact);
+      const positionStatus: PositionStatus = a.position_status ?? "estimated";
       const rates: Record<string, number> = {};
-      for (const m of a.moves ?? []) rates[`${m.row},${m.col}`] = m.win_rate;
+      const ratesProvenLoss: Record<string, boolean> = {};
+      const capRates =
+        afterProvenBlunderRef.current && !exact && positionStatus !== "proven_losing";
+
+      for (const m of a.moves ?? []) {
+        const key = `${m.row},${m.col}`;
+        let wr = m.win_rate;
+        if (capRates) {
+          wr = Math.min(wr, AFTER_PROVEN_LOSS_CAP);
+        }
+        rates[key] = wr;
+        if (m.proven_loss) {
+          ratesProvenLoss[key] = true;
+        }
+      }
+
+      if (positionStatus === "proven_losing") {
+        afterProvenBlunderRef.current = true;
+      } else if (exact && positionStatus !== "proven_losing") {
+        afterProvenBlunderRef.current = false;
+      }
+
+      let winRateP1 = typeof a.win_rate_p1 === "number" ? a.win_rate_p1 : 0.5;
+      if (capRates) {
+        winRateP1 = Math.min(winRateP1, AFTER_PROVEN_LOSS_CAP);
+      }
+      if (positionStatus === "proven_losing") {
+        winRateP1 = 0;
+      }
+
       setAnalysis({
-        winRateP1: typeof a.win_rate_p1 === "number" ? a.win_rate_p1 : 0.5,
+        winRateP1,
         label: a.label || (exact ? "Exact (tablebase)" : "Estimé (MCTS)"),
         exact,
-        source: a.source || "",
+        source: a.label || a.source || "",
         bestMove: Array.isArray(a.best_move)
           ? { row: a.best_move[0], col: a.best_move[1] }
           : null,
         rates,
+        ratesProvenLoss,
+        positionStatus,
+        afterProvenBlunder: afterProvenBlunderRef.current,
       });
     } catch {
       if (token === analysisToken.current) {
@@ -120,11 +178,31 @@ export function useGame() {
     }
   }, []);
 
+  const opponentNameForMode = useCallback((m: GameMode) => {
+    if (m === "learning") return "Coach";
+    const bot = botsRef.current.find((b) => b.id === botIdRef.current);
+    return bot?.name ?? "IA";
+  }, []);
+
   const applyState = useCallback(
     (next: GameState, saved?: SavedGameInfo | null) => {
       setState(next);
       if (saved) setSavedGame(saved);
       setMessage(statusMessage(next, modeRef.current, saved));
+
+      if (next.is_terminal && !wasTerminalRef.current) {
+        showGameOverOverlay(
+          gameStateToIntro(next, {
+            mode: modeRef.current,
+            opponentName: opponentNameForMode(modeRef.current),
+            savedGame: saved !== undefined ? saved : savedGame,
+          })
+        );
+      } else if (!next.is_terminal) {
+        dismissGameOverOverlay();
+      }
+      wasTerminalRef.current = next.is_terminal;
+
       // L'analyse (barre W/L, meilleur coup, taux par case) n'est utile qu'en
       // mode apprentissage. En classique, on joue « à l'aveugle » : pas d'aide.
       if (modeRef.current === "learning") {
@@ -134,12 +212,15 @@ export function useGame() {
         setAnalysis(null);
       }
     },
-    [runAnalysis]
+    [dismissGameOverOverlay, opponentNameForMode, runAnalysis, savedGame, showGameOverOverlay]
   );
 
   const newGame = useCallback(
     async (nextMode?: GameMode) => {
       const m = nextMode ?? modeRef.current;
+      dismissGameOverOverlay();
+      wasTerminalRef.current = false;
+      afterProvenBlunderRef.current = false;
       setBusy(true);
       setMessage("Nouvelle partie…");
       setError(null);
@@ -154,12 +235,20 @@ export function useGame() {
         setBusy(false);
       }
     },
-    [applyState, botIdForMode]
+    [applyState, botIdForMode, dismissGameOverOverlay]
   );
 
   const playHuman = useCallback(
     async (row: number, col: number) => {
       if (busy) return;
+      const moveKey = `${row},${col}`;
+      const cellRate = analysis?.rates[moveKey];
+      if (
+        analysis?.ratesProvenLoss[moveKey] ||
+        (analysis?.exact && cellRate !== undefined && cellRate <= 0.005)
+      ) {
+        afterProvenBlunderRef.current = true;
+      }
       setBusy(true);
       setMessage("Coup en cours…");
       setError(null);
@@ -169,48 +258,80 @@ export function useGame() {
         const res = await playMove(row, col);
         finalState = res.state;
         saved = res.saved_game;
+        applyState(finalState, saved ?? undefined);
+
         if (modeRef.current === "standard" && !res.terminal && res.next_player === 2) {
           setMessage("Réflexion de l'IA…");
-          const ai = await aiMove(selectedBotId);
-          finalState = ai.state;
-          saved = ai.saved_game ?? saved;
+          try {
+            const ai = await aiMove(botIdRef.current);
+            finalState = ai.state;
+            saved = ai.saved_game ?? saved;
+          } catch {
+            const ai = await aiMove(botIdRef.current);
+            finalState = ai.state;
+            saved = ai.saved_game ?? saved;
+          }
+        } else if (
+          modeRef.current === "learning" &&
+          !res.terminal &&
+          res.state.current_player === 2 &&
+          !res.coach_action
+        ) {
+          setError("Le coach n'a pas pu répondre. Utilisez Annuler ou Nouvelle partie.");
         }
       } catch (err) {
         if (isSessionLost(err)) {
           await newGame();
           return;
         }
-        setError(err instanceof Error ? err.message : "Erreur inconnue");
+        if (finalState?.current_player === 2 && modeRef.current === "standard") {
+          try {
+            setMessage("Réflexion de l'IA…");
+            const ai = await aiMove(botIdRef.current);
+            finalState = ai.state;
+            saved = ai.saved_game ?? saved;
+          } catch (aiErr) {
+            setError(
+              aiErr instanceof Error
+                ? `L'IA n'a pas pu jouer : ${aiErr.message}`
+                : "L'IA n'a pas pu jouer."
+            );
+          }
+        } else {
+          setError(err instanceof Error ? err.message : "Erreur inconnue");
+        }
       } finally {
         setBusy(false);
         if (finalState) applyState(finalState, saved ?? undefined);
       }
     },
-    [busy, selectedBotId, applyState, newGame]
+    [busy, applyState, newGame, analysis]
   );
 
   const playAi = useCallback(async () => {
     if (busy) return;
     setBusy(true);
     setMessage("Réflexion de l'IA…");
+    setError(null);
     try {
-      const ai = await aiMove(selectedBotId);
+      const ai = await aiMove(botIdRef.current);
       applyState(ai.state, ai.saved_game ?? undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
       setBusy(false);
     }
-  }, [busy, selectedBotId, applyState]);
+  }, [busy, applyState]);
 
   const undo = useCallback(async () => {
     if (busy) return;
     setBusy(true);
     setMessage("Annulation…");
     try {
-      // Annule le coup IA + le coup humain en mode standard (revenir à votre tour).
-      const count = modeRef.current === "standard" ? 2 : 1;
+      // Annule le coup coach + le coup humain en mode apprentissage.
+      const count = modeRef.current === "learning" ? 2 : modeRef.current === "standard" ? 2 : 1;
       const { state: s } = await undoMove(count).catch(() => undoMove(1));
+      afterProvenBlunderRef.current = false;
       applyState(s);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -218,6 +339,25 @@ export function useGame() {
       setBusy(false);
     }
   }, [busy, applyState]);
+
+  const undoToMove = useCallback(
+    async (moveIndex: number) => {
+      if (busy) return;
+      setBusy(true);
+      setMessage("Navigation…");
+      setError(null);
+      try {
+        const { state: s } = await undoTo(moveIndex);
+        afterProvenBlunderRef.current = false;
+        applyState(s);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erreur inconnue");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, applyState]
+  );
 
   const setMode = useCallback(
     async (next: GameMode) => {
@@ -283,5 +423,8 @@ export function useGame() {
     playHuman,
     playAi,
     undo,
+    undoToMove,
+    gameOverOverlay,
+    dismissGameOverOverlay,
   };
 }

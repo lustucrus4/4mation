@@ -14,7 +14,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tracing::info;
 
-use super::engine::EngineControl;
+use super::engine::{BuildControl, EngineControl};
 use super::process;
 use super::stats::{
     self, get_health, get_process_status, get_solver_status, get_work_stats, resolve_web_dir,
@@ -28,6 +28,7 @@ pub struct DashboardConfig {
     pub port: u16,
     pub solver_in_process: bool,
     pub engine_control: Option<EngineControl>,
+    pub build_control: Option<BuildControl>,
 }
 
 #[derive(Clone)]
@@ -69,6 +70,7 @@ async fn solver_status_handler(State(state): State<AppState>) -> Json<stats::Sol
         &state.config.db_path,
         state.config.solver_in_process,
         state.config.engine_control.as_ref(),
+        state.config.build_control.as_ref(),
     ))
 }
 
@@ -90,6 +92,8 @@ async fn process_status_handler(
     Json(get_process_status(
         state.config.solver_in_process,
         state.config.engine_control.as_ref(),
+        Some(&state.config.db_path),
+        state.config.build_control.as_ref(),
     ))
     .into_response()
 }
@@ -311,6 +315,7 @@ pub fn default_dashboard_config(
     port: u16,
     solver_in_process: bool,
     engine_control: Option<EngineControl>,
+    build_control: Option<BuildControl>,
 ) -> DashboardConfig {
     DashboardConfig {
         db_path,
@@ -319,5 +324,6 @@ pub fn default_dashboard_config(
         port,
         solver_in_process,
         engine_control,
+        build_control,
     }
 }

@@ -32,6 +32,11 @@ class MinimaxOpponentWrapper(gym.Wrapper):
             env.opponent_type = "none"  # Désactiver l'adversaire automatique
         else:
             self.original_opponent_type = "none"
+
+    @property
+    def engine(self):
+        """Délègue au moteur sous-jacent (FourMationEnv)."""
+        return self.env.engine
     
     def set_minimax_depth(self, depth: int):
         """Change la profondeur de Minimax (pour curriculum learning)"""

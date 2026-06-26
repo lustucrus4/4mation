@@ -42,6 +42,46 @@ def _resolve_connect(auth: Optional[Dict[str, Any]]) -> Tuple[int, str, int, boo
     return next_guest_id(), guest_name, GUEST_DEFAULT_ELO, True
 
 
+def _private_session_for_room(room: OnlineRoom) -> Optional[Any]:
+    for player in room.players.values():
+        session = private_rooms.get_session_for_user(player.user_id)
+        if session is not None:
+            return session
+    return None
+
+
+def _notify_private_opponent_left(opponent: QueuePlayer, *, reason: str) -> None:
+    socketio.emit(
+        "online:private_opponent_left",
+        {"reason": reason},
+        to=opponent.sid,
+    )
+
+
+def _dissolve_private_session(room: OnlineRoom, *, leaver_user_id: int, reason: str) -> None:
+    session = _private_session_for_room(room)
+    if session is None:
+        return
+    opponent = session.opponent_of(leaver_user_id)
+    private_rooms.dissolve_session(session.code)
+    if opponent is not None and opponent.user_id != leaver_user_id:
+        _notify_private_opponent_left(opponent, reason=reason)
+
+
+def _forfeit_player(room: OnlineRoom, player: RoomPlayer, *, end_reason: str) -> None:
+    """Déclare le joueur perdant (abandon ou déconnexion)."""
+    if room.finished:
+        return
+    room.finished = True
+    room.resign_by = player.color
+    room.winner = 2 if player.color == 1 else 1
+    room.end_reason = end_reason
+    if end_reason == "disconnect":
+        _dissolve_private_session(room, leaver_user_id=player.user_id, reason="disconnect")
+    _finish_room(room)
+    room_manager.close_room(room.room_id)
+
+
 def _finish_room(room: OnlineRoom) -> None:
     history = room_manager.history(room)
     move_count = len(history)
@@ -69,6 +109,7 @@ def _finish_room(room: OnlineRoom) -> None:
         except Exception:
             logger.exception("Échec sauvegarde partie online room=%s", room.room_id)
 
+    session = _private_session_for_room(room)
     for _color, player in room.players.items():
         opp = room.opponent_of(player)
         stats = saved.get(player.user_id, {})
@@ -77,11 +118,16 @@ def _finish_room(room: OnlineRoom) -> None:
             "winner": winner,
             "your_color": player.color,
             "resign_by": room.resign_by,
+            "end_reason": room.end_reason,
             "elo_delta": stats.get("elo_delta"),
             "elo_after": stats.get("elo_after"),
             "is_guest": is_guest_id(player.user_id),
             "opponent": {"display_name": opp.display_name, "elo": opp.elo},
         }
+        if session is not None:
+            emit_payload["is_private"] = True
+            emit_payload["private_code"] = session.code
+            private_rooms.clear_rematch_ready(session.code)
         socketio.emit("online:game_over", emit_payload, to=player.sid)
 
 
@@ -99,6 +145,34 @@ def on_connect(auth: Optional[Dict[str, Any]] = None) -> None:
                 emit("online:state", room.serialize_for(player.color))
                 return
 
+    session = private_rooms.update_sid(user_id, request.sid)
+    if session is not None and not room_manager.get_room_for_user(user_id):
+        opp = session.opponent_of(user_id)
+        emit(
+            "online:private_session_restored",
+            {
+                "code": session.code,
+                "opponent": {
+                    "display_name": opp.display_name if opp else "?",
+                    "elo": opp.elo if opp else 0,
+                },
+                "rematch_ready": user_id in session.rematch_ready,
+                "opponent_rematch_ready": bool(
+                    opp and opp.user_id in session.rematch_ready
+                ),
+            },
+        )
+        emit(
+            "online:connected",
+            {
+                "user_id": user_id,
+                "display_name": name,
+                "elo": elo,
+                "is_guest": is_guest,
+            },
+        )
+        return
+
     emit(
         "online:connected",
         {
@@ -112,9 +186,18 @@ def on_connect(auth: Optional[Dict[str, Any]] = None) -> None:
 
 @socketio.on("disconnect")
 def on_disconnect() -> None:
-    info = _connected.pop(request.sid, None)
-    matchmaking_queue.leave_sid(request.sid)
-    private_rooms.remove_by_sid(request.sid)
+    sid = request.sid
+    info = _connected.pop(sid, None)
+    matchmaking_queue.leave_sid(sid)
+    private_rooms.remove_by_sid(sid)
+
+    room = room_manager.get_room_for_sid(sid)
+    if room and not room.finished:
+        player = room.player_by_sid(sid)
+        if player:
+            _forfeit_player(room, player, end_reason="disconnect")
+            return
+
     if info is None:
         return
     user_id, _, _, _ = info
@@ -122,11 +205,12 @@ def on_disconnect() -> None:
     if room and not room.finished:
         player = room.player_by_user(user_id)
         if player:
-            room.finished = True
-            room.resign_by = player.color
-            room.winner = 2 if player.color == 1 else 1
-            _finish_room(room)
-            room_manager.close_room(room.room_id)
+            _forfeit_player(room, player, end_reason="disconnect")
+            return
+
+    session, opponent = private_rooms.leave_user(user_id)
+    if opponent is not None:
+        _notify_private_opponent_left(opponent, reason="disconnect")
 
 
 @socketio.on("online:queue_join")
@@ -139,6 +223,9 @@ def on_queue_join() -> None:
     user_id, name, elo, _is_guest = auth
     if room_manager.get_room_for_user(user_id):
         emit("online:error", {"message": "Partie déjà en cours"})
+        return
+    if private_rooms.user_in_private(user_id):
+        emit("online:error", {"message": "Quittez la salle privée avant de lancer une recherche"})
         return
 
     matchmaking_queue.leave_user(user_id)
@@ -168,6 +255,25 @@ def _player_from_auth() -> Optional[QueuePlayer]:
     return QueuePlayer(user_id=user_id, sid=request.sid, elo=elo, display_name=name)
 
 
+def _player_from_user_id(user_id: int) -> Optional[QueuePlayer]:
+    for sid, info in _connected.items():
+        if info[0] == user_id:
+            _, name, elo, _ = info
+            return QueuePlayer(user_id=user_id, sid=sid, elo=elo, display_name=name)
+    return None
+
+
+def _refresh_session_players(session) -> list[QueuePlayer]:
+    """Met à jour sid / Elo depuis les connexions actives."""
+    refreshed: list[QueuePlayer] = []
+    for uid, stored in session.players.items():
+        live = _player_from_user_id(uid)
+        player = live if live is not None else stored
+        session.players[uid] = player
+        refreshed.append(player)
+    return refreshed
+
+
 @socketio.on("online:private_create")
 def on_private_create() -> None:
     player = _player_from_auth()
@@ -176,6 +282,9 @@ def on_private_create() -> None:
         return
     if room_manager.get_room_for_user(player.user_id):
         emit("online:error", {"message": "Partie déjà en cours"})
+        return
+    if private_rooms.user_in_private(player.user_id):
+        emit("online:error", {"message": "Quittez la salle privée avant d'en créer une nouvelle"})
         return
     matchmaking_queue.leave_user(player.user_id)
     try:
@@ -204,13 +313,16 @@ def on_private_join(data: Dict[str, Any]) -> None:
     if room_manager.get_room_for_user(player.user_id):
         emit("online:error", {"message": "Partie déjà en cours"})
         return
+    if private_rooms.user_in_private(player.user_id):
+        emit("online:error", {"message": "Quittez votre salle privée actuelle avant d'en rejoindre une autre"})
+        return
 
     code = str(data.get("code") or "").upper().strip()
     if len(code) != 6:
         emit("online:error", {"message": "Code invalide (6 caractères)"})
         return
 
-    lobby = private_rooms.pop(code)
+    lobby = private_rooms.get(code)
     if lobby is None:
         emit("online:error", {"message": "Salle introuvable ou expirée"})
         return
@@ -218,16 +330,34 @@ def on_private_join(data: Dict[str, Any]) -> None:
         emit("online:error", {"message": "Vous ne pouvez pas rejoindre votre propre salle"})
         return
 
+    lobby = private_rooms.pop(code)
+    assert lobby is not None
+
     matchmaking_queue.leave_user(player.user_id)
+    session = private_rooms.open_session(lobby.host, player, code)
+    _start_private_match(session)
+
+
+def _start_private_match(session) -> None:
+    players = _refresh_session_players(session)
+    if len(players) != 2:
+        return
+    p1, p2 = players
+    red, blue, starting_player = private_rooms.prepare_private_match(session, p1, p2)
     room_id = uuid.uuid4().hex[:12]
-    if lobby.host.elo >= player.elo:
-        white, black = lobby.host, player
-    else:
-        white, black = player, lobby.host
-    _start_match(MatchPair(room_id=room_id, white=white, black=black))
+    _start_match(
+        MatchPair(room_id=room_id, white=red, black=blue),
+        private_code=session.code,
+        starting_player=starting_player,
+    )
 
 
-def _start_match(pair: MatchPair) -> None:
+def _start_match(
+    pair: MatchPair,
+    *,
+    private_code: Optional[str] = None,
+    starting_player: int = 1,
+) -> None:
     white = RoomPlayer(
         user_id=pair.white.user_id,
         sid=pair.white.sid,
@@ -242,22 +372,23 @@ def _start_match(pair: MatchPair) -> None:
         display_name=pair.black.display_name,
         elo=pair.black.elo,
     )
-    room = room_manager.create_room(pair.room_id, white, black)
+    room = room_manager.create_room(
+        pair.room_id, white, black, starting_player=starting_player
+    )
 
     for player in (white, black):
         join_room(pair.room_id, sid=player.sid)
-        socketio.emit(
-            "online:match_found",
-            {
-                "room_id": pair.room_id,
-                "your_color": player.color,
-                "opponent": {
-                    "display_name": room.opponent_of(player).display_name,
-                    "elo": room.opponent_of(player).elo,
-                },
+        payload: Dict[str, Any] = {
+            "room_id": pair.room_id,
+            "your_color": player.color,
+            "opponent": {
+                "display_name": room.opponent_of(player).display_name,
+                "elo": room.opponent_of(player).elo,
             },
-            to=player.sid,
-        )
+        }
+        if private_code:
+            payload["private_code"] = private_code
+        socketio.emit("online:match_found", payload, to=player.sid)
         socketio.emit("online:state", room.serialize_for(player.color), to=player.sid)
 
 
@@ -292,5 +423,82 @@ def on_resign(data: Dict[str, Any]) -> None:
         emit("online:error", {"message": err})
         return
     assert room is not None
+    player = room.player_by_sid(request.sid)
+    room.end_reason = "resign"
     _finish_room(room)
     room_manager.close_room(room.room_id)
+    if player and data.get("leave_private"):
+        session, opponent = private_rooms.leave_user(player.user_id)
+        if opponent is not None:
+            _notify_private_opponent_left(opponent, reason="leave")
+        emit("online:private_left", {})
+
+
+@socketio.on("online:private_rematch")
+def on_private_rematch() -> None:
+    player = _player_from_auth()
+    if player is None:
+        emit("online:error", {"message": "Non connecté au serveur"})
+        return
+    if room_manager.get_room_for_user(player.user_id):
+        emit("online:error", {"message": "Partie déjà en cours"})
+        return
+
+    session, both_ready = private_rooms.mark_rematch_ready(player.user_id)
+    if session is None:
+        emit("online:error", {"message": "Pas dans une salle privée"})
+        return
+
+    opponent = session.opponent_of(player.user_id)
+    if opponent is None:
+        emit("online:error", {"message": "Adversaire absent"})
+        return
+
+    if not both_ready:
+        emit("online:private_rematch_waiting", {})
+        socketio.emit(
+            "online:private_rematch_opponent_ready",
+            {"opponent_name": player.display_name},
+            to=opponent.sid,
+        )
+        return
+
+    private_rooms.clear_rematch_ready(session.code)
+    _start_private_match(session)
+
+
+@socketio.on("online:private_leave")
+def on_private_leave(data: Optional[Dict[str, Any]] = None) -> None:
+    player = _player_from_auth()
+    if player is None:
+        emit("online:error", {"message": "Non connecté au serveur"})
+        return
+
+    room = room_manager.get_room_for_user(player.user_id)
+    if room and not room.finished:
+        room, err = room_manager.resign(room.room_id, request.sid)
+        if err:
+            emit("online:error", {"message": err})
+            return
+        assert room is not None
+        room.end_reason = "resign"
+        _dissolve_private_session(room, leaver_user_id=player.user_id, reason="leave")
+        _finish_room(room)
+        room_manager.close_room(room.room_id)
+        emit("online:private_left", {})
+        return
+
+    session, opponent = private_rooms.leave_user(player.user_id)
+    if session is None and opponent is None:
+        code = str((data or {}).get("code") or "")
+        lobby = private_rooms.get(code)
+        if lobby and lobby.host.sid == player.sid:
+            private_rooms.remove_code(code)
+            emit("online:private_cancelled", {})
+            return
+        emit("online:error", {"message": "Pas dans une salle privée"})
+        return
+
+    if opponent is not None:
+        _notify_private_opponent_left(opponent, reason="leave")
+    emit("online:private_left", {})

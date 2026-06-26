@@ -1,5 +1,6 @@
 //! Binaire dashboard seul — lecture SQLite + UI web (sans solveur).
 
+mod game;
 mod dashboard;
 
 use anyhow::Result;
@@ -56,6 +57,6 @@ async fn main() -> Result<()> {
     println!("Ctrl+C pour arrêter.");
     println!();
 
-    let config = default_dashboard_config(db_path, args.host, args.port, false, None);
+    let config = default_dashboard_config(db_path, args.host, args.port, false, None, None);
     run_dashboard_server(config).await
 }

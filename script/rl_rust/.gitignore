@@ -1,0 +1,7 @@
+/target/
+/data/checkpoints/
+/data/*.db
+/data/*.db-journal
+/data/metrics.jsonl
+/data/status.json
+/data/train.log

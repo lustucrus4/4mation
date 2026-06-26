@@ -1,27 +1,14 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import Board, { emptyBoard, type BoardMatrix, type Move } from "../components/game/Board";
-import Button from "../components/ui/Button";
+import Board, { type Move } from "../components/game/Board";
 import Card from "../components/ui/Card";
 import EvalGraph from "../components/review/EvalGraph";
+import MoveNavigator from "../components/review/MoveNavigator";
+import MoveHistoryList from "../components/review/MoveHistoryList";
 import { fetchGameReview, type ReviewMove } from "../lib/accountApi";
+import { boardAt } from "../lib/boardReplay";
 import { classificationColor, classificationLabel } from "../lib/reviewLabels";
-
-function boardAt(history: ReviewMove[], upTo: number): {
-  board: BoardMatrix;
-  lastMove: Move | null;
-} {
-  const board = emptyBoard();
-  let last: Move | null = null;
-  for (let i = 0; i < upTo && i < history.length; i++) {
-    const m = history[i];
-    board[m.row][m.col] = m.player;
-    last = { row: m.row, col: m.col };
-  }
-  return { board, lastMove: last };
-}
-
 export default function GameReviewPage() {
   const { gameId } = useParams<{ gameId: string }>();
   const [moveIndex, setMoveIndex] = useState(0);
@@ -96,36 +83,11 @@ export default function GameReviewPage() {
             playable={[]}
           />
 
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Button variant="ghost" onClick={() => setMoveIndex(0)} disabled={moveIndex === 0}>
-              ⏮
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setMoveIndex((i) => Math.max(0, i - 1))}
-              disabled={moveIndex === 0}
-            >
-              ◀
-            </Button>
-            <span className="min-w-[5rem] text-center text-sm text-white/70">
-              {moveIndex} / {maxMove}
-            </span>
-            <Button
-              variant="ghost"
-              onClick={() => setMoveIndex((i) => Math.min(maxMove, i + 1))}
-              disabled={moveIndex >= maxMove}
-            >
-              ▶
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setMoveIndex(maxMove)}
-              disabled={moveIndex >= maxMove}
-            >
-              ⏭
-            </Button>
-          </div>
-
+          <MoveNavigator
+            moveIndex={moveIndex}
+            maxMove={maxMove}
+            onChange={setMoveIndex}
+          />
           {currentMove && (
             <Card className="!py-3">
               <p className="text-sm">
@@ -156,37 +118,21 @@ export default function GameReviewPage() {
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/50">
             Coups
           </h2>
-          <ol className="space-y-1 text-sm">
-            {moves.map((m, i) => (
-              <li key={m.index}>
-                <button
-                  type="button"
-                  onClick={() => setMoveIndex(i + 1)}
-                  className={[
-                    "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors",
-                    moveIndex === i + 1 ? "bg-accent/15" : "hover:bg-white/5",
-                  ].join(" ")}
-                >
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ background: classificationColor(m.classification) }}
-                  />
-                  <span className="text-white/40">#{m.index}</span>
-                  <span className={m.player === 1 ? "text-p1" : "text-p2"}>
-                    {m.player === review.human_color ? "Vous" : "IA"}
-                  </span>
-                  <span className="text-white/70">
-                    ({m.row + 1},{m.col + 1})
-                  </span>
-                  {m.is_human && m.accuracy != null && (
-                    <span className="ml-auto text-xs text-white/40">{m.accuracy}%</span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ol>
-        </Card>
-      </div>
+          <MoveHistoryList
+            moves={moves.map((m) => ({
+              index: m.index,
+              player: m.player,
+              row: m.row,
+              col: m.col,
+              classification: m.classification,
+              isHuman: m.is_human,
+              displayPercent: m.is_human && m.accuracy != null ? m.accuracy : null,
+            }))}
+            moveIndex={moveIndex}
+            humanColor={review.human_color}
+            onSelectMove={(idx) => setMoveIndex(idx)}
+          />
+        </Card>      </div>
     </div>
   );
 }

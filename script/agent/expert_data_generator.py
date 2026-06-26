@@ -3,6 +3,7 @@ Générateur de données expert pour l'imitation learning
 Génère des parties jouées par Minimax pour entraîner le PPO
 """
 
+import gc
 import numpy as np
 from typing import List, Dict, Tuple, Optional
 from game_tree.optimized_minimax import OptimizedMinimaxAdvisor
@@ -16,13 +17,18 @@ class ExpertDataGenerator:
     pour l'apprentissage par imitation.
     """
     
-    def __init__(self, minimax_depth: int = 8):
+    def __init__(self, minimax_depth: int = 6, cache_size: int = 10000):
         """
         Args:
             minimax_depth: Profondeur de Minimax pour générer les données expert
+            cache_size: Taille max du cache de transposition (réduit vs jeu live)
         """
         self.minimax_depth = minimax_depth
-        self.minimax_advisor = OptimizedMinimaxAdvisor(depth=minimax_depth)
+        self.minimax_advisor = OptimizedMinimaxAdvisor(
+            depth=minimax_depth,
+            cache_size=cache_size,
+            use_iterative_deepening=False,
+        )
         self.engine = GameEngine(
             board_width=config.game.board_width,
             board_height=config.game.board_height,
@@ -150,7 +156,7 @@ class ExpertDataGenerator:
         
         return transitions
     
-    def generate(self, num_games: int = 1000, player1_minimax: bool = True) -> List[Dict]:
+    def generate(self, num_games: int = 150, player1_minimax: bool = True) -> List[Dict]:
         """
         Génère plusieurs parties et retourne toutes les transitions.
         
@@ -171,6 +177,9 @@ class ExpertDataGenerator:
             
             transitions = self.generate_game(player1_minimax=player1_minimax, player2_minimax=False)
             all_transitions.extend(transitions)
+            del transitions
+            self.minimax_advisor.clear_cache()
+            gc.collect()
         
         print(f"✅ {len(all_transitions)} transitions expert générées")
         

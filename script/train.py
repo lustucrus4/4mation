@@ -81,6 +81,16 @@ Exemples:
                        help="Profondeur initiale de Minimax (défaut: 4)")
     parser.add_argument("--imitation-ratio", type=float, default=0.5,
                        help="Ratio d'imitation learning (0.0-1.0, défaut: 0.5)")
+    parser.add_argument("--eval-bots", action="store_true",
+                       help="Benchmark vs bots Minimax (level_1/3/5) pendant l'entrainement")
+    parser.add_argument("--eval-bots-games", type=int, default=10,
+                       help="Parties par bot lors du benchmark (défaut: 10)")
+    parser.add_argument("--eval-bots-freq", type=int, default=None,
+                       help="Fréquence du benchmark bots en steps (défaut: eval_freq)")
+    parser.add_argument("--expert-games", type=int, default=150,
+                       help="Nombre de parties expert pour l'imitation (défaut: 150)")
+    parser.add_argument("--expert-depth", type=int, default=6,
+                       help="Profondeur Minimax pour générer les données expert (défaut: 6)")
     
     args = parser.parse_args()
     
@@ -96,6 +106,13 @@ Exemples:
     # Déterminer si on charge un modèle existant
     load_model = None
     best_model_path = Path(config.training.model_dir) / "best" / "best_model.zip"
+
+    # Phase 2 : obs 149 dims — les anciens checkpoints (98 dims) sont incompatibles
+    if best_model_path.exists() and not args.new_model:
+        print("NOTE Phase 2: observation 149 dims (board + last_move + action_mask).")
+        print("   Les checkpoints Phase 1 (98 dims) ne peuvent pas etre charges.")
+        print("   Utilisez --new-model pour repartir de zero si le chargement echoue.")
+        print()
     
     # Si Minimax est activé et qu'un modèle best existe, le charger automatiquement
     if args.minimax_teacher and best_model_path.exists() and not args.new_model:
@@ -142,9 +159,18 @@ Exemples:
     print(f"📊 Nombre de pas: {total_timesteps:,}")
     print(f"🔄 Environnements parallèles: {args.parallel}")
     if args.minimax_teacher:
-        print(f"🤖 Minimax activé (profondeur: {args.minimax_depth}, imitation: {args.imitation_ratio * 100:.0f}%)")
+        print(
+            f"Minimax active (profondeur: {args.minimax_depth}, imitation: "
+            f"{args.imitation_ratio * 100:.0f}%)"
+        )
+        print(
+            f"Donnees expert: {args.expert_games} parties, profondeur {args.expert_depth}"
+        )
     else:
-        print(f"🎮 Adversaire: {args.opponent}")
+        print(f"Adversaire: {args.opponent}")
+    if args.eval_bots:
+        freq = args.eval_bots_freq or config.training.eval_freq
+        print(f"Eval bots: level_1/3/5, {args.eval_bots_games} parties/bot tous les {freq} steps")
     print(f"💾 Modèles sauvegardés dans: {config.training.model_dir}")
     print(f"📈 Logs TensorBoard: {config.training.log_dir}")
     
@@ -214,18 +240,26 @@ Exemples:
             enable_elite_tracking=not args.no_elite,
             use_minimax_teacher=args.minimax_teacher,
             minimax_depth=args.minimax_depth,
-            imitation_ratio=args.imitation_ratio
+            imitation_ratio=args.imitation_ratio,
+            eval_bots=args.eval_bots,
+            eval_bots_games=args.eval_bots_games,
+            eval_bots_freq=args.eval_bots_freq,
+            expert_games=args.expert_games,
+            expert_depth=args.expert_depth,
         )
         
         print()
         print("=" * 60)
-        print("✅ ENTRAÎNEMENT TERMINÉ!")
+        print("ENTRAINEMENT TERMINE!")
         print("=" * 60)
-        print(f"📁 Meilleur modèle: {config.training.model_dir}/best/best_model.zip")
-        print(f"📁 Modèle final: {config.training.model_dir}/{args.model_name or config.training.model_name}_final.zip")
+        print(f"Meilleur modele: {config.training.model_dir}/best/best_model.zip")
+        print(f"Modele final: {config.training.model_dir}/{args.model_name or config.training.model_name}_final.zip")
         print()
-        print("🧪 Pour tester le modèle:")
+        print("Pour tester le modele:")
         print("   python test_model.py")
+        print()
+        print("Benchmark vs bots Minimax:")
+        print("   python evaluate.py --games 50 --opponent ppo")
         print()
         
     except KeyboardInterrupt:

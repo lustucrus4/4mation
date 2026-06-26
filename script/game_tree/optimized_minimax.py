@@ -149,9 +149,10 @@ class OptimizedMinimaxAdvisor:
         
         # Hash du dernier coup (important pour différencier les positions avec mêmes pions)
         if last_move:
-            h ^= (last_move[0] * 7 + last_move[1]) << 32
+            move_idx = int(last_move[0]) * 7 + int(last_move[1])
+            h ^= move_idx << 32
         
-        return h
+        return h & ((1 << 64) - 1)
     
     def _get_frontier_moves(self, board: np.ndarray, last_move: Optional[Tuple[int, int]], 
                             current_player: int) -> List[Tuple[int, int]]:

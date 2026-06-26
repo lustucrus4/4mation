@@ -1,27 +1,71 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import Board, { type Move } from "../components/game/Board";
+import Board from "../components/game/Board";
 import Card from "../components/ui/Card";
+import ProgressBar from "../components/ui/ProgressBar";
 import EvalGraph from "../components/review/EvalGraph";
 import MoveNavigator from "../components/review/MoveNavigator";
 import MoveHistoryList from "../components/review/MoveHistoryList";
-import { fetchGameReview, type ReviewMove } from "../lib/accountApi";
+import {
+  fetchGameReviewStream,
+  type GameReview,
+  type ReviewMove,
+  type SavedGameDetail,
+} from "../lib/accountApi";
 import { boardAt } from "../lib/boardReplay";
 import { classificationColor, classificationLabel } from "../lib/reviewLabels";
+
+function resultLabel(result: string): string {
+  if (result === "win") return "Victoire";
+  if (result === "loss") return "Défaite";
+  return "Nul";
+}
+
 export default function GameReviewPage() {
   const { gameId } = useParams<{ gameId: string }>();
   const [moveIndex, setMoveIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [game, setGame] = useState<SavedGameDetail | null>(null);
+  const [review, setReview] = useState<GameReview | null>(null);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  const query = useQuery({
-    queryKey: ["game-review", gameId],
-    queryFn: () => fetchGameReview(gameId!),
-    enabled: Boolean(gameId),
-    staleTime: 60_000,
-  });
+  useEffect(() => {
+    if (!gameId) return;
 
-  const review = query.data?.review;
-  const game = query.data?.game;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setGame(null);
+    setReview(null);
+    setProgress({ current: 0, total: 0 });
+    setMoveIndex(0);
+
+    fetchGameReviewStream(gameId, {
+      onGame: (g) => {
+        if (!cancelled) setGame(g);
+      },
+      onProgress: (current, total) => {
+        if (!cancelled) setProgress({ current, total });
+      },
+    })
+      .then((data) => {
+        if (cancelled) return;
+        setGame(data.game);
+        setReview(data.review);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Erreur inconnue");
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId]);
+
   const moves = review?.moves ?? [];
 
   const { board, lastMove } = useMemo(
@@ -35,14 +79,46 @@ export default function GameReviewPage() {
       ? { row: currentMove.best_move[0], col: currentMove.best_move[1] }
       : null;
 
-  if (query.isLoading) {
-    return <p className="text-white/60">Analyse de la partie en cours…</p>;
+  if (loading) {
+    const hasProgress = progress.total > 0;
+    const progressLabel = hasProgress
+      ? `Analyse du coup ${progress.current} / ${progress.total}…`
+      : "Préparation de l'analyse…";
+
+    return (
+      <div className="mx-auto max-w-lg space-y-6 py-8">
+        <Link to="/analyze" className="text-sm text-white/50 hover:text-accent">
+          ← Historique
+        </Link>
+        <h1 className="text-2xl font-black text-accent">Revue de partie</h1>
+        {game ? (
+          <p className="text-sm text-white/60">
+            {game.game_mode === "online"
+              ? `vs ${game.opponent_name ?? "joueur"} · ${resultLabel(game.result)}`
+              : `Niveau ${game.bot_level ?? "?"} · ${resultLabel(game.result)}`}
+          </p>
+        ) : null}
+        <Card>
+          <ProgressBar
+            value={hasProgress ? progress.current : 0}
+            max={hasProgress ? progress.total : 100}
+            label={progressLabel}
+            indeterminate={!hasProgress}
+          />
+          <p className="mt-3 text-xs text-white/45">
+            Chaque coup est évalué (tablebase ou MCTS). Les parties longues peuvent prendre
+            une minute.
+          </p>
+        </Card>
+      </div>
+    );
   }
 
-  if (query.isError || !review || !game) {
+  if (error || !review || !game) {
     return (
       <div className="space-y-4">
         <p className="text-p1">Impossible de charger la revue de partie.</p>
+        {error ? <p className="text-sm text-white/50">{error}</p> : null}
         <Link to="/analyze" className="text-accent hover:underline">
           ← Retour à l'historique
         </Link>
@@ -62,12 +138,8 @@ export default function GameReviewPage() {
           <h1 className="mt-1 text-2xl font-black text-accent">Revue de partie</h1>
           <p className="text-sm text-white/60">
             {game.game_mode === "online"
-              ? `vs ${game.opponent_name ?? "joueur"}${game.opponent_elo != null ? ` (${game.opponent_elo} Elo)` : ""} · ${
-                  game.result === "win" ? "Victoire" : game.result === "loss" ? "Défaite" : "Nul"
-                }`
-              : `Niveau ${game.bot_level ?? "?"} · ${
-                  game.result === "win" ? "Victoire" : game.result === "loss" ? "Défaite" : "Nul"
-                }`}
+              ? `vs ${game.opponent_name ?? "joueur"}${game.opponent_elo != null ? ` (${game.opponent_elo} Elo)` : ""} · ${resultLabel(game.result)}`
+              : `Niveau ${game.bot_level ?? "?"} · ${resultLabel(game.result)}`}
             {game.finished_at &&
               ` · ${new Date(game.finished_at).toLocaleDateString("fr-FR")}`}
           </p>
@@ -87,6 +159,7 @@ export default function GameReviewPage() {
             lastMove={lastMove}
             bestMove={bestHighlight}
             playable={[]}
+            muteEmpty
           />
 
           <MoveNavigator
@@ -125,7 +198,7 @@ export default function GameReviewPage() {
             Coups
           </h2>
           <MoveHistoryList
-            moves={moves.map((m) => ({
+            moves={moves.map((m: ReviewMove) => ({
               index: m.index,
               player: m.player,
               row: m.row,
@@ -138,7 +211,8 @@ export default function GameReviewPage() {
             humanColor={review.human_color}
             onSelectMove={(idx) => setMoveIndex(idx)}
           />
-        </Card>      </div>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from api.services.tablebase_lookup import get_tablebase_lookup
 from game.game_engine import GameEngine
@@ -100,14 +100,14 @@ def _win_rate_for_move(
     return played_wr, is_best, best
 
 
-def build_game_review(
+def iter_build_game_review(
     history: List[Dict[str, Any]],
     *,
     human_color: int = 1,
-) -> Dict[str, Any]:
+) -> Iterator[Dict[str, Any]]:
     """
     Rejoue la partie et classifie chaque coup.
-    `history` : liste { index, player, row, col }.
+    Émet des événements ``progress`` puis ``complete`` avec la revue finale.
     """
     engine = GameEngine()
     engine.reset()
@@ -115,6 +115,7 @@ def build_game_review(
     moves_out: List[Dict[str, Any]] = []
     graph: List[Dict[str, Any]] = [{"move_index": 0, "win_rate_p1": 0.5}]
     human_accs: List[float] = []
+    total = len(history)
 
     for entry in history:
         idx = int(entry.get("index", len(moves_out) + 1))
@@ -134,7 +135,6 @@ def build_game_review(
         if analysis is not None:
             source = str(analysis.get("source") or "")
             exact = bool(analysis.get("exact"))
-            cp = int(analysis.get("current_player") or player)
             pwr = analysis.get("position_win_rate")
             if pwr is None:
                 mv = analysis.get("moves") or []
@@ -147,7 +147,6 @@ def build_game_review(
             win_rate_best = float(mv[0]["win_rate"]) if mv else played_wr
             best_move = list(best) if best else None
 
-            # Perte = différence entre le meilleur coup et le coup joué (perspective joueur au trait).
             loss = max(0.0, win_rate_best - win_rate_played)
             classification = _classify(loss, is_best)
             if player == human_color:
@@ -156,7 +155,6 @@ def build_game_review(
 
         engine.step((row, col))
 
-        state = engine.get_state()
         wr_p1 = win_rate_before if player == 1 else 1.0 - win_rate_before
         graph.append({
             "move_index": idx,
@@ -180,9 +178,15 @@ def build_game_review(
             "is_human": player == human_color,
         })
 
+        yield {
+            "type": "progress",
+            "current": len(moves_out),
+            "total": total,
+        }
+
     human_accuracy = round(sum(human_accs) / len(human_accs), 1) if human_accs else None
 
-    return {
+    review = {
         "human_color": human_color,
         "human_accuracy": human_accuracy,
         "bot_accuracy": None,
@@ -190,3 +194,18 @@ def build_game_review(
         "graph": graph,
         "move_count": len(moves_out),
     }
+    yield {"type": "complete", "review": review}
+
+
+def build_game_review(
+    history: List[Dict[str, Any]],
+    *,
+    human_color: int = 1,
+) -> Dict[str, Any]:
+    """Rejoue la partie et classifie chaque coup (bloquant, sans progression)."""
+    review: Optional[Dict[str, Any]] = None
+    for event in iter_build_game_review(history, human_color=human_color):
+        if event.get("type") == "complete":
+            review = event["review"]
+    assert review is not None
+    return review

@@ -11,6 +11,7 @@ import Button from "../components/ui/Button";
 import { useGame } from "../hooks/useGame";
 import { useLearningReview } from "../hooks/useLearningReview";
 import { boardAt } from "../lib/boardReplay";
+import { boardInteractionProps } from "../lib/boardInteraction";
 import { classificationColor, classificationLabel } from "../lib/reviewLabels";
 import { positionStatusHint } from "../lib/winRateDisplay";
 
@@ -43,19 +44,7 @@ export default function TrainerPage() {
 
   const displayAnalysis = review.viewedAnalysis ?? analysis;
 
-  const playable =
-    review.isAtLive &&
-    state &&
-    !state.is_terminal &&
-    state.current_player === 1
-      ? state.valid_actions
-      : [];
-  const dimInvalid =
-    review.isAtLive &&
-    !!state &&
-    !state.is_terminal &&
-    state.current_player === 1 &&
-    state.move_count > 0;
+  const boardUi = boardInteractionProps(state ?? undefined, { active: review.isAtLive });
 
   const statusHint = positionStatusHint(displayAnalysis?.positionStatus);
   const coachNote =
@@ -93,8 +82,9 @@ export default function TrainerPage() {
         <div className="relative space-y-4">
           <Board
             board={board}
-            playable={playable}
-            dimInvalid={dimInvalid}
+            playable={boardUi.playable}
+            dimInvalid={boardUi.dimInvalid}
+            muteEmpty={boardUi.muteEmpty}
             lastMove={lastMove}
             bestMove={
               displayAnalysis && (!state?.is_terminal || viewingPast)

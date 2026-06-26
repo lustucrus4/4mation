@@ -42,7 +42,7 @@ def update_elo(player_elo: int, opponent_elo: int, score: float) -> Tuple[int, i
 
 
 def human_score(winner: int | None, human_color: int) -> float:
-    if winner is None:
+    if winner is None or winner == 0:
         return 0.5
     if winner == human_color:
         return 1.0
@@ -50,7 +50,7 @@ def human_score(winner: int | None, human_color: int) -> float:
 
 
 def result_label(winner: int | None, human_color: int) -> str:
-    if winner is None:
+    if winner is None or winner == 0:
         return "draw"
     if winner == human_color:
         return "win"

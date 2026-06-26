@@ -118,6 +118,12 @@ def init_schema() -> bool:
                 ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_label TEXT;
                 """
             )
+            conn.execute(
+                """
+                UPDATE games SET result = 'draw'
+                WHERE winner = 0 AND result <> 'draw';
+                """
+            )
             conn.commit()
         _schema_ready = True
         logger.info("Schéma PostgreSQL prêt")

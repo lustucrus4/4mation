@@ -6,6 +6,7 @@ import GameOverOverlay from "../components/game/GameOverOverlay";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { useOnlineGame } from "../hooks/useOnlineGame";
+import { boardInteractionProps } from "../lib/boardInteraction";
 import { useAccount } from "../hooks/useAccount";
 import { getGuestName, rollGuestName, setGuestName } from "../lib/socket";
 import { isGenericGuestName } from "../lib/guestNames";
@@ -56,13 +57,10 @@ export default function OnlinePlayPage() {
     yourColor != null &&
     !online.state.is_terminal &&
     online.state.current_player === yourColor;
-  const dimInvalid =
-    isYourTurn && (online.state?.move_count ?? 0) > 0;
-  const muteEmpty =
-    online.phase === "playing" &&
-    !!online.state &&
-    !online.state.is_terminal &&
-    !isYourTurn;
+  const boardUi = boardInteractionProps(online.state ?? undefined, {
+    humanColor: yourColor ?? 1,
+    active: online.phase === "playing" && yourColor != null,
+  });
 
   const applyNickname = () => {
     const trimmed = nickname.trim();
@@ -90,8 +88,8 @@ export default function OnlinePlayPage() {
           key={online.boardRoomId ?? online.phase}
           board={board}
           playable={isYourTurn ? online.playable : []}
-          dimInvalid={dimInvalid}
-          muteEmpty={muteEmpty}
+          dimInvalid={boardUi.dimInvalid}
+          muteEmpty={boardUi.muteEmpty}
           lastMove={
             online.phase === "playing" ? (online.state?.last_move ?? null) : null
           }

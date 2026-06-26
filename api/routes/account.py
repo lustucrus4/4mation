@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from api.middleware.auth import get_lab211_user, require_auth
 from api.services.user_repository import _serialize_game_detail, _serialize_game_summary, user_repo
@@ -50,8 +50,9 @@ def api_me_game_detail(game_id: str):
 @require_auth
 def api_me_game_review(game_id: str):
     """Game Review : précision, classification des coups, courbe d'évaluation."""
-    from api.services.game_review import build_game_review
     import json
+
+    from api.services.game_review import build_game_review, iter_build_game_review
 
     row = user_repo.get_game(g.db_user_id, game_id)
     if row is None:
@@ -64,11 +65,36 @@ def api_me_game_review(game_id: str):
         return jsonify({"success": False, "error": "Partie sans historique"}), 400
 
     human_color = int(row.get("human_color") or 1)
+    game_payload = _serialize_game_detail(row)
+
+    if request.args.get("stream") == "1":
+
+        def generate():
+            yield json.dumps({"type": "start", "game": game_payload}, ensure_ascii=False) + "\n"
+            for event in iter_build_game_review(history, human_color=human_color):
+                if event.get("type") == "complete":
+                    payload = {
+                        "type": "complete",
+                        "success": True,
+                        "game_id": str(row["id"]),
+                        "game": game_payload,
+                        "review": event["review"],
+                    }
+                else:
+                    payload = event
+                yield json.dumps(payload, ensure_ascii=False) + "\n"
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="application/x-ndjson",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     review = build_game_review(history, human_color=human_color)
 
     return jsonify({
         "success": True,
         "game_id": str(row["id"]),
-        "game": _serialize_game_detail(row),
+        "game": game_payload,
         "review": review,
     })

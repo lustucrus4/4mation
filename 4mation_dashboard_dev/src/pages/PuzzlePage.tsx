@@ -208,7 +208,9 @@ export default function PuzzlePage() {
       <div className="relative">
         <Board
           board={board}
-          playable={solved || failed ? [] : playable}
+          playable={solved || failed || busy ? [] : playable}
+          dimInvalid={!busy && !solved && !failed && sessionHistory.length > 0}
+          muteEmpty={busy || solved || failed}
           lastMove={lastMove}
           thinking={busy}
           onCellClick={({ row, col }) => void onCellClick(row, col)}

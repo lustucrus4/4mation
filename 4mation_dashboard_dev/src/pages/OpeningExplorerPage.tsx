@@ -52,6 +52,8 @@ export default function OpeningExplorerPage() {
   const playable = data?.is_terminal
     ? []
     : (data?.continuations ?? []).map((c) => c.move);
+  const dimInvalid = !busy && !data?.is_terminal && (data?.move_count ?? 0) > 0;
+  const muteEmpty = busy || !!data?.is_terminal;
   const rates: Record<string, number> = {};
   for (const c of data?.continuations ?? []) {
     if (typeof c.win_rate === "number") {
@@ -69,6 +71,8 @@ export default function OpeningExplorerPage() {
         <Board
           board={board}
           playable={playable}
+          dimInvalid={dimInvalid}
+          muteEmpty={muteEmpty}
           lastMove={data?.last_move ?? null}
           bestMove={bestMove}
           rates={Object.keys(rates).length ? rates : undefined}

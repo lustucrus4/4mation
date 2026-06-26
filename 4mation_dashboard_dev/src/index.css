@@ -80,3 +80,16 @@ body {
   animation: matchFoundBar 10s linear forwards;
   transform-origin: left center;
 }
+
+@keyframes progressIndeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.animate-progress-indeterminate {
+  animation: progressIndeterminate 1.4s ease-in-out infinite;
+}

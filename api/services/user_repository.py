@@ -276,7 +276,7 @@ class UserRepository:
                 """
                 SELECT g.id, g.game_mode, g.bot_id, g.bot_level, g.result, g.move_count,
                        g.elo_before, g.elo_after, g.elo_delta, g.started_at, g.finished_at,
-                       g.opponent_user_id, g.opponent_elo, g.opponent_label,
+                       g.opponent_user_id, g.opponent_elo, g.opponent_label, g.winner,
                        u.display_name AS opponent_name, u.username AS opponent_username
                 FROM games g
                 LEFT JOIN users u ON u.id = g.opponent_user_id
@@ -328,13 +328,20 @@ class UserRepository:
         }
 
 
+def _normalize_game_result(result: str, winner: Any) -> str:
+    """winner=0 = égalité (convention moteur de jeu)."""
+    if winner == 0:
+        return "draw"
+    return str(result)
+
+
 def _serialize_game_summary(row: Dict[str, Any]) -> Dict[str, Any]:
     out: Dict[str, Any] = {
         "id": str(row["id"]),
         "game_mode": row["game_mode"],
         "bot_id": row.get("bot_id"),
         "bot_level": row.get("bot_level"),
-        "result": row["result"],
+        "result": _normalize_game_result(row["result"], row.get("winner")),
         "move_count": int(row["move_count"]),
         "elo_before": row.get("elo_before"),
         "elo_after": row.get("elo_after"),
@@ -357,7 +364,8 @@ def _serialize_game_summary(row: Dict[str, Any]) -> Dict[str, Any]:
 def _serialize_game_detail(row: Dict[str, Any]) -> Dict[str, Any]:
     out = _serialize_game_summary(row)
     out["human_color"] = int(row.get("human_color") or 1)
-    out["winner"] = row.get("winner")
+    winner = row.get("winner")
+    out["winner"] = int(winner) if winner is not None else None
     history = row.get("history")
     if isinstance(history, str):
         history = json.loads(history)

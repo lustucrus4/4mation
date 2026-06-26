@@ -7,6 +7,7 @@ import Button from "../components/ui/Button";
 import Select from "../components/ui/Select";
 import { useGame } from "../hooks/useGame";
 import { useAccount } from "../hooks/useAccount";
+import { boardInteractionProps } from "../lib/boardInteraction";
 
 export default function PlayPage() {
   const game = useGame();
@@ -24,18 +25,16 @@ export default function PlayPage() {
   }, [mode, game]);
 
   const board = state?.board ?? emptyBoard();
-  const playable =
-    state && !state.is_terminal && state.current_player === 1 ? state.valid_actions : [];
-  const dimInvalid =
-    !!state && !state.is_terminal && state.current_player === 1 && state.move_count > 0;
+  const boardUi = boardInteractionProps(state ?? undefined);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
       <div className="relative">
         <Board
           board={board}
-          playable={playable}
-          dimInvalid={dimInvalid}
+          playable={boardUi.playable}
+          dimInvalid={boardUi.dimInvalid}
+          muteEmpty={boardUi.muteEmpty}
           lastMove={state?.last_move ?? null}
           thinking={busy}
           onCellClick={({ row, col }) => game.playHuman(row, col)}

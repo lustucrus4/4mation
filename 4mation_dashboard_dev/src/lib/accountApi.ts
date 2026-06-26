@@ -1,4 +1,4 @@
-import { apiFetch, getSessionId, setSessionId } from "./api";
+import { apiFetch, getApiBase, getSessionId, setSessionId } from "./api";
 
 export interface UserRating {
   mode: string;
@@ -107,7 +107,7 @@ export function fetchGameReview(gameId: string): Promise<{
   }) => ({ game: d.game, review: d.review }));
 }
 
-const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const API_BASE = getApiBase();
 
 export async function fetchGameReviewStream(
   gameId: string,

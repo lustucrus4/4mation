@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
+import time
 from contextlib import contextmanager
 from typing import Any, Generator, Optional
 
@@ -62,9 +63,11 @@ def init_schema() -> bool:
     if not is_configured():
         logger.warning("DATABASE_URL absente — comptes/parties désactivés")
         return False
-    try:
-        with db_conn() as conn:
-            conn.execute(
+    for attempt in range(6):
+        try:
+            with db_conn() as conn:
+                conn.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+                conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
@@ -110,24 +113,32 @@ def init_schema() -> bool:
                     ON games (user_id, finished_at DESC);
                 """
             )
-            conn.execute(
-                """
-                ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_user_id INTEGER
-                    REFERENCES users(id) ON DELETE SET NULL;
-                ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_elo INTEGER;
-                ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_label TEXT;
-                """
-            )
-            conn.execute(
-                """
-                UPDATE games SET result = 'draw'
-                WHERE winner = 0 AND result <> 'draw';
-                """
-            )
-            conn.commit()
-        _schema_ready = True
-        logger.info("Schéma PostgreSQL prêt")
-        return True
-    except Exception:
-        logger.exception("Échec initialisation schéma PostgreSQL")
-        return False
+                conn.execute(
+                    """
+                    ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_user_id INTEGER
+                        REFERENCES users(id) ON DELETE SET NULL;
+                    ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_elo INTEGER;
+                    ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_label TEXT;
+                    """
+                )
+                conn.execute(
+                    """
+                    UPDATE games SET result = 'draw'
+                    WHERE winner = 0 AND result <> 'draw';
+                    """
+                )
+                conn.commit()
+            _schema_ready = True
+            logger.info("Schéma PostgreSQL prêt")
+            return True
+        except Exception:
+            if attempt < 5:
+                logger.warning(
+                    "PostgreSQL indisponible (tentative %s/6), nouvel essai…",
+                    attempt + 1,
+                )
+                time.sleep(min(2 ** attempt, 10))
+                continue
+            logger.exception("Échec initialisation schéma PostgreSQL")
+            return False
+    return False

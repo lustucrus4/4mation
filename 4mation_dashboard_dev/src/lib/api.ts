@@ -7,6 +7,11 @@
 const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 const SESSION_KEY = "4mation_session_id";
 
+/** Préfixe API (vide = même origine, proxy nginx /api). */
+export function getApiBase(): string {
+  return API_BASE;
+}
+
 export function getSessionId(): string | null {
   return localStorage.getItem(SESSION_KEY);
 }

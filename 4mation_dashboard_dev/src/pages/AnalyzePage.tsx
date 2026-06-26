@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
 import GameHistoryList from "../components/account/GameHistoryList";
 import { useAccount } from "../hooks/useAccount";
 import { fetchGames } from "../lib/accountApi";
+import { parseApiErrorMessage } from "../lib/apiErrors";
 import { useEffect } from "react";
 
 export default function AnalyzePage() {
@@ -13,6 +15,7 @@ export default function AnalyzePage() {
     queryFn: () => fetchGames(50, 0),
     enabled: authenticated,
     staleTime: 30_000,
+    retry: 2,
   });
 
   useEffect(() => {
@@ -23,6 +26,10 @@ export default function AnalyzePage() {
     window.addEventListener("4mation:game-saved", handler);
     return () => window.removeEventListener("4mation:game-saved", handler);
   }, [refresh, gamesQuery]);
+
+  const historyError = gamesQuery.isError
+    ? parseApiErrorMessage(gamesQuery.error, "Impossible de charger l'historique.")
+    : null;
 
   return (
     <div className="space-y-6">
@@ -55,7 +62,12 @@ export default function AnalyzePage() {
           {gamesQuery.isLoading ? (
             <p className="text-white/60">Chargement…</p>
           ) : gamesQuery.isError ? (
-            <p className="text-p1">Historique indisponible (PostgreSQL requis côté serveur).</p>
+            <div className="space-y-3">
+              <p className="text-p1">{historyError}</p>
+              <Button variant="secondary" onClick={() => void gamesQuery.refetch()}>
+                Réessayer
+              </Button>
+            </div>
           ) : (
             <GameHistoryList games={gamesQuery.data ?? []} linkToReview />
           )}

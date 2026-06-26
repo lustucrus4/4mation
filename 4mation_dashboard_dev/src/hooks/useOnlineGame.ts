@@ -51,6 +51,7 @@ export interface GameOverPayload {
   is_guest?: boolean;
   is_private?: boolean;
   private_code?: string;
+  saved_game_id?: string;
   opponent: { display_name: string; elo: number };
 }
 
@@ -114,6 +115,7 @@ function toGameOverIntro(payload: GameOverPayload): GameOverIntro {
     eloAfter: payload.elo_after,
     eloDelta: payload.elo_delta,
     isGuest: payload.is_guest,
+    savedGameId: payload.saved_game_id,
   };
 }
 
@@ -457,6 +459,8 @@ export function useOnlineGame() {
         );
         if (!payload.is_guest && payload.elo_after != null) {
           setElo(payload.elo_after);
+          window.dispatchEvent(new CustomEvent("4mation:game-saved"));
+        } else if (payload.saved_game_id) {
           window.dispatchEvent(new CustomEvent("4mation:game-saved"));
         }
       };

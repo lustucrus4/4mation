@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Board, { emptyBoard } from "../components/game/Board";
 import GameOverOverlay from "../components/game/GameOverOverlay";
 import Card from "../components/ui/Card";
@@ -10,6 +10,7 @@ import { useAccount } from "../hooks/useAccount";
 
 export default function PlayPage() {
   const game = useGame();
+  const navigate = useNavigate();
   const { authenticated, profile } = useAccount();
   const { state, busy, mode } = game;
   const initRef = useRef(false);
@@ -51,6 +52,16 @@ export default function PlayPage() {
                 void game.newGame("standard");
               },
             }}
+            secondaryAction={
+              game.gameOverOverlay.savedGameId
+                ? {
+                    label: "Analyser la partie",
+                    onClick: () => {
+                      navigate(`/analyze/${game.gameOverOverlay!.savedGameId}`);
+                    },
+                  }
+                : undefined
+            }
           />
         ) : null}
 

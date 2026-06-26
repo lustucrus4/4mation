@@ -115,6 +115,7 @@ def init_schema() -> bool:
                 ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_user_id INTEGER
                     REFERENCES users(id) ON DELETE SET NULL;
                 ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_elo INTEGER;
+                ALTER TABLE games ADD COLUMN IF NOT EXISTS opponent_label TEXT;
                 """
             )
             conn.commit()

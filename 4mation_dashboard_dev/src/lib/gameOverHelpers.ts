@@ -31,5 +31,6 @@ export function gameStateToIntro(
     eloAfter: options.savedGame?.elo_after,
     eloDelta: options.savedGame?.elo_delta,
     isGuest: hasElo ? false : undefined,
+    savedGameId: options.savedGame?.game_id || undefined,
   };
 }

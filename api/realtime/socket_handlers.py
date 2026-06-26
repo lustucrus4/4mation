@@ -92,22 +92,27 @@ def _finish_room(room: OnlineRoom) -> None:
     p2 = room.players[2]
     saved: Dict[int, Dict[str, Any]] = {}
 
-    both_registered = not is_guest_id(p1.user_id) and not is_guest_id(p2.user_id)
-    if both_registered:
-        try:
-            saved = user_repo.save_online_game(
-                red_user_id=p1.user_id,
-                blue_user_id=p2.user_id,
-                winner=winner,
-                move_count=move_count,
-                history=history,
-                started_at=started_at,
-                red_elo=p1.elo,
-                blue_elo=p2.elo,
-                resign_by=room.resign_by,
-            )
-        except Exception:
-            logger.exception("Échec sauvegarde partie online room=%s", room.room_id)
+    if user_repo.ensure_ready():
+        for _color, player in room.players.items():
+            if is_guest_id(player.user_id):
+                continue
+            opp = room.opponent_of(player)
+            try:
+                row = user_repo.save_online_game_for_user(
+                    player.user_id,
+                    human_color=player.color,
+                    opponent_user_id=opp.user_id if not is_guest_id(opp.user_id) else None,
+                    opponent_label=opp.display_name if is_guest_id(opp.user_id) else None,
+                    opponent_elo=opp.elo,
+                    winner=winner,
+                    move_count=move_count,
+                    history=history,
+                    started_at=started_at,
+                )
+                if row:
+                    saved[player.user_id] = row
+            except Exception:
+                logger.exception("Échec sauvegarde partie online room=%s user=%s", room.room_id, player.user_id)
 
     session = _private_session_for_room(room)
     for _color, player in room.players.items():
@@ -121,6 +126,7 @@ def _finish_room(room: OnlineRoom) -> None:
             "end_reason": room.end_reason,
             "elo_delta": stats.get("elo_delta"),
             "elo_after": stats.get("elo_after"),
+            "saved_game_id": stats.get("game_id"),
             "is_guest": is_guest_id(player.user_id),
             "opponent": {"display_name": opp.display_name, "elo": opp.elo},
         }

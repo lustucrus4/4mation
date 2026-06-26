@@ -61,7 +61,13 @@ export default function GameReviewPage() {
           </Link>
           <h1 className="mt-1 text-2xl font-black text-accent">Revue de partie</h1>
           <p className="text-sm text-white/60">
-            Niveau {game.bot_level ?? "?"} · {game.result === "win" ? "Victoire" : game.result === "loss" ? "Défaite" : "Nul"}
+            {game.game_mode === "online"
+              ? `vs ${game.opponent_name ?? "joueur"}${game.opponent_elo != null ? ` (${game.opponent_elo} Elo)` : ""} · ${
+                  game.result === "win" ? "Victoire" : game.result === "loss" ? "Défaite" : "Nul"
+                }`
+              : `Niveau ${game.bot_level ?? "?"} · ${
+                  game.result === "win" ? "Victoire" : game.result === "loss" ? "Défaite" : "Nul"
+                }`}
             {game.finished_at &&
               ` · ${new Date(game.finished_at).toLocaleDateString("fr-FR")}`}
           </p>

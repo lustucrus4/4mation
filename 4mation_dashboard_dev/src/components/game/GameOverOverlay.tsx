@@ -7,6 +7,7 @@ export interface GameOverIntro {
   eloAfter?: number;
   eloDelta?: number;
   isGuest?: boolean;
+  savedGameId?: string;
 }
 
 export interface GameOverPrimaryAction {
@@ -18,6 +19,7 @@ interface GameOverOverlayProps {
   intro: GameOverIntro;
   onDismiss?: () => void;
   primaryAction?: GameOverPrimaryAction;
+  secondaryAction?: GameOverPrimaryAction;
 }
 
 const RESULT_META = {
@@ -50,7 +52,7 @@ const RESULT_META = {
   },
 } as const;
 
-export default function GameOverOverlay({ intro, onDismiss, primaryAction }: GameOverOverlayProps) {
+export default function GameOverOverlay({ intro, onDismiss, primaryAction, secondaryAction }: GameOverOverlayProps) {
   const meta = RESULT_META[intro.result];
   const delta = intro.eloDelta;
   const hasElo = !intro.isGuest && delta != null && intro.eloAfter != null;
@@ -115,17 +117,31 @@ export default function GameOverOverlay({ intro, onDismiss, primaryAction }: Gam
           <p className="mt-6 text-sm text-white/50">Elo non enregistré (mode invité)</p>
         ) : null}
 
-        {primaryAction ? (
-          <div className="mt-6">
-            <Button
-              type="button"
-              className="w-full"
-              onClick={() => {
-                primaryAction.onClick();
-              }}
-            >
-              {primaryAction.label}
-            </Button>
+        {primaryAction || secondaryAction ? (
+          <div className="mt-6 flex flex-col gap-2">
+            {primaryAction ? (
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => {
+                  primaryAction.onClick();
+                }}
+              >
+                {primaryAction.label}
+              </Button>
+            ) : null}
+            {secondaryAction ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  secondaryAction.onClick();
+                }}
+              >
+                {secondaryAction.label}
+              </Button>
+            ) : null}
           </div>
         ) : null}
 

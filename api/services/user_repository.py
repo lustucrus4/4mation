@@ -146,6 +146,81 @@ class UserRepository:
 
         return {
             "game": game_row,
+            "game_id": str(game_row["id"]),
+            "elo_before": player_elo,
+            "elo_after": new_elo,
+            "elo_delta": delta,
+        }
+
+    def save_online_game_for_user(
+        self,
+        user_id: int,
+        *,
+        human_color: int,
+        opponent_user_id: Optional[int],
+        opponent_label: Optional[str],
+        opponent_elo: int,
+        winner: Optional[int],
+        move_count: int,
+        history: List[Dict[str, Any]],
+        started_at: Optional[datetime] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Enregistre une partie en ligne pour un joueur connecté (adversaire compte ou invité)."""
+        started = started_at or _utcnow()
+        rating = self.get_or_create_rating(user_id, "online")
+        player_elo = int(rating["elo"])
+        score = human_score(winner, human_color)
+        new_elo, delta = update_elo(player_elo, int(opponent_elo), score)
+        res = result_label(winner, human_color)
+
+        with db_conn() as conn:
+            game_row = conn.execute(
+                """
+                INSERT INTO games (
+                    user_id, game_mode, human_color, opponent_user_id, opponent_label,
+                    opponent_elo, result, winner, move_count, history,
+                    elo_before, elo_after, elo_delta, started_at, finished_at
+                )
+                VALUES (%s, 'online', %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, NOW())
+                RETURNING *
+                """,
+                (
+                    user_id,
+                    human_color,
+                    opponent_user_id,
+                    opponent_label if opponent_user_id is None else None,
+                    opponent_elo,
+                    res,
+                    winner,
+                    move_count,
+                    json.dumps(history),
+                    player_elo,
+                    new_elo,
+                    delta,
+                    started,
+                ),
+            ).fetchone()
+
+            win_inc = 1 if res == "win" else 0
+            loss_inc = 1 if res == "loss" else 0
+            draw_inc = 1 if res == "draw" else 0
+            conn.execute(
+                """
+                UPDATE ratings SET
+                    elo = %s,
+                    games_played = games_played + 1,
+                    wins = wins + %s,
+                    losses = losses + %s,
+                    draws = draws + %s
+                WHERE user_id = %s AND mode = 'online'
+                """,
+                (new_elo, win_inc, loss_inc, draw_inc, user_id),
+            )
+            conn.commit()
+
+        return {
+            "game": game_row,
+            "game_id": str(game_row["id"]),
             "elo_before": player_elo,
             "elo_after": new_elo,
             "elo_delta": delta,
@@ -164,82 +239,27 @@ class UserRepository:
         blue_elo: int,
         resign_by: Optional[int] = None,
     ) -> Dict[int, Dict[str, Any]]:
-        """Enregistre une partie PvP et met à jour l'Elo online des deux joueurs."""
-        started = started_at or _utcnow()
+        """Enregistre une partie PvP entre deux comptes et met à jour l'Elo online."""
+        _ = resign_by
         outcomes: Dict[int, Dict[str, Any]] = {}
-
         pairs = (
-            (red_user_id, 1, red_elo, blue_user_id, blue_elo),
-            (blue_user_id, 2, blue_elo, red_user_id, red_elo),
+            (red_user_id, 1, blue_user_id, None, red_elo, blue_elo),
+            (blue_user_id, 2, red_user_id, None, blue_elo, red_elo),
         )
-
-        rating_rows = {
-            uid: self.get_or_create_rating(uid, "online") for uid in (red_user_id, blue_user_id)
-        }
-        elo_map = {red_user_id: int(rating_rows[red_user_id]["elo"]), blue_user_id: int(rating_rows[blue_user_id]["elo"])}
-
-        score_red = human_score(winner, 1)
-        score_blue = human_score(winner, 2)
-        new_red, delta_red = update_elo(elo_map[red_user_id], elo_map[blue_user_id], score_red)
-        new_blue, delta_blue = update_elo(elo_map[blue_user_id], elo_map[red_user_id], score_blue)
-        new_elos = {red_user_id: new_red, blue_user_id: new_blue}
-        deltas = {red_user_id: delta_red, blue_user_id: delta_blue}
-
-        with db_conn() as conn:
-            for user_id, human_color, _seat_elo, opp_id, opp_elo in pairs:
-                res = result_label(winner, human_color)
-                player_elo = elo_map[user_id]
-                new_elo = new_elos[user_id]
-                delta = deltas[user_id]
-
-                conn.execute(
-                    """
-                    INSERT INTO games (
-                        user_id, game_mode, human_color, opponent_user_id, opponent_elo,
-                        result, winner, move_count, history,
-                        elo_before, elo_after, elo_delta, started_at, finished_at
-                    )
-                    VALUES (%s, 'online', %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, NOW())
-                    """,
-                    (
-                        user_id,
-                        human_color,
-                        opp_id,
-                        opp_elo,
-                        res,
-                        winner,
-                        move_count,
-                        json.dumps(history),
-                        player_elo,
-                        new_elo,
-                        delta,
-                        started,
-                    ),
-                )
-
-                win_inc = 1 if res == "win" else 0
-                loss_inc = 1 if res == "loss" else 0
-                draw_inc = 1 if res == "draw" else 0
-                conn.execute(
-                    """
-                    UPDATE ratings SET
-                        elo = %s,
-                        games_played = games_played + 1,
-                        wins = wins + %s,
-                        losses = losses + %s,
-                        draws = draws + %s
-                    WHERE user_id = %s AND mode = 'online'
-                    """,
-                    (new_elo, win_inc, loss_inc, draw_inc, user_id),
-                )
-                outcomes[user_id] = {
-                    "elo_before": player_elo,
-                    "elo_after": new_elo,
-                    "elo_delta": delta,
-                    "resign_by": resign_by,
-                }
-            conn.commit()
-
+        for user_id, human_color, opp_id, opp_label, _seat_elo, opp_elo in pairs:
+            saved = self.save_online_game_for_user(
+                user_id,
+                human_color=human_color,
+                opponent_user_id=opp_id,
+                opponent_label=opp_label,
+                opponent_elo=opp_elo,
+                winner=winner,
+                move_count=move_count,
+                history=history,
+                started_at=started_at,
+            )
+            if saved:
+                outcomes[user_id] = saved
         return outcomes
 
     def list_games(
@@ -256,7 +276,7 @@ class UserRepository:
                 """
                 SELECT g.id, g.game_mode, g.bot_id, g.bot_level, g.result, g.move_count,
                        g.elo_before, g.elo_after, g.elo_delta, g.started_at, g.finished_at,
-                       g.opponent_user_id, g.opponent_elo,
+                       g.opponent_user_id, g.opponent_elo, g.opponent_label,
                        u.display_name AS opponent_name, u.username AS opponent_username
                 FROM games g
                 LEFT JOIN users u ON u.id = g.opponent_user_id
@@ -323,7 +343,12 @@ def _serialize_game_summary(row: Dict[str, Any]) -> Dict[str, Any]:
         "finished_at": row["finished_at"].isoformat() if row.get("finished_at") else None,
     }
     if row.get("game_mode") == "online":
-        opp = row.get("opponent_name") or row.get("opponent_username") or "Adversaire"
+        opp = (
+            row.get("opponent_name")
+            or row.get("opponent_username")
+            or row.get("opponent_label")
+            or "Adversaire"
+        )
         out["opponent_name"] = str(opp)
         out["opponent_elo"] = row.get("opponent_elo")
     return out

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Board, { emptyBoard } from "../components/game/Board";
 import MatchFoundOverlay from "../components/game/MatchFoundOverlay";
 import GameOverOverlay from "../components/game/GameOverOverlay";
@@ -37,6 +37,7 @@ function PrivateCodeBadge({ code }: { code: string }) {
 }
 
 export default function OnlinePlayPage() {
+  const navigate = useNavigate();
   const { authenticated, profile } = useAccount();
   const [nickname, setNickname] = useState(getGuestName);
   const [joinCode, setJoinCode] = useState("");
@@ -112,6 +113,16 @@ export default function OnlinePlayPage() {
                     label: "Nouvelle partie",
                     onClick: online.joinQueue,
                   }
+            }
+            secondaryAction={
+              online.gameOverOverlay.savedGameId
+                ? {
+                    label: "Analyser la partie",
+                    onClick: () => {
+                      navigate(`/analyze/${online.gameOverOverlay!.savedGameId}`);
+                    },
+                  }
+                : undefined
             }
           />
         ) : null}

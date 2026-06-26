@@ -29,8 +29,8 @@ export default function AnalyzePage() {
       <header>
         <h1 className="text-2xl font-black text-accent">Analyser</h1>
         <p className="mt-1 text-sm text-white/60">
-          Historique de vos parties enregistrées — cliquez sur une partie pour la revue détaillée
-          (précision, classification des coups, relecture).
+          Historique de vos parties enregistrées (IA et en ligne) — cliquez sur une partie pour la revue
+          détaillée (précision, classification des coups, relecture).
         </p>
         <p className="mt-2 text-sm">
           <a href="/analyze/rl" className="font-semibold text-accent hover:underline">
@@ -42,7 +42,7 @@ export default function AnalyzePage() {
       {!authLoading && !authenticated && (
         <Card>
           <p className="text-white/70">
-            Connectez-vous pour retrouver l'historique de vos parties contre les bots.
+            Connectez-vous pour retrouver l&apos;historique de vos parties contre les bots et en ligne.
           </p>
         </Card>
       )}

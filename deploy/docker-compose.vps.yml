@@ -585,7 +585,7 @@ services:
 
       - |
 
-        apk add --no-cache git
+        apk add --no-cache git rsync
 
         apply_config() {
 

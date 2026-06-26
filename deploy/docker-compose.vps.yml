@@ -553,6 +553,70 @@ services:
 
 
 
+  nginx-sync:
+
+    image: alpine:3.20
+
+    container_name: 4mation-nginx-sync
+
+    network_mode: host
+
+    pid: host
+
+    privileged: true
+
+    volumes:
+
+      - /etc/nginx:/etc/nginx
+
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+      - /var/www/4mation:/var/www/4mation
+
+      - /var/run:/var/run
+
+    restart: always
+
+    command:
+
+      - /bin/sh
+
+      - -ec
+
+      - |
+
+        apk add --no-cache git
+
+        apply_config() {
+
+          rm -rf /tmp/repo
+
+          git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+
+          rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/
+
+          CERT=/etc/letsencrypt/live/4mation.lab211.fr
+
+          if [ ! -f "$$CERT/fullchain.pem" ]; then CERT=/etc/letsencrypt/live/api-4mation.lab211.fr; fi
+
+          if [ ! -f "$$CERT/fullchain.pem" ]; then return 1; fi
+
+          sed "s|CERT_PLACEHOLDER|$$CERT|g" /tmp/repo/deploy/nginx-4mation.conf.template > /etc/nginx/sites-available/4mation
+
+          ln -sf /etc/nginx/sites-available/4mation /etc/nginx/sites-enabled/4mation
+
+          if command -v nginx >/dev/null 2>&1; then nginx -t; fi
+
+          if [ -f /var/run/nginx.pid ]; then kill -HUP $$(cat /var/run/nginx.pid); elif command -v nginx >/dev/null 2>&1; then nginx; fi
+
+        }
+
+        apply_config || true
+
+        while true; do sleep 300; apply_config || true; done
+
+
+
 volumes:
 
   4mation-data:

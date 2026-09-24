@@ -1,0 +1,497 @@
+{
+  "genere_le": "2026-09-24T23:22:22",
+  "depth": 30,
+  "time_ms": 90000,
+  "ouvertures": [
+    {
+      "ouverture": [
+        0,
+        0
+      ],
+      "reponse": [
+        1,
+        1
+      ],
+      "score": -5,
+      "verdict": "L",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.4956,
+      "mate_in": null,
+      "profondeur": 26,
+      "noeuds": 187779072,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 3,
+      "coups_top": [
+        {
+          "coup": [
+            1,
+            1
+          ],
+          "score": -5,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            1
+          ],
+          "score": -25,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            0
+          ],
+          "score": -25,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        0,
+        1
+      ],
+      "reponse": [
+        1,
+        2
+      ],
+      "score": -13,
+      "verdict": "L",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.4884,
+      "mate_in": null,
+      "profondeur": 24,
+      "noeuds": 193410048,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 5,
+      "coups_top": [
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": -13,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            1
+          ],
+          "score": -40,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            2
+          ],
+          "score": -41,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        0,
+        2
+      ],
+      "reponse": [
+        1,
+        3
+      ],
+      "score": 22,
+      "verdict": "W",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.5196,
+      "mate_in": null,
+      "profondeur": 25,
+      "noeuds": 220266496,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 5,
+      "coups_top": [
+        {
+          "coup": [
+            1,
+            3
+          ],
+          "score": 22,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": 4,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            1
+          ],
+          "score": 2,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        0,
+        3
+      ],
+      "reponse": [
+        1,
+        3
+      ],
+      "score": -39,
+      "verdict": "L",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.4654,
+      "mate_in": null,
+      "profondeur": 26,
+      "noeuds": 197947392,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 5,
+      "coups_top": [
+        {
+          "coup": [
+            1,
+            3
+          ],
+          "score": -39,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            2
+          ],
+          "score": -52,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            4
+          ],
+          "score": -52,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        1,
+        1
+      ],
+      "reponse": [
+        1,
+        2
+      ],
+      "score": 5,
+      "verdict": "W",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.5044,
+      "mate_in": null,
+      "profondeur": 25,
+      "noeuds": 227599360,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 8,
+      "coups_top": [
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": 5,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            1
+          ],
+          "score": 5,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            2
+          ],
+          "score": -9,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        1,
+        2
+      ],
+      "reponse": [
+        2,
+        3
+      ],
+      "score": -42,
+      "verdict": "L",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.4627,
+      "mate_in": null,
+      "profondeur": 24,
+      "noeuds": 235174912,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 8,
+      "coups_top": [
+        {
+          "coup": [
+            2,
+            3
+          ],
+          "score": -42,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            2
+          ],
+          "score": -59,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            3
+          ],
+          "score": -60,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        1,
+        3
+      ],
+      "reponse": [
+        2,
+        3
+      ],
+      "score": -12,
+      "verdict": "L",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.4893,
+      "mate_in": null,
+      "profondeur": 25,
+      "noeuds": 184678400,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 8,
+      "coups_top": [
+        {
+          "coup": [
+            2,
+            3
+          ],
+          "score": -12,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": -32,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": -32,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        2,
+        2
+      ],
+      "reponse": [
+        3,
+        3
+      ],
+      "score": -63,
+      "verdict": "L",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.4442,
+      "mate_in": null,
+      "profondeur": 26,
+      "noeuds": 217684992,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 8,
+      "coups_top": [
+        {
+          "coup": [
+            3,
+            3
+          ],
+          "score": -63,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            3
+          ],
+          "score": -99,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            3,
+            2
+          ],
+          "score": -99,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        2,
+        3
+      ],
+      "reponse": [
+        3,
+        3
+      ],
+      "score": -53,
+      "verdict": "L",
+      "preuve": "aucune preuve",
+      "exact": false,
+      "win_rate": 0.453,
+      "mate_in": null,
+      "profondeur": 27,
+      "noeuds": 204452864,
+      "tb_exact": 0,
+      "tb_skips": 0,
+      "tronque": true,
+      "duree_ms": 90000,
+      "coups_legaux": 8,
+      "coups_top": [
+        {
+          "coup": [
+            3,
+            3
+          ],
+          "score": -53,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            3,
+            2
+          ],
+          "score": -70,
+          "preuve": "estimation"
+        },
+        {
+          "coup": [
+            3,
+            4
+          ],
+          "score": -70,
+          "preuve": "estimation"
+        }
+      ]
+    },
+    {
+      "ouverture": [
+        3,
+        3
+      ],
+      "reponse": [
+        3,
+        2
+      ],
+      "score": -99972,
+      "verdict": "L",
+      "preuve": "perte",
+      "exact": true,
+      "win_rate": 0.0,
+      "mate_in": 28,
+      "profondeur": 28,
+      "noeuds": 63054723,
+      "tb_exact": 1,
+      "tb_skips": 0,
+      "tronque": false,
+      "duree_ms": 27704,
+      "coups_legaux": 8,
+      "coups_top": [
+        {
+          "coup": [
+            3,
+            2
+          ],
+          "score": -99972,
+          "preuve": "perte"
+        },
+        {
+          "coup": [
+            2,
+            3
+          ],
+          "score": -99972,
+          "preuve": "perte"
+        },
+        {
+          "coup": [
+            3,
+            4
+          ],
+          "score": -99972,
+          "preuve": "perte"
+        }
+      ]
+    }
+  ]
+}

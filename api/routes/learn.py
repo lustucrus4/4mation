@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from typing import Any, Dict, List
+
 from flask import Blueprint, jsonify, request
 
 from api.services.opening_explorer import explore_opening
@@ -528,16 +532,58 @@ def api_puzzle_check():
     return jsonify({"success": True, **result})
 
 
+def _load_generated_lessons() -> Dict[str, Dict[str, Any]]:
+    """Leçons regénérées depuis le solveur, indexées par identifiant.
+
+    `script/solver/build_lessons.py` écrit ce fichier en relisant les artefacts de
+    résolution (sonde profonde, preuve du centre, vérifications de schémas, finales
+    exactes). Il est **versionné** (`api/content/`) : sinon le site déployé servirait
+    les anciennes leçons. Le fichier reste optionnel : sans lui, le site sert les
+    leçons écrites à la main.
+    """
+    path = Path(__file__).resolve().parent.parent / "content" / "lessons_engine.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    lessons = payload.get("lessons")
+    if not isinstance(lessons, list):
+        return {}
+    return {
+        lesson["id"]: lesson
+        for lesson in lessons
+        if isinstance(lesson, dict) and isinstance(lesson.get("id"), str)
+    }
+
+
+def all_lessons() -> List[Dict[str, Any]]:
+    """Leçons servies par l'API : les regénérées remplacent celles écrites à la main."""
+    generated = _load_generated_lessons()
+    merged: List[Dict[str, Any]] = []
+    replaced: set = set()
+    for lesson in LESSONS:
+        replacement = generated.get(lesson["id"])
+        if replacement:
+            merged.append(replacement)
+            replaced.add(lesson["id"])
+        else:
+            merged.append(lesson)
+    for lesson_id, lesson in generated.items():
+        if lesson_id not in replaced:
+            merged.append(lesson)
+    return merged
+
+
 @learn_bp.route("/api/learn/lessons", methods=["GET"])
 def api_lessons():
     """Liste des leçons disponibles."""
-    return jsonify({"success": True, "lessons": LESSONS})
+    return jsonify({"success": True, "lessons": all_lessons()})
 
 
 @learn_bp.route("/api/learn/lessons/<lesson_id>", methods=["GET"])
 def api_lesson_detail(lesson_id: str):
     """Contenu d'une leçon."""
-    for lesson in LESSONS:
+    for lesson in all_lessons():
         if lesson["id"] == lesson_id:
             return jsonify({"success": True, "lesson": lesson})
     return jsonify({"success": False, "error": "Leçon introuvable"}), 404

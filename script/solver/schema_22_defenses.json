@@ -1,0 +1,1511 @@
+{
+  "genere_le": "2026-09-24T23:11:29",
+  "opening": [
+    2,
+    2
+  ],
+  "parties": 8,
+  "defense_top": 3,
+  "profondeur": 20,
+  "budget_ms": 1500,
+  "graine": 11,
+  "duree_s": 35.8,
+  "jeux": [
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 17,
+      "analyses": 16,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            2,
+            3
+          ],
+          "win_rate": 0.4929,
+          "rang": 1,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            3,
+            3
+          ],
+          "win_rate": 0.5213,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            3,
+            4
+          ],
+          "win_rate": 0.4689,
+          "rang": 2,
+          "choix": 6,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            4,
+            4
+          ],
+          "win_rate": 0.5523,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            3,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 1,
+          "choix": 6,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            2,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 7,
+          "player": 2,
+          "move": [
+            1,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 1,
+          "choix": 4,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 8,
+          "player": 1,
+          "move": [
+            2,
+            5
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 9,
+          "player": 2,
+          "move": [
+            1,
+            6
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 4,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 10,
+          "player": 1,
+          "move": [
+            0,
+            6
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 11,
+          "player": 2,
+          "move": [
+            0,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 1,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 12,
+          "player": 1,
+          "move": [
+            1,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 2,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 13,
+          "player": 2,
+          "move": [
+            0,
+            3
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 14,
+          "player": 1,
+          "move": [
+            1,
+            3
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 15,
+          "player": 2,
+          "move": [
+            0,
+            2
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 16,
+          "player": 1,
+          "move": [
+            1,
+            1
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        1,
+        2,
+        1,
+        1,
+        2,
+        0,
+        0,
+        2
+      ],
+      "index": 1
+    },
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 7,
+      "analyses": 6,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            2,
+            3
+          ],
+          "win_rate": 0.4787,
+          "rang": 1,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            3,
+            2
+          ],
+          "win_rate": 0.5584,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            3,
+            1
+          ],
+          "win_rate": 0.4654,
+          "rang": 2,
+          "choix": 6,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            4,
+            2
+          ],
+          "win_rate": 0.5889,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            4,
+            1
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 6,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            5,
+            2
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 5,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        1,
+        2,
+        2
+      ],
+      "index": 2
+    },
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 21,
+      "analyses": 20,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            3,
+            3
+          ],
+          "win_rate": 0.4769,
+          "rang": 0,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            2,
+            4
+          ],
+          "win_rate": 0.5231,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            2,
+            3
+          ],
+          "win_rate": 0.5124,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            1,
+            3
+          ],
+          "win_rate": 0.4902,
+          "rang": 0,
+          "choix": 5,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            1,
+            4
+          ],
+          "win_rate": 0.4725,
+          "rang": 1,
+          "choix": 5,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            0,
+            4
+          ],
+          "win_rate": 0.4796,
+          "rang": 0,
+          "choix": 5,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 7,
+          "player": 2,
+          "move": [
+            1,
+            5
+          ],
+          "win_rate": 0.4103,
+          "rang": 1,
+          "choix": 3,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 8,
+          "player": 1,
+          "move": [
+            0,
+            5
+          ],
+          "win_rate": 0.524,
+          "rang": 0,
+          "choix": 5,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 9,
+          "player": 2,
+          "move": [
+            0,
+            6
+          ],
+          "win_rate": 0.3672,
+          "rang": 0,
+          "choix": 2,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 10,
+          "player": 1,
+          "move": [
+            1,
+            6
+          ],
+          "win_rate": 0.5654,
+          "rang": 0,
+          "choix": 1,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 11,
+          "player": 2,
+          "move": [
+            2,
+            5
+          ],
+          "win_rate": 0.3009,
+          "rang": 0,
+          "choix": 2,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 12,
+          "player": 1,
+          "move": [
+            3,
+            5
+          ],
+          "win_rate": 0.5863,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 13,
+          "player": 2,
+          "move": [
+            4,
+            4
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 6,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 14,
+          "player": 1,
+          "move": [
+            5,
+            3
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 15,
+          "player": 2,
+          "move": [
+            6,
+            2
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 7,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 16,
+          "player": 1,
+          "move": [
+            5,
+            2
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 17,
+          "player": 2,
+          "move": [
+            5,
+            1
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 6,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 18,
+          "player": 1,
+          "move": [
+            4,
+            2
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 19,
+          "player": 2,
+          "move": [
+            4,
+            3
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 20,
+          "player": 1,
+          "move": [
+            3,
+            2
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        2,
+        2,
+        2,
+        0
+      ],
+      "index": 3
+    },
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 9,
+      "analyses": 8,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            3,
+            2
+          ],
+          "win_rate": 0.4689,
+          "rang": 2,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            4,
+            3
+          ],
+          "win_rate": 0.5311,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            3,
+            4
+          ],
+          "win_rate": 0.4796,
+          "rang": 1,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            3,
+            3
+          ],
+          "win_rate": 0.5399,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            2,
+            4
+          ],
+          "win_rate": 0.0,
+          "rang": 1,
+          "choix": 4,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            2,
+            3
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 7,
+          "player": 2,
+          "move": [
+            1,
+            2
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 8,
+          "player": 1,
+          "move": [
+            1,
+            3
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "index": 4
+    },
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 7,
+      "analyses": 6,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            3,
+            2
+          ],
+          "win_rate": 0.4689,
+          "rang": 2,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            2,
+            3
+          ],
+          "win_rate": 0.5399,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            1,
+            3
+          ],
+          "win_rate": 0.3763,
+          "rang": 2,
+          "choix": 6,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            2,
+            4
+          ],
+          "win_rate": 0.6237,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            1,
+            4
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 6,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            2,
+            5
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 5,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        2,
+        2,
+        2
+      ],
+      "index": 5
+    },
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 19,
+      "analyses": 18,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            3,
+            3
+          ],
+          "win_rate": 0.4831,
+          "rang": 0,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            2,
+            4
+          ],
+          "win_rate": 0.5169,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            3,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 7,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            2,
+            5
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            1,
+            6
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            0,
+            6
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 7,
+          "player": 2,
+          "move": [
+            0,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 2,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 8,
+          "player": 1,
+          "move": [
+            0,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 9,
+          "player": 2,
+          "move": [
+            1,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 10,
+          "player": 1,
+          "move": [
+            1,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 2,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 11,
+          "player": 2,
+          "move": [
+            0,
+            3
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 12,
+          "player": 1,
+          "move": [
+            1,
+            3
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 13,
+          "player": 2,
+          "move": [
+            0,
+            2
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 14,
+          "player": 1,
+          "move": [
+            0,
+            1
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 15,
+          "player": 2,
+          "move": [
+            0,
+            0
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 16,
+          "player": 1,
+          "move": [
+            1,
+            0
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 2,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 17,
+          "player": 2,
+          "move": [
+            2,
+            0
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 18,
+          "player": 1,
+          "move": [
+            3,
+            1
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      "index": 6
+    },
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 11,
+      "analyses": 10,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            3,
+            3
+          ],
+          "win_rate": 0.4831,
+          "rang": 0,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            2,
+            4
+          ],
+          "win_rate": 0.5275,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            2,
+            5
+          ],
+          "win_rate": 0.4215,
+          "rang": 1,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            3,
+            4
+          ],
+          "win_rate": 0.5785,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            4,
+            3
+          ],
+          "win_rate": 0.338,
+          "rang": 1,
+          "choix": 5,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            4,
+            4
+          ],
+          "win_rate": 0.5698,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 7,
+          "player": 2,
+          "move": [
+            3,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 1,
+          "choix": 5,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 8,
+          "player": 1,
+          "move": [
+            2,
+            6
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 9,
+          "player": 2,
+          "move": [
+            1,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 10,
+          "player": 1,
+          "move": [
+            1,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 5,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        0,
+        1,
+        1,
+        1,
+        2
+      ],
+      "index": 7
+    },
+    {
+      "opening": [
+        2,
+        2
+      ],
+      "winner": 1,
+      "plies": 13,
+      "analyses": 12,
+      "moves": [
+        {
+          "ply": 0,
+          "player": 1,
+          "move": [
+            2,
+            2
+          ],
+          "win_rate": null,
+          "rang": 0,
+          "choix": 1
+        },
+        {
+          "ply": 1,
+          "player": 2,
+          "move": [
+            3,
+            3
+          ],
+          "win_rate": 0.4725,
+          "rang": 0,
+          "choix": 8,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "player": 1,
+          "move": [
+            2,
+            4
+          ],
+          "win_rate": 0.5275,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "estimation",
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "player": 2,
+          "move": [
+            3,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 2,
+          "choix": 7,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 4,
+          "player": 1,
+          "move": [
+            2,
+            5
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 7,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 5,
+          "player": 2,
+          "move": [
+            1,
+            6
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 6,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 6,
+          "player": 1,
+          "move": [
+            0,
+            6
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 7,
+          "player": 2,
+          "move": [
+            1,
+            5
+          ],
+          "win_rate": 0.0,
+          "rang": 1,
+          "choix": 2,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 8,
+          "player": 1,
+          "move": [
+            0,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 9,
+          "player": 2,
+          "move": [
+            0,
+            3
+          ],
+          "win_rate": 0.0,
+          "rang": 1,
+          "choix": 4,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 10,
+          "player": 1,
+          "move": [
+            1,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        },
+        {
+          "ply": 11,
+          "player": 2,
+          "move": [
+            2,
+            3
+          ],
+          "win_rate": 0.0,
+          "rang": 0,
+          "choix": 3,
+          "verdict": "perte",
+          "exact": true
+        },
+        {
+          "ply": 12,
+          "player": 1,
+          "move": [
+            3,
+            4
+          ],
+          "win_rate": 1.0,
+          "rang": 0,
+          "choix": 4,
+          "verdict": "gain",
+          "exact": true
+        }
+      ],
+      "defense_rangs": [
+        0,
+        2,
+        0,
+        1,
+        1,
+        0
+      ],
+      "index": 8
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import LessonBody from "../components/learn/LessonBody";
+import RuleDiagram, { type CellValue } from "../components/learn/RuleDiagram";
 import Card from "../components/ui/Card";
 import { fetchLesson, type Lesson } from "../lib/learnApi";
 
@@ -44,7 +46,14 @@ export default function LessonDetailPage() {
       {lesson.sections.map((s) => (
         <Card key={s.heading}>
           <h2 className="text-lg font-bold text-accent">{s.heading}</h2>
-          <p className="mt-2 leading-relaxed text-white/80">{s.body}</p>
+          <LessonBody body={s.body} />
+          {s.diagram && (
+            <RuleDiagram
+              board={s.diagram.board as CellValue[][]}
+              highlights={s.diagram.highlights}
+              caption={s.diagram.caption}
+            />
+          )}
         </Card>
       ))}
 

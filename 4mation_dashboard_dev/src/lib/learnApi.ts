@@ -70,12 +70,27 @@ export interface PackPuzzleCheckResult {
   expected_step?: number;
 }
 
+export interface LessonDiagram {
+  /** Matrice row-major : 0 vide, 1 joueur 1, 2 joueur 2. */
+  board: number[][];
+  /** Surbrillance par case "row,col". */
+  highlights?: Record<string, "valid" | "invalid" | "win" | "focus" | "last">;
+  caption?: string;
+}
+
+export interface LessonSection {
+  heading: string;
+  body: string;
+  /** Schéma de plateau optionnel, rendu sous le texte. */
+  diagram?: LessonDiagram;
+}
+
 export interface Lesson {
   id: string;
   title: string;
   level: string;
   duration_min: number;
-  sections: { heading: string; body: string }[];
+  sections: LessonSection[];
 }
 
 export function exploreOpening(

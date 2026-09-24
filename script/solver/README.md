@@ -2,6 +2,65 @@
 
 Scripts de construction de la base de positions exactes (W/L/D, meilleur coup, taux de victoire).
 
+## Résultat principal : le centre gagne de force (prouvé)
+
+Le premier coup **`3,3` (centre) gagne de force** : après ce coup, le second joueur est
+perdant **quoi qu'il fasse**, mat en 28 demi-coups. Ce n'est pas une estimation du moteur,
+c'est une **preuve** (recherche alpha-bêta complète, profondeur 28, ~23 s, table de
+transposition 2 Go), et elle est **contre-vérifiée** :
+
+- ligne rejouée avec le moteur de jeu Python (autorité sur les règles) : **0 anomalie** ;
+- à chaque position, le nombre de coups légaux du moteur coïncide avec celui des règles
+  (8/8, 7/7, 6/6, 4/4, … 17/17) — aucun coup de défense n'est oublié ;
+- distance de mat décroissante d'exactement 1 par demi-coup, alternance stricte des camps ;
+- à chaque tour de défense, **tous** les coups perdent : le gain ne dépend d'aucune faute.
+
+La ligne principale (défense la plus tenace, attaque au plus court) :
+
+```
+X3,3 O3,2 X2,3 O1,3 X2,2 O1,1 X1,2 O2,1 X3,1 O4,2 X4,3 O5,3 X5,4 O4,5 X3,4 O2,4
+X2,5 O1,6 X0,5 O1,5 X2,6 O3,6 X4,6 O5,6 X6,6 O5,5 X6,4 O6,5 X0,1
+```
+
+`Xn,m` = coup du premier joueur, `On,m` = coup du second, format `ligne,colonne`.
+
+Outils :
+
+| Script | Rôle |
+|--------|------|
+| `scripts/probe_opening_proof.py` | Sonde profonde des 10 ouvertures (preuve ou pas, meilleure réponse) |
+| `scripts/extract_forced_win.py` | Extrait la ligne de gain forcée, demi-coup par demi-coup |
+| `scripts/check_forced_win.py` | Contre-vérifie la ligne avec les règles du site (0 anomalie attendue) |
+
+```powershell
+python scripts\probe_opening_proof.py --depth 30 --time-ms 90000 --tt-mb 2048
+python scripts\extract_forced_win.py --opening 3,3 --depth 40 --time-ms 120000 --tt-mb 2048
+python scripts\check_forced_win.py script\solver\forced_win_33.json
+```
+
+Sorties : `script/solver/PREUVE_PROFONDE.md`, `GAIN_FORCE_33.md`, `forced_win_33.json`.
+
+Conséquence pratique : les ouvertures non centrales restent des **estimations** (le moteur
+n'y prouve rien à profondeur 24-26, leurs scores restent proches de l'équilibre), tandis que
+le centre est **démontré gagnant**. C'est aussi l'explication de ce que les parties réelles
+montraient déjà : contre une défense exacte, le second joueur perd systématiquement après
+une ouverture centrale — ce n'est pas un défaut du bot `level_6`, c'est le jeu.
+
+## État de la tablebase (audit complet)
+
+`4mation-local.exe --verify` (couches 1 à 12) :
+
+```
+BILAN : 11 076 663 ok | 0 faux | 13 349 810 indécidables
+Échantillon de 3000 indécidables : 2841 alias fantômes, 159 vrais trous
+```
+
+- **0 valeur fausse** sur les 11,1 M de positions vérifiables : la base est saine.
+- Les 13,3 M « indécidables » sont à ~95 % des **alias fantômes** (même plateau, `last_move`
+  différent : redondance, pas une erreur) et à ~5 % de **vrais trous** (~0,7 M estimés).
+- Conséquence : les couches 1-7 sont solides, les couches 8-12 sont **partielles**. Le
+  comblement se fait par `4mation-local --sweep-from / --sweep-to`.
+
 ## Structure
 
 ```

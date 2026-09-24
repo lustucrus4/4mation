@@ -42,14 +42,26 @@ def _last_move(data: dict) -> Optional[Tuple[int, int]]:
 
 
 def _engine_from_request(data: dict) -> GameEngine:
+    """Reconstruit un moteur Python sur la position demandée.
+
+    Les bots ne lisent que ``engine.state`` (plateau, joueur au trait, dernier coup) :
+    écrire ``engine.board`` / ``engine.current_player`` posait des attributs que
+    personne ne consultait, et le daemon répondait en réalité sur le plateau vide.
+    """
     board = _board_from_json(data["board"])
     player = int(data.get("current_player", 1))
     engine = GameEngine()
-    engine.board = board.copy()
-    engine.current_player = player
+    state = engine.get_state()
+    state.board = board.copy()
+    state.current_player = player
+    state.move_count = int(np.count_nonzero(state.board))
+
     lm = _last_move(data)
-    if lm is not None:
-        engine.last_move = lm
+    state.last_move_position = lm
+    if lm is None:
+        state.action_history = []
+    else:
+        state.action_history = [(2 if player == 1 else 1, int(lm[0]), int(lm[1]))]
     return engine
 
 

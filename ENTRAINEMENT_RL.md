@@ -1,6 +1,16 @@
 # Entraînement IA par RL — 4mation
 
 > **Pour Lucien** — tu n’as rien à configurer. Une commande lance l’entraînement, le dashboard suit la progression, une autre commande teste l’IA contre le niveau 5.
+>
+> ⚠️ **24/09/2026 — à lire avant de te fier aux chiffres du dashboard.** Le pont Python
+> d’évaluation répondait sur le **plateau vide** à chaque coup : toutes les parties d’éval
+> finissaient artificiellement en « nulle » (0 victoire / 0 défaite / 12 nulles, même avec
+> un réseau aléatoire), et la phase 1 s’entraînait contre un adversaire qui jouait toujours
+> la même case. Le pont est corrigé (l’éval mesure maintenant de vraies victoires/défaites),
+> mais **toutes les métriques `eval_*` enregistrées avant cette date sont sans valeur**.
+> La force de jeu du site ne dépend pas de ce chantier : elle vient du moteur exact
+> (`4mation-engine` : tablebase + recherche alpha-bêta) décrit dans
+> `script/solver_rust/README.md`.
 
 ## En bref : c’est quoi le RL ici ?
 
@@ -62,6 +72,19 @@
 ## Objectif
 
 Faire monter le **win rate vs level_5**. La v1 (policy linéaire) a plafonné après 16M parties (0 victoire, nulles uniquement).
+
+## Mesure de référence après correction du pont (24/09/2026)
+
+Réseau neuf (aucun entraînement), éval de 12 parties dans les deux sens :
+
+| Adversaire | Victoires | Défaites | Nulles |
+|------------|-----------|----------|--------|
+| level_3 | 2 | 10 | 0 |
+| level_5 | 0 | 12 | 0 |
+
+C’est la première mesure honnête du harnais : un réseau non entraîné perd contre level_5
+et gagne parfois contre level_3. Les valeurs « 0/0/12 » observées auparavant signalaient
+la panne du pont, pas une invincibilité.
 
 ## v3.2 — Phase L5 puis self-play (actif)
 

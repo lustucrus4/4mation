@@ -147,6 +147,7 @@ pub fn evaluate_vs_minimax(
 
         while !session.is_terminal() && session.move_count < cfg.max_moves {
             let is_rl_turn = session.current_player == rl_player;
+            let side: &str = if is_rl_turn { "agent" } else { cfg.bot_id.as_str() };
             let mv = if is_rl_turn {
                 if cfg.use_az_mcts && cfg.mcts_sims > 0 {
                     az.choose_move(policy, &session, &mut rng)
@@ -173,9 +174,26 @@ pub fn evaluate_vs_minimax(
                 bridge.choose_move(cfg, &session)?
             };
 
-            let Some(chosen) = mv else { break };
+            let Some(chosen) = mv else {
+                // Plus aucun coup jouable : fin de partie légitime.
+                if session.legal_moves().is_empty() {
+                    break;
+                }
+                anyhow::bail!(
+                    "eval: {side} n'a proposé aucun coup (coup n°{})",
+                    session.move_count + 1
+                );
+            };
+            // Un coup refusé est un bug de protocole (adversaire qui répond sur une
+            // autre position, par exemple), pas une fin de partie : compter une nulle
+            // ici masquerait la panne derrière un harnais silencieusement cassé.
             if !session.apply(chosen) {
-                break;
+                anyhow::bail!(
+                    "eval: {side} a joué un coup illégal {:?} (coup n°{}), coups légaux {:?}",
+                    chosen,
+                    session.move_count + 1,
+                    session.legal_moves()
+                );
             }
         }
 

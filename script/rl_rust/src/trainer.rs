@@ -9,7 +9,7 @@ use rand::SeedableRng;
 use rayon::ThreadPoolBuilder;
 use tracing::{info, warn};
 
-use crate::eval::{evaluate_vs_minimax, resolve_paths, EvalConfig};
+use crate::eval::{evaluate_vs_minimax, resolve_paths, EvalConfig, EvalResult};
 use crate::imitation::{heuristic_bootstrap, run_imitation_bootstrap, ImitationConfig};
 use crate::persistence::{now_iso, read_status, DataStore, MetricRow, TrainingStatus};
 use crate::policy::{reinforce_update, LinearPolicy};
@@ -78,6 +78,37 @@ impl Trainer {
             total_games,
             started_at,
         })
+    }
+
+    /// Évalue la policy courante contre un bot Python, sans entraîner.
+    ///
+    /// Sert de mesure de référence : c'est le seul chiffre qui dit si le chantier RL
+    /// progresse, et il doit donc pouvoir être obtenu seul, sur un checkpoint donné.
+    pub fn eval_only(&self, games: usize, bot_id: &str) -> Result<EvalResult> {
+        let (script_path, project_root) = resolve_paths(&self.cfg.data_dir);
+        let eval_cfg = EvalConfig {
+            games,
+            mcts_sims: self.cfg.mcts_sims,
+            python: self.cfg.python.clone(),
+            script_path,
+            project_root,
+            bot_id: bot_id.to_string(),
+            ..EvalConfig::default()
+        };
+        let result = evaluate_vs_minimax(&self.policy, &eval_cfg, 12_345)?;
+        info!(
+            "Évaluation vs {} : {} victoire(s), {} défaite(s), {} nulle(s) ({} tronquée(s)), premier coup {:.0} % ({} parties), second {:.0} % ({} parties)",
+            bot_id,
+            result.rl_wins,
+            result.bot_wins,
+            result.draws,
+            result.truncated,
+            result.seat[0].score() * 100.0,
+            result.seat[0].games,
+            result.seat[1].score() * 100.0,
+            result.seat[1].games
+        );
+        Ok(result)
     }
 
     pub fn run(&mut self) -> Result<()> {

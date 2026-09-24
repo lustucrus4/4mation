@@ -42,27 +42,69 @@ def _last_move(data: dict) -> Optional[Tuple[int, int]]:
 
 
 def _engine_from_request(data: dict) -> GameEngine:
-    board = _board_from_json(data["board"])
-    player = int(data.get("current_player", 1))
-    engine = GameEngine()
-    engine.board = board.copy()
-    engine.current_player = player
-    lm = _last_move(data)
-    if lm is not None:
-        engine.last_move = lm
+    """Reconstruit un moteur à partir de la position transmise.
+
+    Le plateau est posé dans ``engine.state`` : c'est l'objet qui porte réellement la
+    position. Écrire ``engine.board`` créait un attribut fantôme, donc le bot jouait
+    depuis le plateau vide et proposait des coups illégaux — que l'entraîneur comptait
+    ensuite comme des nulles.
+    """
+    board = _board_from_json(data["board"]).copy()
+    engine = GameEngine(board_width=board.shape[1], board_height=board.shape[0])
+    engine.reset()
+    state = engine.state
+    state.board = board
+    state.current_player = int(data.get("current_player", 1))
+    state.last_move_position = _last_move(data)
+    state.move_count = int(np.count_nonzero(state.board))
+    winner = data.get("winner")
+    state.is_terminal = bool(data.get("is_terminal", False)) or winner is not None
+    state.winner = None if winner is None else int(winner)
     return engine
 
 
-def cmd_move() -> None:
-    raw = sys.stdin.read()
-    data = json.loads(raw)
-    bot_id = data.get("bot_id", "level_5")
-    engine = _engine_from_request(data)
+def _move_response(engine: GameEngine, bot_id: str) -> Dict[str, Any]:
+    """Réponse JSON d'un coup, ou une erreur explicite s'il n'y a rien à jouer."""
+    valid = engine.get_valid_actions()
+    if not valid:
+        return {"error": "aucun coup legal"}
     move = bot_registry.choose_move(bot_id, engine)
     if move is None:
-        valid = engine.get_valid_actions()
-        move = valid[0] if valid else (0, 0)
-    print(json.dumps({"row": int(move[0]), "col": int(move[1])}))
+        move = valid[0]
+    return {"row": int(move[0]), "col": int(move[1])}
+
+
+def cmd_move() -> None:
+    data = json.loads(sys.stdin.read())
+    engine = _engine_from_request(data)
+    resp = _move_response(engine, data.get("bot_id", "level_5"))
+    print(json.dumps(resp))
+    if "error" in resp:
+        raise SystemExit(1)
+
+
+def cmd_daemon() -> None:
+    """Boucle JSONL : une ligne = une position, une ligne = un coup.
+
+    Évite de relancer Python (imports numpy + moteur de jeu + bots, ~1 s) à chaque
+    demi-coup : c'est ce qui rendait l'évaluation RL interminable.
+    """
+    loaded: Optional[str] = None
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            data = json.loads(line)
+            bot_id = data.get("bot_id", "level_5")
+            if bot_id != loaded:
+                bot_registry._get_bot(bot_id)  # amorce le cache avant la première requête
+                loaded = bot_id
+            engine = _engine_from_request(data)
+            resp = _move_response(engine, bot_id)
+        except Exception as exc:  # une position illisible ne doit pas tuer le daemon
+            resp = {"error": f"{type(exc).__name__}: {exc}"}
+        print(json.dumps(resp), flush=True)
 
 
 def _move_features(board: np.ndarray, mv: Tuple[int, int], player: int, last_move) -> List[float]:
@@ -183,6 +225,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("move")
+    sub.add_parser("daemon")
     p_im = sub.add_parser("imitate")
     p_im.add_argument("--games", type=int, default=300)
     p_im.add_argument("--depth", type=int, default=7)
@@ -190,6 +233,8 @@ def main() -> None:
 
     if args.cmd == "move":
         cmd_move()
+    elif args.cmd == "daemon":
+        cmd_daemon()
     elif args.cmd == "imitate":
         cmd_imitate(args.games, args.depth)
 

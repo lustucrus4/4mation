@@ -10,7 +10,7 @@ use rand::distributions::{Distribution, WeightedIndex};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::features::{move_features, position_features, FEATURE_DIM, POS_DIM};
+use crate::features::{move_features, FEATURE_DIM, POS_DIM};
 
 pub const H1: usize = 64;
 pub const H2: usize = 32;

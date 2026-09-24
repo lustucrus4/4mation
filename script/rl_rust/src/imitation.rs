@@ -11,9 +11,10 @@ use serde::Deserialize;
 
 use crate::features::move_features;
 use crate::game_session::GameSession;
-use crate::policy::{reinforce_update, PolicyNet, TrajectoryStep};
+use crate::policy::{PolicyNet, TrajectoryStep};
 
 #[derive(Deserialize)]
+#[allow(dead_code)] // champs produits par le pont Python, non exploités par le bootstrap
 struct ImitationSample {
     features: Vec<f64>,
     target_move_idx: usize,

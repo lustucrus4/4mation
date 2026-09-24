@@ -213,6 +213,8 @@ impl PolicyNet {
         pos[5] - pos[4] + pos[6] - pos[7]
     }
 
+    /// Conversion d'un réseau MLP vers la représentation interne (reprises).
+    #[allow(dead_code)]
     fn mlp_to_policy(m: &crate::mlp::MlpPolicy) -> Self {
         Self::Mlp {
             w1: m.w1.clone(),
@@ -252,7 +254,7 @@ impl PolicyNet {
             steps,
         } = self
         {
-            let mut m = crate::mlp::MlpPolicy {
+            let m = crate::mlp::MlpPolicy {
                 w1: w1.clone(),
                 b1: b1.clone(),
                 w2: w2.clone(),

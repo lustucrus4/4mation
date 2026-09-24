@@ -1,5 +1,5 @@
 {
-  "genere_le": "2026-09-24T22:35:15",
+  "genere_le": "2026-09-24T23:01:20",
   "base": "C:\\Users\\Lucien\\Documents\\Projet code\\4mation\\script\\solver\\data\\tablebase.db",
   "max_ply": 6,
   "echelle_score": 281.09,
@@ -767,6 +767,142 @@
       ]
     }
   ],
+  "verification_parties": {
+    "source": "_tmp_sweep_l6.json",
+    "config": {},
+    "par_ouverture": [
+      {
+        "ouverture": [
+          0,
+          0
+        ],
+        "parties": 1,
+        "score_defense": 1.0,
+        "defaites": 0,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5187,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          0,
+          2
+        ],
+        "parties": 1,
+        "score_defense": 1.0,
+        "defaites": 0,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5178,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          0,
+          1
+        ],
+        "parties": 1,
+        "score_defense": 0.5,
+        "defaites": 0,
+        "nulles": 1,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.4751,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          0,
+          3
+        ],
+        "parties": 1,
+        "score_defense": 0.0,
+        "defaites": 1,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5151,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          1,
+          1
+        ],
+        "parties": 1,
+        "score_defense": 0.0,
+        "defaites": 1,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5249,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          1,
+          2
+        ],
+        "parties": 1,
+        "score_defense": 0.0,
+        "defaites": 1,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5284,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          1,
+          3
+        ],
+        "parties": 1,
+        "score_defense": 0.0,
+        "defaites": 1,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5452,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          2,
+          2
+        ],
+        "parties": 1,
+        "score_defense": 0.0,
+        "defaites": 1,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5231,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          2,
+          3
+        ],
+        "parties": 1,
+        "score_defense": 0.0,
+        "defaites": 1,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5496,
+        "exact_livre": false
+      },
+      {
+        "ouverture": [
+          3,
+          3
+        ],
+        "parties": 1,
+        "score_defense": 0.0,
+        "defaites": 1,
+        "nulles": 0,
+        "duree_moyenne_plies": null,
+        "score_espere_p1_livre": 0.5811,
+        "exact_livre": false
+      }
+    ]
+  },
   "avertissements": [
     "ligne principale : 5 demi-coup(s) lu(s) après transport par symétrie",
     "alt [2, 3] : ligne principale : 4 demi-coup(s) lu(s) après transport par symétrie"

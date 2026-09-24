@@ -143,6 +143,46 @@ def load_scale() -> Tuple[float, List[dict]]:
         return 0.0, []
 
 
+def load_sweep(path: Path) -> Optional[dict]:
+    """Table par ouverture d'un balayage de parties réelles (`opening_sweep.py`).
+
+    Le livre donne une évaluation ; ce balayage donne le résultat de vraies parties entre
+    deux bots forts, ouverture imposée. Les deux se lisent ensemble : l'évaluation dit ce
+    que la position vaut, les parties disent ce qui arrive quand on la joue.
+    """
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if "par_ouverture" in data:
+        return data
+    # Ancien format : seules les parties brutes sont présentes, on refait le résumé.
+    rows: List[dict] = []
+    grouped: Dict[str, List[float]] = {}
+    for match in data.get("matches") or []:
+        opening = match.get("opening")
+        if not opening or len(opening) < 2:
+            continue
+        grouped.setdefault(f"{opening[0]},{opening[1]}", []).append(float(match.get("score") or 0.0))
+    for key, scores in grouped.items():
+        row, col = (int(x) for x in key.split(","))
+        rows.append(
+            {
+                "ouverture": [row, col],
+                "parties": len(scores),
+                "points_defense": round(sum(scores), 2),
+                "score_defense": round(sum(scores) / len(scores), 3),
+                "defaites": sum(1 for s in scores if s == 0.0),
+                "nulles": sum(1 for s in scores if s == 0.5),
+                "duree_moyenne_plies": None,
+            }
+        )
+    rows.sort(key=lambda e: -e["score_defense"])
+    return {"config": {}, "par_ouverture": rows}
+
+
 def child_hash(board: np.ndarray, player: int, move: Tuple[int, int]) -> str:
     nb = board.copy()
     nb[move[0], move[1]] = player
@@ -281,6 +321,12 @@ def main() -> int:
     ap.add_argument("--out-json", type=Path, default=DEFAULT_JSON)
     ap.add_argument("--out-md", type=Path, default=DEFAULT_MD)
     ap.add_argument("--top-lines", type=int, default=3, help="Lignes alternatives à détailler")
+    ap.add_argument(
+        "--sweep",
+        type=Path,
+        default=None,
+        help="Balayage de parties réelles (opening_sweep.py) à confronter au livre",
+    )
     args = ap.parse_args()
 
     if not args.db.exists():
@@ -410,6 +456,39 @@ def main() -> int:
             }
         )
 
+    # Confrontation au réel : les scores du livre sont des espérances, le balayage donne
+    # des parties. On rapproche chaque ouverture des deux mesures quand le balayage existe.
+    verification = None
+    if args.sweep is not None:
+        sweep = load_sweep(args.sweep)
+        if sweep is None:
+            report.warnings.append(f"balayage illisible : {args.sweep}")
+        else:
+            by_rep = {tuple(item["representative"]): item for item in report.first_moves}
+            rows = []
+            for entry in sweep["par_ouverture"]:
+                cell = tuple(entry["ouverture"])
+                item = by_rep.get(cell)
+                rows.append(
+                    {
+                        "ouverture": list(cell),
+                        "parties": entry["parties"],
+                        "score_defense": entry["score_defense"],
+                        "defaites": entry.get("defaites"),
+                        "nulles": entry.get("nulles"),
+                        "duree_moyenne_plies": entry.get("duree_moyenne_plies"),
+                        "score_espere_p1_livre": (
+                            item["score_espere_p1"] if item is not None else None
+                        ),
+                        "exact_livre": item["exact"] if item is not None else None,
+                    }
+                )
+            verification = {
+                "source": str(args.sweep),
+                "config": sweep.get("config") or {},
+                "par_ouverture": rows,
+            }
+
     payload = {
         "genere_le": datetime.now().isoformat(timespec="seconds"),
         "base": str(args.db),
@@ -433,6 +512,7 @@ def main() -> int:
         "ouvertures": report.first_moves,
         "ligne_principale": report.main_line,
         "lignes_alternatives": alternatives,
+        "verification_parties": verification,
         "avertissements": report.warnings,
     }
 
@@ -588,6 +668,58 @@ def render_markdown(payload: dict, report: Report) -> str:
             lines.append(
                 f"- **{_cell(alt['premier_coup'])}** ({_wr(alt['score_espere_p1'])}) : {moves}"
             )
+        lines.append("")
+
+    if payload.get("verification_parties"):
+        verif = payload["verification_parties"]
+        config = verif.get("config") or {}
+        lines.append("## Vérification en parties réelles")
+        lines.append("")
+        lines.append(
+            "Le livre est une évaluation ; voici ce que donnent de **vraies parties** entre "
+            "deux bots forts, premier coup imposé. La colonne « partie » est le score du "
+            "**second joueur** : c'est lui qui subit l'ouverture."
+        )
+        lines.append("")
+        details = []
+        if config.get("bot"):
+            details.append(f"défense `{config['bot']}`")
+        if config.get("opponent"):
+            details.append(f"attaque `{config['opponent']}`")
+        if config.get("defender_depth"):
+            details.append(f"profondeur de défense {config['defender_depth']}")
+        if config.get("defender_time_ms"):
+            details.append(f"budget de défense {config['defender_time_ms']} ms")
+        if details:
+            lines.append(f"Conditions : {', '.join(details)}.")
+            lines.append("")
+        lines.append(
+            "| Ouverture | Parties | Score du 2ᵉ joueur | Défaites | Nulles | Durée moyenne "
+            "(demi-coups) | Score espéré du livre (1ᵉʳ joueur) |"
+        )
+        lines.append(
+            "|-----------|---------|--------------------|----------|--------|"
+            "------------------------|----------------------------------------|"
+        )
+        for row in verif["par_ouverture"]:
+            livre = row.get("score_espere_p1_livre")
+            livre_txt = "—" if livre is None else f"{livre * 100:.1f} %"
+            duree = row.get("duree_moyenne_plies")
+            lines.append(
+                f"| {_cell(row['ouverture'])} | {row['parties']} | "
+                f"{row['score_defense'] * 100:.0f} % | "
+                f"{row.get('defaites') if row.get('defaites') is not None else '—'} | "
+                f"{row.get('nulles') if row.get('nulles') is not None else '—'} | "
+                f"{duree if duree is not None else '—'} | {livre_txt} |"
+            )
+        lines.append("")
+        lines.append(
+            "Un écart entre les deux colonnes n'est pas une contradiction : le livre note une "
+            "**espérance** (une position perdue peut encore rapporter un demi-point si "
+            "l'adversaire se trompe), la partie note un **résultat**. L'écart mesure donc la "
+            "capacité de la défense à convertir son espérance en points — c'est exactement ce "
+            "qu'un cours doit enseigner."
+        )
         lines.append("")
 
     lines.append("## Seuils de lecture")

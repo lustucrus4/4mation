@@ -201,6 +201,75 @@ Mesure du 24/09/2026 (`--max-ply 6`, livre aux couches 1-6 réévaluées par le 
 | Amplitude totale des 10 ouvertures | 10,6 points : le premier coup ne décide pas la partie |
 | Couverture | 26 175 positions au 6ᵉ demi-coup, dont 2 753 prouvées |
 
+### Vérification en parties réelles (`opening_sweep.py`)
+
+Le livre est une évaluation ; pour savoir ce qui se passe quand on joue vraiment la
+position, `scripts/opening_sweep.py` fait s'affronter deux bots forts avec le premier coup
+imposé, et mesure le rendement du **second joueur** — celui qui subit l'ouverture.
+
+```bash
+python scripts/opening_sweep.py --bot level_6 --opponent level_6 --per-orbit 1
+#    -> _tmp_opening_sweep.json (table par ouverture + parties complètes)
+python script/solver/extract_opening_theory.py --max-ply 6 --sweep _tmp_opening_sweep.json
+#    -> section « Vérification en parties réelles » dans THEORIE_OUVERTURE.md
+```
+
+`--only-opening "3,3 2,3 2,2"` restreint le balayage à quelques ouvertures, et
+`--defender-depth` / `--defender-time-ms` donnent à la défense un budget hors norme : c'est
+ainsi qu'on mesure si une défaite du second joueur est une faiblesse du bot ou une
+propriété de l'ouverture.
+
+Mesure du 24/09/2026 (10 orbites, `level_6` contre lui-même, 1 partie par orbite) :
+
+| Ouverture | Score du 2ᵉ joueur | Verdict |
+|-----------|--------------------|---------|
+| `(0,0)`, `(0,2)` | 100 % | le second joueur gagne |
+| `(0,1)` | 50 % | nulle |
+| `(0,3)` → `(3,3)` | 0 % | le premier joueur gagne, d'autant plus vite que le coup est central |
+
+Le classement des parties réelles suit celui du livre (plus le premier coup est central,
+plus il rapporte), et il est plus tranché : les ouvertures centrales ne laissent aucun point
+au second joueur, même avec une défense quatre fois plus lente que l'attaque. Les pertes du
+niveau 6 en second joueur ne sont donc pas un défaut du bot.
+
+### Motifs des finales exactes (`mine_final_patterns.py`)
+
+La tablebase tranche les finales mais ne se lit pas. Ce script en extrait ce qui se répète
+et ce qui s'enseigne, en séparant deux notions que les joueurs confondent :
+
+- une **case d'alignement** est un endroit où poser une pierre ferait quatre ;
+- une **menace jouable** est une case d'alignement qui est *aussi* un coup légal.
+
+Une case d'alignement inaccessible ne menace personne : c'est la « menace fantôme ».
+Chaque position est donc classée par ce que le trait peut faire *réellement*.
+
+```bash
+python script/solver/mine_final_patterns.py --layers 7 8 9 10 11 --sample 600 --puzzles 9
+#    -> script/solver/final_patterns.json (données brutes)
+#    -> script/solver/MOTIFS_FINALES.md  (rapport lisible + exercices)
+python scripts/check_exercise_lines.py script/solver/final_patterns.json
+#    -> rejoue chaque exercice et compte les anomalies (0 attendu)
+```
+
+Une position n'est retenue que si son dernier coup porte une pierre adverse, que **tous**
+ses enfants sont en base et que la valeur déduite des enfants est celle qui est stockée —
+c'est une position « exploitable ». Les exercices, eux, ne partent que si la ligne forcée
+se termine sur un alignement du camp gagnant : le camp qui gagne n'y joue jamais un coup
+perdant faute d'enfant connu, il s'arrête. Les trous de la base se lisent donc directement
+dans le rapport, en nombre d'exercices écartés.
+
+Mesure du 24/09/2026 (couches 7 à 11, 600 positions exploitables par couche) :
+
+| Enseignement | Chiffre |
+|--------------|---------|
+| Contrôles de cohérence | 3 000 positions, **0 incohérence** — la base ne se contredit jamais |
+| Quand le trait peut conclure | il gagne 480 fois sur 480 |
+| Quand l'adversaire conclut quoi qu'il arrive | on perd 1 559 fois sur 1 559 |
+| La vraie finale (personne ne conclut) | 961 positions : 50 % de gains, 28 % de nulles, 22 % de pertes |
+| Gains construits | 77 % passent par une **fourchette** (deux menaces ou plus d'un seul coup) |
+| Menace fantôme | présente chez l'adversaire dans **68 %** des positions de bataille |
+| Exercices retenus | 7 sur 474 candidats, 12 lignes coupées par un trou, 0 verdict contredit |
+
 ### Audit de la tablebase (`4mation-local --verify`)
 
 `4mation-local.exe --verify` relit chaque position stockée, recalcule sa valeur à partir

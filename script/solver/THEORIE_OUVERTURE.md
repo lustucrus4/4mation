@@ -1,6 +1,6 @@
 # Théorie d'ouverture
 
-Extraite du livre d'ouverture évalué par `4mation-engine` (2026-09-24T22:35:15, demi-coups 0 à 6).
+Extraite du livre d'ouverture évalué par `4mation-engine` (2026-09-24T23:01:20, demi-coups 0 à 6).
 
 Deux natures de valeurs, jamais confondues : **prouvé** (`exact=1`, mat forcé ou verdict de la tablebase) et **estimé** (évaluation du moteur convertie en taux de victoire par une sigmoïde calibrée, échelle 281).
 
@@ -49,6 +49,25 @@ Meilleur jeu supposé des deux camps, demi-coup par demi-coup.
 - **(2, 3)** (55.0 %) : (3, 3) (2, 4) (1, 3) (0, 4) (1, 4) (1, 5)
 - **(1, 3)** (54.5 %) : (3, 2) (2, 1) (1, 1) (2, 2) (1, 3) (2, 3)
 - **(1, 2)** (52.8 %) : (4, 3) (5, 3) (5, 2) (4, 2) (3, 1) (2, 2)
+
+## Vérification en parties réelles
+
+Le livre est une évaluation ; voici ce que donnent de **vraies parties** entre deux bots forts, premier coup imposé. La colonne « partie » est le score du **second joueur** : c'est lui qui subit l'ouverture.
+
+| Ouverture | Parties | Score du 2ᵉ joueur | Défaites | Nulles | Durée moyenne (demi-coups) | Score espéré du livre (1ᵉʳ joueur) |
+|-----------|---------|--------------------|----------|--------|------------------------|----------------------------------------|
+| (0, 0) | 1 | 100 % | 0 | 0 | — | 51.9 % |
+| (0, 2) | 1 | 100 % | 0 | 0 | — | 51.8 % |
+| (0, 1) | 1 | 50 % | 0 | 1 | — | 47.5 % |
+| (0, 3) | 1 | 0 % | 1 | 0 | — | 51.5 % |
+| (1, 1) | 1 | 0 % | 1 | 0 | — | 52.5 % |
+| (1, 2) | 1 | 0 % | 1 | 0 | — | 52.8 % |
+| (1, 3) | 1 | 0 % | 1 | 0 | — | 54.5 % |
+| (2, 2) | 1 | 0 % | 1 | 0 | — | 52.3 % |
+| (2, 3) | 1 | 0 % | 1 | 0 | — | 55.0 % |
+| (3, 3) | 1 | 0 % | 1 | 0 | — | 58.1 % |
+
+Un écart entre les deux colonnes n'est pas une contradiction : le livre note une **espérance** (une position perdue peut encore rapporter un demi-point si l'adversaire se trompe), la partie note un **résultat**. L'écart mesure donc la capacité de la défense à convertir son espérance en points — c'est exactement ce qu'un cours doit enseigner.
 
 ## Seuils de lecture
 

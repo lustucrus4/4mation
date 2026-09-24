@@ -1,0 +1,2810 @@
+{
+  "genere_le": "2026-09-24T23:04:30",
+  "partie": {
+    "first_bot": "level_6",
+    "second_bot": "level_6",
+    "opening": [
+      3,
+      3
+    ],
+    "winner": 1,
+    "plies": 29
+  },
+  "analyse": {
+    "profondeur": 20,
+    "budget_ms": 2500
+  },
+  "verdict": {
+    "1": {
+      "coups": 15,
+      "optimaux": 14,
+      "pire_ecart": 0.4442,
+      "ecart_moyen": 0.0303,
+      "gagne": true
+    },
+    "2": {
+      "coups": 14,
+      "optimaux": 14,
+      "pire_ecart": 0.0459,
+      "ecart_moyen": 0.0033,
+      "gagne": false
+    }
+  },
+  "demi_coups": [
+    {
+      "ply": 0,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        3,
+        3
+      ],
+      "best": [
+        3,
+        3
+      ],
+      "played_win_rate": 0.575,
+      "best_win_rate": 0.575,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          2,
+          3
+        ],
+        "win_rate": 0.5408
+      },
+      "coups_analyses": 49,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": null
+    },
+    {
+      "ply": 1,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        2,
+        3
+      ],
+      "best": [
+        2,
+        2
+      ],
+      "played_win_rate": 0.373,
+      "best_win_rate": 0.4189,
+      "delta": 0.0459,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          2,
+          2
+        ],
+        "win_rate": 0.4189
+      },
+      "coups_analyses": 8,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        3,
+        3
+      ]
+    },
+    {
+      "ply": 2,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        3,
+        2
+      ],
+      "best": [
+        3,
+        2
+      ],
+      "played_win_rate": 0.5523,
+      "best_win_rate": 0.5523,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          3,
+          4
+        ],
+        "win_rate": 0.5523
+      },
+      "coups_analyses": 7,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        2,
+        3
+      ]
+    },
+    {
+      "ply": 3,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        3,
+        1
+      ],
+      "best": [
+        3,
+        1
+      ],
+      "played_win_rate": 0.3705,
+      "best_win_rate": 0.3705,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          2,
+          1
+        ],
+        "win_rate": 0.3301
+      },
+      "coups_analyses": 6,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        3,
+        2
+      ]
+    },
+    {
+      "ply": 4,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        2,
+        2
+      ],
+      "best": [
+        4,
+        2
+      ],
+      "played_win_rate": 0.5681,
+      "best_win_rate": 0.5785,
+      "delta": 0.0104,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          2
+        ],
+        "win_rate": 0.5785
+      },
+      "coups_analyses": 7,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        3,
+        1
+      ]
+    },
+    {
+      "ply": 5,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        1,
+        1
+      ],
+      "best": [
+        1,
+        1
+      ],
+      "played_win_rate": 0.3655,
+      "best_win_rate": 0.3655,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          1,
+          2
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        2,
+        2
+      ]
+    },
+    {
+      "ply": 6,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        2,
+        1
+      ],
+      "best": [
+        2,
+        1
+      ],
+      "played_win_rate": 0.5863,
+      "best_win_rate": 0.5863,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          0,
+          2
+        ],
+        "win_rate": 0.5733
+      },
+      "coups_analyses": 7,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        1,
+        1
+      ]
+    },
+    {
+      "ply": 7,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        1,
+        2
+      ],
+      "best": [
+        1,
+        2
+      ],
+      "played_win_rate": 0.3301,
+      "best_win_rate": 0.3301,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          2,
+          0
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        2,
+        1
+      ]
+    },
+    {
+      "ply": 8,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        1,
+        3
+      ],
+      "best": [
+        1,
+        3
+      ],
+      "played_win_rate": 0.5975,
+      "best_win_rate": 0.5975,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": false,
+      "meilleure_alternative": {
+        "coup": [
+          0,
+          1
+        ],
+        "win_rate": 0.5672
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        1,
+        2
+      ]
+    },
+    {
+      "ply": 9,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        2,
+        4
+      ],
+      "best": [
+        2,
+        4
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          0,
+          2
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 5,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        1,
+        3
+      ]
+    },
+    {
+      "ply": 10,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        3,
+        4
+      ],
+      "best": [
+        3,
+        4
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          1,
+          4
+        ],
+        "win_rate": 0.4504
+      },
+      "coups_analyses": 5,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        2,
+        4
+      ]
+    },
+    {
+      "ply": 11,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        3,
+        5
+      ],
+      "best": [
+        3,
+        5
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          3
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 5,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        3,
+        4
+      ]
+    },
+    {
+      "ply": 12,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        4,
+        5
+      ],
+      "best": [
+        4,
+        5
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          4
+        ],
+        "win_rate": 0.5444
+      },
+      "coups_analyses": 6,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        3,
+        5
+      ]
+    },
+    {
+      "ply": 13,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        5,
+        4
+      ],
+      "best": [
+        5,
+        4
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          4
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 6,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        4,
+        5
+      ]
+    },
+    {
+      "ply": 14,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        4,
+        3
+      ],
+      "best": [
+        4,
+        3
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          4
+        ],
+        "win_rate": 0.5461
+      },
+      "coups_analyses": 7,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        5,
+        4
+      ]
+    },
+    {
+      "ply": 15,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        4,
+        2
+      ],
+      "best": [
+        4,
+        2
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          2
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        4,
+        3
+      ]
+    },
+    {
+      "ply": 16,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        5,
+        2
+      ],
+      "best": [
+        5,
+        2
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          3
+        ],
+        "win_rate": 0.6111
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        4,
+        2
+      ]
+    },
+    {
+      "ply": 17,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        6,
+        1
+      ],
+      "best": [
+        6,
+        1
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          1
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 6,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        5,
+        2
+      ]
+    },
+    {
+      "ply": 18,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        5,
+        0
+      ],
+      "best": [
+        5,
+        0
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          1
+        ],
+        "win_rate": 0.5663
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        6,
+        1
+      ]
+    },
+    {
+      "ply": 19,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        5,
+        1
+      ],
+      "best": [
+        5,
+        1
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          0
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        5,
+        0
+      ]
+    },
+    {
+      "ply": 20,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        6,
+        2
+      ],
+      "best": [
+        6,
+        2
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          1
+        ],
+        "win_rate": 0.5837
+      },
+      "coups_analyses": 4,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        5,
+        1
+      ]
+    },
+    {
+      "ply": 21,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        6,
+        3
+      ],
+      "best": [
+        6,
+        3
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          3
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 2,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        6,
+        2
+      ]
+    },
+    {
+      "ply": 22,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        6,
+        4
+      ],
+      "best": [
+        6,
+        4
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          3
+        ],
+        "win_rate": 0.5759
+      },
+      "coups_analyses": 2,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        6,
+        3
+      ]
+    },
+    {
+      "ply": 23,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        6,
+        5
+      ],
+      "best": [
+        6,
+        5
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          5
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 3,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0
+        ]
+      ],
+      "last_move": [
+        6,
+        4
+      ]
+    },
+    {
+      "ply": 24,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        6,
+        6
+      ],
+      "best": [
+        6,
+        6
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          6
+        ],
+        "win_rate": 0.5602
+      },
+      "coups_analyses": 3,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          1,
+          2,
+          0
+        ]
+      ],
+      "last_move": [
+        6,
+        5
+      ]
+    },
+    {
+      "ply": 25,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        5,
+        5
+      ],
+      "best": [
+        5,
+        5
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          5,
+          6
+        ],
+        "win_rate": 0.0
+      },
+      "coups_analyses": 2,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1
+        ]
+      ],
+      "last_move": [
+        6,
+        6
+      ]
+    },
+    {
+      "ply": 26,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        4,
+        4
+      ],
+      "best": [
+        4,
+        6
+      ],
+      "played_win_rate": 0.5558,
+      "best_win_rate": 1.0,
+      "delta": 0.4442,
+      "optimal": false,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          4,
+          6
+        ],
+        "win_rate": 1.0
+      },
+      "coups_analyses": 3,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1
+        ]
+      ],
+      "last_move": [
+        5,
+        5
+      ]
+    },
+    {
+      "ply": 27,
+      "player": 2,
+      "bot": "level_6",
+      "played": [
+        5,
+        3
+      ],
+      "best": [
+        5,
+        3
+      ],
+      "played_win_rate": 0.0,
+      "best_win_rate": 0.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": null,
+      "coups_analyses": 1,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1
+        ]
+      ],
+      "last_move": [
+        4,
+        4
+      ]
+    },
+    {
+      "ply": 28,
+      "player": 1,
+      "bot": "level_6",
+      "played": [
+        1,
+        0
+      ],
+      "best": [
+        1,
+        0
+      ],
+      "played_win_rate": 1.0,
+      "best_win_rate": 1.0,
+      "delta": 0.0,
+      "optimal": true,
+      "source": "engine",
+      "exact": true,
+      "meilleure_alternative": {
+        "coup": [
+          2,
+          5
+        ],
+        "win_rate": 1.0
+      },
+      "coups_analyses": 17,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1
+        ]
+      ],
+      "last_move": [
+        5,
+        3
+      ]
+    }
+  ]
+}

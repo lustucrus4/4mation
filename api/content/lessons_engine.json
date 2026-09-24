@@ -1,9 +1,9 @@
 {
-  "genere_le": "2026-09-24T23:28:19",
+  "genere_le": "2026-09-24T23:37:01",
   "sources": [
     "sonde profonde du 2026-09-24T23:22:22",
     "théorie du livre du 2026-09-24T23:01:20",
-    "preuve du centre du 2026-09-24T23:24:55",
+    "preuve du centre du 2026-09-24T23:31:32",
     "schéma 33 du 2026-09-24T23:10:02",
     "schéma 00 du 2026-09-24T23:12:55",
     "finales du 2026-09-24T22:55:57"
@@ -29,11 +29,11 @@
         },
         {
           "heading": "Ce que ça change pour vous",
-          "body": "- Vous commencez : jouez (3,3). C'est le coup qui laisse le moins de jeu au second joueur.\n- Vous êtes second : partez du principe que la position est difficile, et choisissez une ouverture de coin si vous voulez la partie la plus longue — c'est là que l'adversaire a le plus de chemin à faire."
+          "body": "- Vous commencez : jouez (3,3), et c'est **démontré gagnant** — le reste du classement n'est qu'indicatif.\n- Vous êtes second : après (3,3) la position est perdue de force ; jouez la défense la plus tenace (voir la leçon « Preuve ») et attendez l'erreur, c'est votre seule ressource."
         },
         {
           "heading": "D'où viennent ces chiffres",
-          "body": "Chaque valeur vient d'une recherche du moteur (alpha-bêta, table de transposition, finales exactes branchées en dessous de 12 cases vides). Ce ne sont pas des preuves : le jeu complet n'est pas résolu. Ce sont des évaluations très profondes, cohérentes entre elles, et vérifiées en parties réelles contre des défenses variées."
+          "body": "Chaque valeur vient d'une recherche du moteur (alpha-bêta, table de transposition, finales exactes branchées en dessous de 12 cases vides). Sauf le premier coup central, qui est **prouvé gagnant**, ces nombres ne sont pas des preuves : le jeu complet n'est pas résolu. Ce sont des évaluations très profondes, cohérentes entre elles, et vérifiées en parties réelles contre des défenses variées."
         }
       ]
     },
@@ -45,7 +45,7 @@
       "sections": [
         {
           "heading": "La démonstration",
-          "body": "Le premier coup central **3,3** n'est pas seulement bon : il **gagne de force**. Le moteur le *démontre* — ce n'est pas une estimation — en 23 s de calcul à la profondeur 28, avec une table de transposition de 2 Go.\n\nVerdict : après ce coup, le second joueur est **perdant quoi qu'il fasse**, mat en 28 demi-coups (soit 29 demi-coups joués au total). Le gain ne repose sur **aucune faute** : à chaque tour de défense, *tous* ses coups perdent.\n\n**La ligne principale** (défense la plus tenace, attaque au plus court) :\n\n```\nX3,3 O3,2 X2,3 O1,3 X2,2 O1,1 X1,2 O2,1 X3,1 O4,2 X4,3 O5,3 X5,4 O4,5 X3,4 O2,4 X2,5 O1,6 X0,5 O1,5 X2,6 O3,6 X4,6 O5,6 X6,6 O5,5 X6,4 O6,5 X0,1\n```\n`Xn,m` = coup du premier joueur, `On,m` = coup du second, format `ligne,colonne`.\n\nSur les 14 tours de défense de cette ligne, 11 n'ont **qu'un seul** coup qui résiste le plus longtemps : la défense est presque entièrement forcée. Voilà pourquoi, en pratique, on perd cette ouverture contre un moteur exact même en jouant « bien ».\n\nVérification indépendante : la ligne a été rejouée avec le moteur de jeu du site, qui fait autorité sur les règles — **0 anomalie**, et le nombre de coups légaux du moteur coïncide avec celui des règles à chaque position.",
+          "body": "Le premier coup central **3,3** n'est pas seulement bon : il **gagne de force**. Le moteur le *démontre* — ce n'est pas une estimation — en 28 s de calcul à la profondeur 28, avec une table de transposition de 2 Go.\n\nVerdict : après ce coup, le second joueur est **perdant quoi qu'il fasse**, mat en 28 demi-coups (soit 29 demi-coups joués au total). Le gain ne repose sur **aucune faute** : à chaque tour de défense, *tous* ses coups perdent.\n\n**La ligne principale** (défense la plus tenace, attaque au plus court) :\n\n```\nX3,3 O3,2 X2,3 O1,3 X2,2 O1,1 X1,2 O2,1 X3,1 O4,2 X4,3 O5,3 X5,4 O4,5 X3,4 O2,4 X2,5 O1,6 X0,5 O1,5 X2,6 O3,6 X4,6 O5,6 X6,6 O5,5 X6,4 O6,5 X0,1\n```\n`Xn,m` = coup du premier joueur, `On,m` = coup du second, format `ligne,colonne`.\n\nSur les 14 tours de défense de cette ligne, 11 n'ont **qu'un seul** coup qui résiste le plus longtemps : la défense est presque entièrement forcée. Voilà pourquoi, en pratique, on perd cette ouverture contre un moteur exact même en jouant « bien ».\n\nVérification indépendante : la ligne a été rejouée avec le moteur de jeu du site, qui fait autorité sur les règles — **0 anomalie**, et le nombre de coups légaux du moteur coïncide avec celui des règles à chaque position.",
           "diagram": {
             "board": [
               [

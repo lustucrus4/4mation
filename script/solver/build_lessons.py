@@ -459,11 +459,11 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                 {
                     "heading": "Ce que ça change pour vous",
                     "body": (
-                        "- Vous commencez : jouez (3,3). C'est le coup qui laisse le moins de "
-                        "jeu au second joueur.\n"
-                        "- Vous êtes second : partez du principe que la position est difficile, "
-                        "et choisissez une ouverture de coin si vous voulez la partie la plus "
-                        "longue — c'est là que l'adversaire a le plus de chemin à faire."
+                        "- Vous commencez : jouez (3,3), et c'est **démontré gagnant** — le reste "
+                        "du classement n'est qu'indicatif.\n"
+                        "- Vous êtes second : après (3,3) la position est perdue de force ; "
+                        "jouez la défense la plus tenace (voir la leçon « Preuve ») et attendez "
+                        "l'erreur, c'est votre seule ressource."
                     ),
                 },
                 {
@@ -471,8 +471,9 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                     "body": (
                         "Chaque valeur vient d'une recherche du moteur (alpha-bêta, table de "
                         "transposition, finales exactes branchées en dessous de 12 cases vides). "
-                        "Ce ne sont pas des preuves : le jeu complet n'est pas résolu. Ce sont "
-                        "des évaluations très profondes, cohérentes entre elles, et vérifiées en "
+                        "Sauf le premier coup central, qui est **prouvé gagnant**, ces nombres ne "
+                        "sont pas des preuves : le jeu complet n'est pas résolu. Ce sont des "
+                        "évaluations très profondes, cohérentes entre elles, et vérifiées en "
                         "parties réelles contre des défenses variées."
                     ),
                 },

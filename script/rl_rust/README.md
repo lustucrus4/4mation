@@ -161,7 +161,18 @@ vide** : toutes les évaluations antérieures (et donc la phase 1) étaient faus
   par coup ;
 - côté Rust, toute réponse vide, illégale ou en erreur **fait échouer l'évaluation**
   (`anyhow::bail!`) au lieu d'être comptée comme nulle ;
-- `scripts/check_rl_eval_bridge.py` vérifie le pont (modes `move` et `daemon`).
+- `scripts/check_rl_eval_bridge.py` contrôle le pont sur 9 positions de référence, dont une
+  à **gain immédiat** : la conclusion doit être trouvée, ce qui est impossible depuis un
+  plateau vide — le bug historique ne peut donc plus passer inaperçu.
+
+### Le daemon n'est pas reproductible (et ce n'est pas un bug)
+
+Le daemon garde le même bot d'une requête à l'autre, donc la même table de transposition
+réchauffée, et la recherche est bornée par un budget de temps. Deux interrogations de la
+même position peuvent donc conclure à deux coups **également bons** (mesuré : 4 cas sur
+27 pour `level_3`, `level_5`, `level_6`). Le contrôle exige donc ce qui compte — coups
+légaux, gain immédiat trouvé — et **signale** ces variations sans échouer. Conséquence
+pratique : ne jamais supposer deux exécutions identiques au coup près.
 
 Conséquence : **les mesures ci-dessus sont les premières fiables**. Elles remplacent les
 anciens « taux » (et le 50/50 historique vs `level_5`, qui était un artefact).

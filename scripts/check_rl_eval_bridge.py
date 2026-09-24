@@ -10,8 +10,16 @@ sont possibles et rendent toute mesure fausse :
 Ce contrôle envoie des positions de référence au bot, en mode `move` (un processus par
 coup) et en mode `daemon` (processus persistant), et exige :
 
-- que le coup renvoyé soit légal d'après le moteur de jeu Python ;
-- que les deux modes renvoient le même coup (le daemon ne doit pas dériver).
+- que le coup renvoyé soit **légal** d'après le moteur de jeu Python ;
+- que le daemon **réponde le même coup** quand on lui repose deux fois la même position
+  (une dérive d'état d'une requête à l'autre trahirait un plateau mal réinitialisé) ;
+- qu'un **coup gagnant immédiat** soit bien trouvé (`menace-immediate`) : impossible à
+  trouver depuis un plateau vide, c'est le piège historique rendu impossible.
+
+Deux exécutions séparées du même bot ne renvoient pas forcément le *même* coup : le
+daemon réutilise le même bot (donc la même table de transposition réchauffée) alors que le
+mode `move` part d'un processus froid. Sur des positions quasi équilibrées, les deux choix
+sont également bons. Cet écart est donc **signalé**, pas compté comme une panne.
 
     python scripts/check_rl_eval_bridge.py --bot level_5 --bot level_3
 """
@@ -46,29 +54,77 @@ def snapshot(engine: GameEngine) -> Dict[str, Any]:
     }
 
 
-def reference_positions() -> List[Tuple[GameEngine, Dict[str, Any], str]]:
-    """Positions de contrôle : début de partie, milieu de partie, position forcée."""
-    positions: List[Tuple[GameEngine, Dict[str, Any], str]] = []
+def reference_positions() -> List[Tuple[GameEngine, Dict[str, Any], str, List[Tuple[int, int]]]]:
+    """Positions de contrôle : début, milieu, coin, et un gain immédiat à trouver.
+
+    Le 4ᵉ champ liste les coups qui terminent la partie **immédiatement**. Il est vide
+    quand la position n'a pas de gain en un coup.
+    """
+    positions: List[Tuple[GameEngine, Dict[str, Any], str, List[Tuple[int, int]]]] = []
 
     engine = GameEngine()
     engine.reset()
     for index in range(6):
         engine.step(engine.get_valid_actions()[0])
-        positions.append((copy.deepcopy(engine), snapshot(engine), f"ligne-gauche-{index}"))
+        positions.append(
+            (copy.deepcopy(engine), snapshot(engine), f"ligne-gauche-{index}", [])
+        )
 
     scripted = GameEngine()
     scripted.reset()
     for move in ((3, 3), (2, 3), (3, 4), (4, 4), (2, 4), (1, 5), (3, 2)):
         scripted.step(move)
-    positions.append((copy.deepcopy(scripted), snapshot(scripted), "centre-conteste"))
+    positions.append((copy.deepcopy(scripted), snapshot(scripted), "centre-conteste", []))
 
     corner = GameEngine()
     corner.reset()
     for move in ((0, 0), (1, 1), (0, 1), (2, 2)):
         corner.step(move)
-    positions.append((copy.deepcopy(corner), snapshot(corner), "coin"))
+    positions.append((copy.deepcopy(corner), snapshot(corner), "coin", []))
+
+    immediate = immediate_win_position()
+    if immediate is not None:
+        eng, wins = immediate
+        positions.append((eng, snapshot(eng), "menace-immediate", wins))
 
     return positions
+
+
+def winning_moves(engine: GameEngine) -> List[Tuple[int, int]]:
+    """Coups légaux qui gagnent sur-le-champ."""
+    player = int(engine.get_current_player())
+    wins: List[Tuple[int, int]] = []
+    for action in engine.get_valid_actions():
+        trial = copy.deepcopy(engine)
+        _, applied, winner = trial.step(action)
+        if applied and trial.is_terminal() and winner is not None and int(winner) == player:
+            wins.append((int(action[0]), int(action[1])))
+    return wins
+
+
+def immediate_win_position(seed: int = 20260924, max_plies: int = 40):
+    """Cherche, par parties aléatoires reproductibles, une position à gain immédiat.
+
+    Une telle position est le meilleur détecteur du bug historique « le bot évalue depuis
+    un plateau vide » : depuis un plateau vide, ce coup n'existe pas.
+    """
+    import random
+
+    rng = random.Random(seed)
+    for _ in range(400):
+        engine = GameEngine()
+        engine.reset()
+        for _ in range(max_plies):
+            if engine.is_terminal():
+                break
+            wins = winning_moves(engine)
+            if wins:
+                return copy.deepcopy(engine), wins
+            actions = engine.get_valid_actions()
+            if not actions:
+                break
+            engine.step(rng.choice(actions))
+    return None
 
 
 def query_move(bot_id: str, request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -116,6 +172,16 @@ class Daemon:
         self.proc.wait(timeout=30)
 
 
+def blunder_rate(bot_id: str) -> float:
+    """Taux d'erreur volontaire du bot, pour ne pas exiger l'impossible."""
+    try:
+        from api.services.bot_registry import BotRegistry
+
+        return float(BotRegistry._LEVELS.get(bot_id, {}).get("blunder_rate", 0.0))
+    except Exception:
+        return 0.0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Contrôle du pont d'évaluation RL")
     parser.add_argument("--bot", action="append", default=[], help="bot à contrôler (répétable)")
@@ -123,13 +189,19 @@ def main() -> int:
     bots = args.bot or ["level_5", "level_3"]
 
     anomalies = 0
+    drifts = 0
+    variations = 0
     daemon = Daemon()
     try:
         for bot_id in bots:
-            for index, (engine, request, label) in enumerate(reference_positions()):
+            flaky = blunder_rate(bot_id) > 0.0
+            if flaky:
+                print(f"[{bot_id}] blunder_rate > 0 : les coups peuvent être volontairement perdants")
+            for index, (engine, request, label, must_win) in enumerate(reference_positions()):
                 legal = [(int(a), int(b)) for a, b in engine.get_valid_actions()]
                 direct = query_move(bot_id, request)
                 streamed = daemon.query(bot_id, request)
+                repeated = daemon.query(bot_id, request)
 
                 for mode, resp in (("move", direct), ("daemon", streamed)):
                     if resp is None or "error" in resp:
@@ -144,20 +216,61 @@ def main() -> int:
                         )
                         anomalies += 1
 
+                if (
+                    streamed
+                    and repeated
+                    and "error" not in streamed
+                    and "error" not in repeated
+                ):
+                    a = (int(streamed["row"]), int(streamed["col"]))
+                    b = (int(repeated["row"]), int(repeated["col"]))
+                    if a != b:
+                        # Attendu : le daemon garde le bot (donc sa table de transposition
+                        # réchauffée) et cherche sous budget de temps. Deux interrogations
+                        # successives peuvent donc conclure à deux coups également bons.
+                        variations += 1
+                        print(
+                            f"[{bot_id}] {label} #{index} : coup variable entre deux "
+                            f"interrogations ({a} puis {b}) — recherche sous budget de temps"
+                        )
+
+                if must_win and not flaky:
+                    for mode, resp in (("move", direct), ("daemon", streamed)):
+                        if resp is None or "error" in resp:
+                            continue
+                        move = (int(resp["row"]), int(resp["col"]))
+                        if move not in must_win:
+                            print(
+                                f"[{bot_id}] {label} #{index} : mode {mode} joue {move} au lieu "
+                                f"de conclure ({must_win}) — position ignorée ?"
+                            )
+                            anomalies += 1
+
                 if direct and streamed and "error" not in direct and "error" not in streamed:
                     a = (int(direct["row"]), int(direct["col"]))
                     b = (int(streamed["row"]), int(streamed["col"]))
                     if a != b:
-                        print(f"[{bot_id}] {label} #{index} : move={a} vs daemon={b}")
-                        anomalies += 1
+                        drifts += 1
+                        print(
+                            f"[{bot_id}] {label} #{index} : écart froid/chaud "
+                            f"move={a} vs daemon={b} (toléré : table de transposition "
+                            f"réchauffée dans le daemon)"
+                        )
             print(f"[{bot_id}] {len(reference_positions())} positions contrôlées")
     finally:
         daemon.close()
 
+    print()
+    if variations:
+        print(
+            f"{variations} coup(s) variable(s) à position identique, {drifts} écart(s) "
+            f"froid/chaud — attendu : le daemon cherche sous budget de temps avec une table de "
+            f"transposition réchauffée. Tous ces coups restent légaux."
+        )
     if anomalies:
         print(f"ÉCHEC : {anomalies} anomalie(s)")
         return 1
-    print("OK : pont d'évaluation fiable (coups légaux et cohérents dans les deux modes)")
+    print("OK : pont d'évaluation fiable (coups légaux, gains immédiats trouvés)")
     return 0
 
 

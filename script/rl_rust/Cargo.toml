@@ -8,6 +8,10 @@ description = "Entraînement RL 4mation haute performance (self-play parallèle,
 name = "train"
 path = "src/bin/train.rs"
 
+[[bin]]
+name = "eval"
+path = "src/bin/eval.rs"
+
 [dependencies]
 formation-worker = { path = "../solver_rust" }
 anyhow = "1"

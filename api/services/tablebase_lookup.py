@@ -84,10 +84,14 @@ class TablebaseLookup:
             m["proven_loss"] = exact and wr <= 0.005
             m["proven_win"] = exact and wr >= 0.995
 
-        if exact and best_wr <= 0.005:
-            analysis["position_status"] = "proven_losing"
-        elif exact and worst_wr >= 0.995:
+        # Le statut décrit la **valeur de la position**, pas celle de tous les coups : une
+        # position gagnante prouvée reste gagnante même si certains coups la perdent. Exiger
+        # que *tous* les coups gagnent faisait retomber sur « estimated » des positions dont
+        # la valeur était pourtant démontrée, ce qui contredisait le label « Exact ».
+        if exact and best_wr >= 0.995:
             analysis["position_status"] = "proven_winning"
+        elif exact and worst_wr <= 0.005:
+            analysis["position_status"] = "proven_losing"
         elif exact and all(abs(float(m["win_rate"]) - 0.5) < 0.01 for m in moves):
             analysis["position_status"] = "proven_draw"
         else:

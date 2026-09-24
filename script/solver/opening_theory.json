@@ -1,0 +1,774 @@
+{
+  "genere_le": "2026-09-24T22:35:15",
+  "base": "C:\\Users\\Lucien\\Documents\\Projet code\\4mation\\script\\solver\\data\\tablebase.db",
+  "max_ply": 6,
+  "echelle_score": 281.09,
+  "bandes": {
+    "seuil_score": 40.0,
+    "favorable": "score >= +40 (taux >= 0,54)",
+    "equilibre": "-40 < score < +40 (0,46 - 0,54)",
+    "defavorable": "score <= -40 (taux <= 0,46)"
+  },
+  "fiabilite": [
+    {
+      "score_min": -200,
+      "score_max": -100,
+      "n": 9,
+      "predicted": 0.388,
+      "observed": 0.389
+    },
+    {
+      "score_min": -100,
+      "score_max": -40,
+      "n": 10,
+      "predicted": 0.442,
+      "observed": 0.45
+    },
+    {
+      "score_min": -40,
+      "score_max": 40,
+      "n": 62,
+      "predicted": 0.501,
+      "observed": 0.516
+    },
+    {
+      "score_min": 40,
+      "score_max": 100,
+      "n": 8,
+      "predicted": 0.564,
+      "observed": 0.5
+    },
+    {
+      "score_min": 100,
+      "score_max": 200,
+      "n": 2,
+      "predicted": 0.634,
+      "observed": 0.75
+    }
+  ],
+  "couverture": {
+    "ply": {
+      "0": {
+        "entrees": 1,
+        "exactes": 0
+      },
+      "1": {
+        "entrees": 10,
+        "exactes": 0
+      },
+      "2": {
+        "entrees": 45,
+        "exactes": 0
+      },
+      "3": {
+        "entrees": 233,
+        "exactes": 0
+      },
+      "4": {
+        "entrees": 1077,
+        "exactes": 37
+      },
+      "5": {
+        "entrees": 5612,
+        "exactes": 197
+      },
+      "6": {
+        "entrees": 26175,
+        "exactes": 2753
+      }
+    }
+  },
+  "racine": {
+    "hash": "34cbd58d62f1894e",
+    "score_espere_p1": 0.5811,
+    "exact": false,
+    "lecture": "équilibré",
+    "meilleur_coup": [
+      3,
+      3
+    ]
+  },
+  "ouvertures": [
+    {
+      "hash": "b374a68f5b84f282",
+      "cells": [
+        [
+          3,
+          3
+        ]
+      ],
+      "representative": [
+        3,
+        3
+      ],
+      "taille_orbite": 1,
+      "score_espere_p1": 0.5811,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        2,
+        2
+      ],
+      "ecart_au_meilleur": 0.0
+    },
+    {
+      "hash": "2ae9ca7c9aa90090",
+      "cells": [
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          3
+        ]
+      ],
+      "representative": [
+        2,
+        3
+      ],
+      "taille_orbite": 4,
+      "score_espere_p1": 0.5496,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        3,
+        3
+      ],
+      "ecart_au_meilleur": 0.0315
+    },
+    {
+      "hash": "2ea5f1c4d9c6b4e1",
+      "cells": [
+        [
+          1,
+          3
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          5,
+          3
+        ]
+      ],
+      "representative": [
+        1,
+        3
+      ],
+      "taille_orbite": 4,
+      "score_espere_p1": 0.5452,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        2,
+        3
+      ],
+      "ecart_au_meilleur": 0.0359
+    },
+    {
+      "hash": "091171f72818f706",
+      "cells": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          4
+        ]
+      ],
+      "representative": [
+        1,
+        2
+      ],
+      "taille_orbite": 8,
+      "score_espere_p1": 0.5284,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        2,
+        3
+      ],
+      "ecart_au_meilleur": 0.0527
+    },
+    {
+      "hash": "709153baa1577af3",
+      "cells": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "representative": [
+        1,
+        1
+      ],
+      "taille_orbite": 4,
+      "score_espere_p1": 0.5249,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        1,
+        2
+      ],
+      "ecart_au_meilleur": 0.0562
+    },
+    {
+      "hash": "055d9ff993262e8b",
+      "cells": [
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "representative": [
+        2,
+        2
+      ],
+      "taille_orbite": 4,
+      "score_espere_p1": 0.5231,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        3,
+        3
+      ],
+      "ecart_au_meilleur": 0.058
+    },
+    {
+      "hash": "29fe1799b1394405",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          6,
+          6
+        ]
+      ],
+      "representative": [
+        0,
+        0
+      ],
+      "taille_orbite": 4,
+      "score_espere_p1": 0.5187,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        1,
+        1
+      ],
+      "ecart_au_meilleur": 0.0624
+    },
+    {
+      "hash": "0a33e324df7fe121",
+      "cells": [
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          4
+        ]
+      ],
+      "representative": [
+        0,
+        2
+      ],
+      "taille_orbite": 8,
+      "score_espere_p1": 0.5178,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        1,
+        3
+      ],
+      "ecart_au_meilleur": 0.0633
+    },
+    {
+      "hash": "1868fa7a868ddf12",
+      "cells": [
+        [
+          0,
+          3
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          6,
+          3
+        ]
+      ],
+      "representative": [
+        0,
+        3
+      ],
+      "taille_orbite": 4,
+      "score_espere_p1": 0.5151,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        1,
+        3
+      ],
+      "ecart_au_meilleur": 0.066
+    },
+    {
+      "hash": "0b56f3786efedecc",
+      "cells": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          5
+        ]
+      ],
+      "representative": [
+        0,
+        1
+      ],
+      "taille_orbite": 8,
+      "score_espere_p1": 0.4751,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "meilleure_reponse": [
+        1,
+        2
+      ],
+      "ecart_au_meilleur": 0.106
+    }
+  ],
+  "ligne_principale": [
+    {
+      "ply": 0,
+      "joueur": 1,
+      "coup": [
+        3,
+        3
+      ],
+      "note": "",
+      "score_espere_p1": 0.5811,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "hash": "34cbd58d62f1894e"
+    },
+    {
+      "ply": 1,
+      "joueur": 2,
+      "coup": [
+        2,
+        2
+      ],
+      "note": "",
+      "score_espere_p1": 0.5811,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "hash": "b374a68f5b84f282"
+    },
+    {
+      "ply": 2,
+      "joueur": 1,
+      "coup": [
+        3,
+        2
+      ],
+      "note": "",
+      "score_espere_p1": 0.5399,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "hash": "2f96556f5c0c88dd"
+    },
+    {
+      "ply": 3,
+      "joueur": 2,
+      "coup": [
+        4,
+        3
+      ],
+      "note": "",
+      "score_espere_p1": 0.5654,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "hash": "0fede628d34a4117"
+    },
+    {
+      "ply": 4,
+      "joueur": 1,
+      "coup": [
+        3,
+        4
+      ],
+      "note": "",
+      "score_espere_p1": 0.5417,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "hash": "00bf3d00689c554f"
+    },
+    {
+      "ply": 5,
+      "joueur": 2,
+      "coup": [
+        3,
+        5
+      ],
+      "note": "",
+      "score_espere_p1": 0.6161,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "hash": "18f2fae0ba68840f"
+    },
+    {
+      "ply": 6,
+      "joueur": 1,
+      "coup": [
+        2,
+        4
+      ],
+      "note": "",
+      "score_espere_p1": 0.5619,
+      "resultat_camp_au_trait": "D",
+      "exact": false,
+      "lecture": "équilibré",
+      "hash": "0c6ed0525ebf769e"
+    }
+  ],
+  "lignes_alternatives": [
+    {
+      "premier_coup": [
+        2,
+        3
+      ],
+      "score_espere_p1": 0.5496,
+      "ligne": [
+        {
+          "ply": 0,
+          "coup": [
+            3,
+            3
+          ],
+          "score_espere_p1": 0.5496,
+          "exact": false
+        },
+        {
+          "ply": 1,
+          "coup": [
+            2,
+            4
+          ],
+          "score_espere_p1": 0.4991,
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "coup": [
+            1,
+            3
+          ],
+          "score_espere_p1": 0.5373,
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "coup": [
+            0,
+            4
+          ],
+          "score_espere_p1": 0.5116,
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "coup": [
+            1,
+            4
+          ],
+          "score_espere_p1": 0.5258,
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "coup": [
+            1,
+            5
+          ],
+          "score_espere_p1": 0.4991,
+          "exact": false
+        }
+      ]
+    },
+    {
+      "premier_coup": [
+        1,
+        3
+      ],
+      "score_espere_p1": 0.5452,
+      "ligne": [
+        {
+          "ply": 0,
+          "coup": [
+            3,
+            2
+          ],
+          "score_espere_p1": 0.5452,
+          "exact": false
+        },
+        {
+          "ply": 1,
+          "coup": [
+            2,
+            1
+          ],
+          "score_espere_p1": 0.5044,
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "coup": [
+            1,
+            1
+          ],
+          "score_espere_p1": 0.5258,
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "coup": [
+            2,
+            2
+          ],
+          "score_espere_p1": 0.508,
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "coup": [
+            1,
+            3
+          ],
+          "score_espere_p1": 0.532,
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "coup": [
+            2,
+            3
+          ],
+          "score_espere_p1": 0.5044,
+          "exact": false
+        }
+      ]
+    },
+    {
+      "premier_coup": [
+        1,
+        2
+      ],
+      "score_espere_p1": 0.5284,
+      "ligne": [
+        {
+          "ply": 0,
+          "coup": [
+            4,
+            3
+          ],
+          "score_espere_p1": 0.5284,
+          "exact": false
+        },
+        {
+          "ply": 1,
+          "coup": [
+            5,
+            3
+          ],
+          "score_espere_p1": 0.4884,
+          "exact": false
+        },
+        {
+          "ply": 2,
+          "coup": [
+            5,
+            2
+          ],
+          "score_espere_p1": 0.5,
+          "exact": false
+        },
+        {
+          "ply": 3,
+          "coup": [
+            4,
+            2
+          ],
+          "score_espere_p1": 0.4902,
+          "exact": false
+        },
+        {
+          "ply": 4,
+          "coup": [
+            3,
+            1
+          ],
+          "score_espere_p1": 0.5178,
+          "exact": false
+        },
+        {
+          "ply": 5,
+          "coup": [
+            2,
+            2
+          ],
+          "score_espere_p1": 0.4911,
+          "exact": false
+        }
+      ]
+    }
+  ],
+  "avertissements": [
+    "ligne principale : 5 demi-coup(s) lu(s) après transport par symétrie",
+    "alt [2, 3] : ligne principale : 4 demi-coup(s) lu(s) après transport par symétrie"
+  ]
+}

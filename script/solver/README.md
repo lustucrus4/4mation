@@ -162,6 +162,45 @@ moteur (0 à 3) contre 6 à 9 % aux frontières avec les couches restées au Min
 (4 à 6), et 1,1 % entre deux couches Minimax (7 et 8) — les estimations du moteur sont
 cohérentes entre elles, les incohérences viennent du mélange.
 
+### Théorie d'ouverture extraite du livre (`extract_opening_theory.py`)
+
+Le livre brut n'est pas lisible par un humain : ce script en tire la théorie prête pour
+les cours (ligne principale, ouvertures uniques, seuils, conseils chiffrés).
+
+```bash
+python script/solver/extract_opening_theory.py --max-ply 6
+#    -> script/solver/opening_theory.json   (données brutes, versionné)
+#    -> script/solver/THEORIE_OUVERTURE.md  (rapport lisible)
+```
+
+Ce que produit le rapport, et sur quoi il faut être précis :
+
+- **Ouvertures uniques** : le plateau est symétrique par rotation et miroir, les 49 cases
+  de départ se réduisent à **10 orbites**. Chaque orbite est présentée avec son
+  représentant et le score espéré du premier joueur, plus l'écart au meilleur coup.
+- **Transport par symétrie** : le livre range chaque position dans la première orientation
+  rencontrée. Pour suivre une ligne, le script retrouve, parmi les 8 images du plateau
+  stocké, celle qui correspond à la position courante, puis transporte le coup par la même
+  symétrie (`reorient`). Sans cela, les coups lus paraissent illégaux.
+- **Nature des valeurs** : chaque ligne dit si elle vient d'un verdict de la tablebase
+  (`exact=1`) ou d'une estimation du moteur — les deux ne se mélangent jamais.
+- **Score espéré, pas probabilité** : la valeur chiffrée est une espérance
+  (victoire = 1, nulle = 0,5, défaite = 0), cible du calibrage. Dans un jeu où la nulle est
+  fréquente, « 58 % de score espéré » n'est pas « 58 % de victoires ». Le vocabulaire du
+  rapport suit cette distinction.
+- **Seuils** : ±40 points d'évaluation, lus dans la table de fiabilité du calibrage, sont
+  la frontière où la prédiction s'écarte vraiment de 0,50 ; le rapport les affiche en clair
+  pour que les cours ne surinterprètent pas le bruit.
+
+Mesure du 24/09/2026 (`--max-ply 6`, livre aux couches 1-6 réévaluées par le moteur) :
+
+| Enseignement | Chiffre |
+|--------------|---------|
+| Meilleur premier coup | `(3,3)`, score espéré du 1ᵉʳ joueur 58,1 % |
+| Coup le plus faible | `(0,1)`, 47,5 % — soit 10,6 points de moins |
+| Amplitude totale des 10 ouvertures | 10,6 points : le premier coup ne décide pas la partie |
+| Couverture | 26 175 positions au 6ᵉ demi-coup, dont 2 753 prouvées |
+
 ### Audit de la tablebase (`4mation-local --verify`)
 
 `4mation-local.exe --verify` relit chaque position stockée, recalcule sa valeur à partir

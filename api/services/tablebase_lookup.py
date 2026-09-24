@@ -475,9 +475,19 @@ class TablebaseLookup:
         current_player: int,
         last_move: Optional[Tuple[int, int]] = None,
         valid_moves: Optional[List[Tuple[int, int]]] = None,
+        *,
+        require_exact: bool = False,
     ) -> Optional[Tuple[int, int]]:
+        """Meilleur coup connu, ou None.
+
+        ``require_exact=True`` ne renvoie que les coups **prouvés** (tablebase exacte ou
+        entrée de livre ``exact=1``), et ignore les estimations du livre : sert aux bots
+        qui ont déjà une recherche propre et ne doivent céder le trait qu'à une preuve.
+        """
         hit = self.lookup(board, current_player, last_move)
         if hit is None or hit.best_move is None:
+            return None
+        if require_exact and not hit.exact:
             return None
         if valid_moves and hit.best_move not in valid_moves:
             return None

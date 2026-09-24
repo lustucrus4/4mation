@@ -100,13 +100,27 @@ class DifficultyBot:
         state = engine.get_state()
         last_move = self._last_move(engine)
 
+        # Preuve d'abord : une position dont la valeur est démontrée (tablebase exacte ou
+        # livre prouvé) se joue sans chercher. Aucune recherche ne fera mieux, et cela
+        # évite qu'un moteur profond joue un coup gagnant mais plus lent qu'un autre.
+        if self.use_tablebase:
+            proven = get_tablebase_lookup().choose_move(
+                state.board,
+                int(state.current_player),
+                last_move,
+                valid_actions,
+                require_exact=True,
+            )
+            if proven is not None:
+                return proven
+
         # Moteur Rust : recherche profonde, tablebase gérée de son côté.
         if self.use_engine:
             engine_move = self._engine_move(state, last_move, valid_actions)
             if engine_move is not None:
                 return engine_move
 
-        # Coups parfaits en finale (niveaux forts uniquement).
+        # Estimations du livre (non prouvées) : seulement si la recherche n'a rien donné.
         if self.use_tablebase:
             tb_move = get_tablebase_lookup().choose_move(
                 state.board,

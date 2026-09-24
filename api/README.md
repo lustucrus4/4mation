@@ -93,6 +93,18 @@ Chaque résultat porte son degré de confiance, que l'interface doit montrer :
 | `coverage_percent` | part des coups légaux effectivement notés |
 | `truncated` | `true` = recherche arrêtée au temps imparti (les scores viennent de la dernière profondeur terminée) |
 
+### Jouer : la preuve passe avant la recherche
+
+Même ordre de confiance pour le choix des coups des bots (`DifficultyBot.choose_move`) :
+une position **prouvée** (tablebase exacte, ou entrée de livre `exact=1`) se joue
+directement, sans lancer le moteur (`choose_move(..., require_exact=True)`). Le moteur
+n'intervient qu'ensuite, puis les estimations du livre en dernier recours.
+
+Conséquence mesurable : le `level_6` joue `(3,3)` en 11 ms au lieu de 2,5 s de recherche, et
+rejoue la ligne prouvée du centre (29 demi-coups) sans un seul écart, à ~4 ms le coup. Une
+preuve ne se discute pas : aucune recherche ne fera mieux, et cela garantit que le bot ne
+joue jamais un coup gagnant plus lent qu'un autre.
+
 ### Score → taux de victoire
 
 Le score du moteur n'est pas un taux de victoire : son unité est la *menace immédiate*

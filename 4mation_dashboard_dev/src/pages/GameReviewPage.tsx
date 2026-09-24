@@ -106,8 +106,8 @@ export default function GameReviewPage() {
             indeterminate={!hasProgress}
           />
           <p className="mt-3 text-xs text-white/45">
-            Chaque coup est évalué (tablebase ou MCTS). Les parties longues peuvent prendre
-            une minute.
+            Chaque coup est évalué par la tablebase (valeur prouvée) ou par le moteur
+            d'analyse (estimation). Les parties longues peuvent prendre une minute.
           </p>
         </Card>
       </div>

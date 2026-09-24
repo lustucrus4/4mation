@@ -80,3 +80,7 @@ htmlcov/
 
 # Rust / Cargo
 script/solver_rust/target/
+script/rl_rust/target/
+
+# Fichiers de travail (logs et scripts jetables)
+_tmp_*

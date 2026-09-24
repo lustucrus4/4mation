@@ -6,17 +6,20 @@ Scripts de construction de la base de positions exactes (W/L/D, meilleur coup, t
 
 ```
 script/solver/
-├── build_endgame_tablebase.py   # Phase A — fin de partie (≤12 cases vides)
-├── build_opening_book.py        # Phase B — livre d'ouverture (12 premiers coups)
-├── build_full_tablebase.py      # Phase C — solveur exhaustif progressif
-├── exhaustive_explorer.py       # BFS avant + rétrograde parents
-├── retrograde_solver.py         # Moteur rétrograde par position
-├── db_schema.py                 # Schéma SQLite partagé
-├── solver_status.py             # Fichier JSON live (API + dashboard)
-├── position_hasher.py           # Hash Zobrist des positions
+├── build_endgame_tablebase.py       # Phase A — fin de partie (≤12 cases vides)
+├── build_opening_book.py            # Phase B — livre d'ouverture (12 premiers coups)
+├── build_opening_book_engine.py     # Livre d'ouverture évalué par le moteur Rust
+├── calibrate_engine_scale.py        # Calibrage score moteur → taux de victoire
+├── check_opening_book.py            # Contrôle d'intégrité et de cohérence du livre
+├── build_full_tablebase.py          # Phase C — solveur exhaustif progressif
+├── exhaustive_explorer.py           # BFS avant + rétrograde parents
+├── retrograde_solver.py             # Moteur rétrograde par position
+├── db_schema.py                     # Schéma SQLite partagé
+├── solver_status.py                 # Fichier JSON live (API + dashboard)
+├── position_hasher.py               # Hash Zobrist des positions
 └── data/
-    ├── tablebase.db             # Base SQLite (positions + progression)
-    └── solver_status.json       # État live pour le dashboard
+    ├── tablebase.db                 # Base SQLite (positions + progression)
+    └── solver_status.json           # État live pour le dashboard
 ```
 
 ## Phase C — résolution exhaustive progressive
@@ -115,6 +118,61 @@ Version Python legacy (Minimax+MCTS, plus lente) :
 ```bash
 python script/solver/build_opening_book_full.py --target-gb 2 --fresh
 ```
+
+## Livre d'ouverture évalué par le moteur Rust
+
+Le livre (`opening_book`) est la matière première des cours d'ouverture et de
+l'explorateur du site. Depuis septembre 2026, ses estimations ne viennent plus du
+Minimax Python ni du MCTS mais du moteur `4mation-engine` (voir
+`script/solver_rust/README.md`), qui apporte deux choses que l'ancien pipeline n'avait
+pas : la **détection de mat forcé** (valeurs `exact=1`) et une **échelle de score
+calibrée** sur les positions exactes de la tablebase.
+
+```bash
+# 1. Calibrer l'échelle score -> taux de victoire (à refaire si le moteur change)
+python script/solver/calibrate_engine_scale.py --samples 150 --depth 8
+#    -> engine_scale.json, lu automatiquement par le constructeur et par l'API
+
+# 2. Rejouer les positions du livre par le moteur (les écritures sont idempotentes)
+python script/solver/build_opening_book_engine.py --max-ply 6 --max-positions 40000
+#    --budget-factor 0.5 pour une passe d'exploration rapide
+
+# 3. Contrôler le résultat
+python script/solver/check_opening_book.py --ply 0 1 2 3 4 --all --by-ply
+```
+
+Budget de recherche par demi-coup (`_budget` dans le constructeur) : 20 demi-coups au
+premier coup, 18 au deuxième, 14 aux coups 3 à 6, 12 au-delà. Les premiers coups sont
+peu nombreux mais très consultés : c'est là que le budget compte.
+
+### Contrôle d'intégrité (`check_opening_book.py`)
+
+| Contrôle | Nature | Ce qu'il détecte |
+|----------|--------|------------------|
+| `plateau` | erreur | plateau non vide sans dernier coup (vestige d'anciens bugs) |
+| `pions` | erreur | nombre de pions incohérent avec le demi-coup |
+| `dernier_coup` | erreur | la case du dernier coup ne porte pas un pion adverse |
+| `coup_legal` | erreur | meilleur coup enregistré illégal (décalage d'orientation) |
+| `coherence` | avertissement | valeur du parent ≠ opposé de celle de l'enfant atteint |
+
+`--by-ply` ventile l'écart de cohérence par demi-coup : c'est ce qui permet de
+distinguer un estimateur intrinsèquement bruité d'un **mélange de deux générations de
+calcul**. Mesure du 24/09/2026 : 2,8 % d'écart moyen dans les couches écrites par le
+moteur (0 à 3) contre 6 à 9 % aux frontières avec les couches restées au Minimax
+(4 à 6), et 1,1 % entre deux couches Minimax (7 et 8) — les estimations du moteur sont
+cohérentes entre elles, les incohérences viennent du mélange.
+
+### Audit de la tablebase (`4mation-local --verify`)
+
+`4mation-local.exe --verify` relit chaque position stockée, recalcule sa valeur à partir
+de ses enfants et la compare à ce qui est écrit. Il distingue les « alias fantômes »
+(le même plateau enregistré sous un autre dernier coup : valeur juste, clé inatteignable)
+des vrais trous, par échantillonnage des positions indécidables.
+
+Bilan du 24/09/2026 sur 24 426 473 positions : **0 valeur fausse**, 11 076 663 vérifiées,
+13 349 810 indécidables dont 94,7 % d'alias fantômes — soit ≈ 0,7 M de vrais trous
+(2,9 % de la base). La base ne se contredit jamais ; son défaut est la couverture.
+Rapport détaillé, couche par couche : **[AUDIT_TABLEBASE_2026-09-24.md](./AUDIT_TABLEBASE_2026-09-24.md)**.
 
 ## API de suivi (dashboard)
 

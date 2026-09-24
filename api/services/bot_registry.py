@@ -1,10 +1,14 @@
-"""Registre des bots IA de 4mation — 5 niveaux de difficulté réels.
+"""Registre des bots IA de 4mation — 6 niveaux de difficulté réels.
 
-Chaque niveau est un bot Minimax paramétré :
+Les niveaux 1 à 5 sont des bots Minimax paramétrés :
 - depth / time_budget_ms : force de la recherche ;
 - use_tablebase : consulte la tablebase exacte (coups parfaits en finale) ;
 - blunder_rate : probabilité de jouer un coup au hasard (erreurs « humaines »),
   ce qui rend les niveaux faibles réellement battables sans être stupides.
+
+Le niveau 6 est branché sur le moteur Rust `4mation-engine` (processus persistant,
+recherche alpha-bêta + tablebase). Si le binaire n'est pas disponible, le niveau 6
+retombe automatiquement sur le chemin Minimax des niveaux 5.
 """
 
 from __future__ import annotations
@@ -13,6 +17,7 @@ import logging
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
+from api.services.engine_client import get_engine_client
 from api.services.tablebase_lookup import get_tablebase_lookup
 from game.game_engine import GameEngine
 from game_tree.optimized_minimax import OptimizedMinimaxAdvisor
@@ -21,7 +26,11 @@ logger = logging.getLogger(__name__)
 
 
 class DifficultyBot:
-    """Bot Minimax dont la force est calibrée par un niveau de difficulté."""
+    """Bot dont la force est calibrée par un niveau de difficulté.
+
+    Deux moteurs possibles : le Minimax Python historique, ou le moteur Rust
+    (`use_engine`) quand il est compilé et disponible.
+    """
 
     def __init__(
         self,
@@ -29,11 +38,13 @@ class DifficultyBot:
         time_budget_ms: int,
         use_tablebase: bool,
         blunder_rate: float,
+        use_engine: bool = False,
     ) -> None:
         self.depth = depth
         self.time_budget_ms = time_budget_ms
         self.use_tablebase = use_tablebase
         self.blunder_rate = blunder_rate
+        self.use_engine = use_engine
         self._advisor = OptimizedMinimaxAdvisor(
             depth=depth,
             use_iterative_deepening=True,
@@ -48,6 +59,35 @@ class DifficultyBot:
             return (int(last_row), int(last_col))
         return None
 
+    def _engine_move(
+        self,
+        state: Any,
+        last_move: Optional[Tuple[int, int]],
+        valid_actions: List[Tuple[int, int]],
+    ) -> Optional[Tuple[int, int]]:
+        """Coup du moteur Rust, ou None si indisponible / coup inutilisable."""
+        client = get_engine_client()
+        if not client.is_available():
+            return None
+        try:
+            move = client.best_move(
+                state.board,
+                int(state.current_player),
+                last_move,
+                depth=self.depth,
+                time_ms=self.time_budget_ms,
+            )
+        except Exception as exc:
+            logger.warning("Moteur Rust en erreur : %s — repli Minimax", exc)
+            return None
+
+        if move is None:
+            return None
+        if move not in valid_actions:
+            logger.warning("Moteur Rust propose un coup illégal %s — coup ignoré", move)
+            return None
+        return move
+
     def choose_move(self, engine: GameEngine) -> Optional[Tuple[int, int]]:
         valid_actions = engine.get_valid_actions()
         if not valid_actions:
@@ -59,6 +99,12 @@ class DifficultyBot:
 
         state = engine.get_state()
         last_move = self._last_move(engine)
+
+        # Moteur Rust : recherche profonde, tablebase gérée de son côté.
+        if self.use_engine:
+            engine_move = self._engine_move(state, last_move, valid_actions)
+            if engine_move is not None:
+                return engine_move
 
         # Coups parfaits en finale (niveaux forts uniquement).
         if self.use_tablebase:
@@ -95,7 +141,7 @@ class DifficultyBot:
 
 
 class BotRegistry:
-    """Catalogue et instanciation des 5 niveaux de difficulté."""
+    """Catalogue et instanciation des 6 niveaux de difficulté."""
 
     DEFAULT_BOT_ID = "level_3"
 
@@ -145,6 +191,16 @@ class BotRegistry:
             "use_tablebase": True,
             "blunder_rate": 0.0,
         },
+        "level_6": {
+            "name": "Niveau 6 — Maître",
+            "description": "Moteur Rust : recherche profonde et finales exactes",
+            "level": 6,
+            "depth": 22,
+            "time_budget_ms": 2500,
+            "use_tablebase": True,
+            "blunder_rate": 0.0,
+            "use_engine": True,
+        },
     }
 
     def __init__(self) -> None:
@@ -172,6 +228,7 @@ class BotRegistry:
                 time_budget_ms=cfg["time_budget_ms"],
                 use_tablebase=cfg["use_tablebase"],
                 blunder_rate=cfg["blunder_rate"],
+                use_engine=cfg.get("use_engine", False),
             )
         return self._bots[bot_id]
 

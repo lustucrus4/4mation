@@ -18,6 +18,8 @@ mod local_db;
 
 mod local_engine;
 
+mod layer_sweep;
+
 mod opening_book;
 
 mod result_table;
@@ -52,6 +54,8 @@ use local_db::LocalDb;
 
 use local_engine::{run_local_engine, LocalConfig};
 
+use result_table::ResultTable;
+
 use opening_book::{run_opening_book_build, OpeningBookConfig, OpeningEstimateMode};
 
 
@@ -72,11 +76,35 @@ const DEFAULT_DB: &str = "script/solver/data/tablebase.db";
 
 struct Args {
 
+    /// Balayage exhaustif : complète la couche N à partir de la couche N-1
+
+    #[arg(long)]
+
+    sweep_from: Option<usize>,
+
+    /// Dernière couche à compléter (incluse)
+
+    #[arg(long, default_value = "8")]
+
+    sweep_to: usize,
+
     /// Chemin vers tablebase.db
 
     #[arg(long, default_value = DEFAULT_DB)]
 
     db: PathBuf,
+
+    /// Diagnostic : affiche jusqu'à 5 parents irrésolubles de la couche N+1
+
+    #[arg(long)]
+
+    diag_layer: Option<usize>,
+
+    /// Vérifie la base : recalcule chaque valeur depuis ses enfants et la compare
+
+    #[arg(long)]
+
+    verify: bool,
 
 
 
@@ -532,6 +560,71 @@ fn main() -> Result<()> {
     let db = LocalDb::open(&args.db)?;
 
 
+
+    // Vérification : la valeur stockée de chaque position est-elle cohérente ?
+    if args.verify {
+
+        return layer_sweep::verify(&db, 1..=12, 3000);
+
+    }
+
+    // Diagnostic : pourquoi des parents restent-ils irrésolubles ?
+    if let Some(layer) = args.diag_layer {
+
+        return layer_sweep::diagnose(&db, layer, 5);
+
+    }
+
+    // Mode balayage : comble les couches trouées puis s'arrête.
+    if let Some(from) = args.sweep_from {
+
+        let table = ResultTable::load_from_db(&db)?;
+
+        info!("Table de résultats chargée : {} positions", table.len());
+
+        for layer in from..args.sweep_to {
+
+            let stats = layer_sweep::sweep_layer(&db, layer, &table)?;
+
+            info!(
+
+                "Couche {} complétée : {} positions en {:.0}s ({:.0}/s), {} connues, {} inconnues",
+
+                layer + 1,
+
+                stats.inserted,
+
+                stats.elapsed_secs,
+
+                stats.rate(),
+
+                stats.known,
+
+                stats.incomplete
+
+            );
+
+            if stats.incomplete > 0 {
+
+                tracing::warn!(
+
+                    "{} positions ignorées : la couche {} est trouée, relancer d'abord le balayage de la couche {}",
+
+                    stats.incomplete,
+
+                    layer,
+
+                    layer.saturating_sub(1)
+
+                );
+
+            }
+
+        }
+
+        return Ok(());
+
+    }
 
     if let Some(n) = args.self_check {
 

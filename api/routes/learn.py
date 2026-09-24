@@ -40,19 +40,45 @@ LESSONS = [
     },
     {
         "id": "ouvertures",
-        "title": "Principes d'ouverture",
+        "title": "Ouvertures : ce que dit le moteur",
         "level": "intermédiaire",
-        "duration_min": 5,
+        "duration_min": 8,
         "sections": [
             {
-                "heading": "Centre d'abord",
-                "body": "Les cases centrales (3,3) et voisines offrent le plus de continuations — "
-                "consultez l'explorateur pour comparer les taux de victoire.",
+                "heading": "Le premier coup est le seul coup libre",
+                "body": "Plateau vide : vous posez où vous voulez, sur les 49 cases. C'est la seule fois de la "
+                "partie. À partir du deuxième coup, tout est contraint par la **frontière** du dernier coup "
+                "joué. Le premier coup fixe donc l'endroit du plateau où va se dérouler la partie — d'où son "
+                "importance.",
             },
             {
-                "heading": "Suivez la frontière",
-                "body": "Vos coups légaux dépendent du dernier coup joué : anticipez où l'adversaire pourra "
-                "répondre et verrouillez les cases autour de sa dernière pose.",
+                "heading": "Le classement des 10 premiers coups",
+                "body": "Sur les 49 cases, il n'y a que **10 premiers coups réellement différents** : les 39 "
+                "autres sont des rotations ou des symétries. Voici le classement du moteur, score du joueur 1 "
+                "(profondeur 14) : **(3,3) centre +29**, (2,3) +8, (1,3) +2, (2,2) 0, (1,2) −5, (1,1) −7, "
+                "(0,3) −9, (0,0) −12, (0,1) −16, (0,2) −17. Tout est dit : le centre domine, les bords coûtent.",
+            },
+            {
+                "heading": "Ce que valent ces chiffres",
+                "body": "Le moteur estime le premier coup central à environ **68 % de victoire pour le premier "
+                "joueur**, et une ouverture sur le bord à moins de 40 %. Ce sont des **estimations** issues de "
+                "la recherche et d'une échelle calibrée sur les finales exactes — pas des preuves. Ce qui est "
+                "prouvé, en revanche, c'est qu'aucune victoire forcée de blanc n'existe dans les 19 premiers "
+                "demi-coups depuis le centre : le gain, s'il existe, est long.",
+            },
+            {
+                "heading": "Une case décalée n'est pas la même ouverture",
+                "body": "Attention à ne pas confondre **symétrie** et **translation**. (3,3) et (2,2) sont deux "
+                "ouvertures distinctes : le bord change toute la suite de la partie. Une ouverture décalée d'une "
+                "case vers le bord n'a ni les mêmes continuations ni la même évaluation — d'où les écarts de "
+                "score ci-dessus.",
+            },
+            {
+                "heading": "Comment utiliser l'explorateur",
+                "body": "L'**explorateur d'ouvertures** du site rejoue une séquence et affiche, pour chaque "
+                "continuation, le taux de victoire estimé par le moteur. Servez-vous-en pour comparer deux "
+                "coups qui vous semblent équivalents : l'écart de pourcentage est la réponse, et l'étiquette "
+                "vous dit s'il s'agit d'une estimation ou d'une valeur prouvée.",
             },
         ],
     },
@@ -97,34 +123,83 @@ LESSONS = [
         "duration_min": 6,
         "sections": [
             {
-                "heading": "Menace ouverte",
-                "body": "Une **menace** est une ligne de **3 pions alignés** avec au moins une extrémité libre "
-                "sur laquelle un 4ᵉ pion terminerait la partie. Le moteur Minimax compte ces menaces dans "
-                "chaque direction (horizontal, vertical, diagonale) — c'est la base de la recherche tactique.",
+                "heading": "Menace réelle, menace fantôme",
+                "body": "Une **menace** est une ligne de **3 pions alignés** dont la case de complétion est "
+                "**jouable maintenant**, c'est-à-dire sur la frontière du dernier coup. C'est la définition "
+                "exacte utilisée par le moteur : il compte les cases de la frontière actuelle qui termineraient "
+                "la partie. Trois pions alignés dont la quatrième case n'est pas jouable ne sont **pas** une "
+                "menace — au coup suivant elle peut avoir disparu.",
             },
             {
                 "heading": "Blocage obligatoire",
-                "body": "Si l'adversaire peut gagner au prochain coup, vous **devez** jouer sur la case qui "
-                "bloque son alignement. Le moteur classe ce coup en priorité juste après une victoire immédiate "
-                "(win > block > menace). Ignorer un blocage coûte la partie.",
+                "body": "Si l'adversaire a une menace réelle, vous **devez** jouer sur la case qui complète son "
+                "alignement, et elle doit être jouable pour vous. Le moteur ne s'y trompe pas : une menace "
+                "immédiate vaut 60 points d'évaluation, tandis que trois pions alignés sans case de complétion "
+                "jouable n'en valent que 14. C'est le rapport qui commande tout le jeu tactique.",
             },
             {
                 "heading": "Exemple sur 7×7",
-                "body": "Rouge a trois pions en (3,2)-(3,3)-(3,4) et la case (3,5) est libre : c'est une menace "
-                "horizontale. Bleu doit jouer en (3,5) s'il peut légalement (case sur la frontière du dernier coup). "
-                "Si (3,5) n'est pas jouable, cherchez une autre menace adverse à bloquer ou créez la vôtre.",
+                "body": "Rouge a trois pions en (3,2)-(3,3)-(3,4) et la case (3,5) est libre. La menace n'est "
+                "réelle que si (3,5) figure dans vos coups légaux : elle doit toucher le dernier coup joué. "
+                "Si (3,5) est hors frontière, vous jouez ailleurs en toute sécurité — et si vous jouez un coup "
+                "qui éloigne la frontière de (3,5), la menace est définitivement éteinte.",
             },
             {
-                "heading": "Menace et frontière",
-                "body": "La règle du **dernier coup** peut empêcher un blocage évident : une case critique peut "
-                "être hors frontière. Avant de construire une menace, vérifiez que l'adversaire pourra répondre "
-                "sur la case de blocage au tour suivant — sinon votre menace est plus forte qu'il n'y paraît.",
+                "heading": "Deux menaces ne se bloquent pas",
+                "body": "Le cas décisif est la **menace double** : deux cases de complétion jouables d'un seul "
+                "coup. L'adversaire ne peut en bloquer qu'une, et le moteur le voit immédiatement car il compte "
+                "les deux (2 × 60 points). La plupart des parties gagnées le sont par deux menaces simultanées, "
+                "pas par une seule.",
             },
             {
                 "heading": "Ordre des priorités",
-                "body": "Comme dans le Minimax du projet : 1) gagner tout de suite, 2) bloquer une victoire adverse, "
-                "3) créer une menace (3 alignés ouverts), 4) améliorer vos fenêtres de 4. Entraînez-vous à scanner "
-                "le plateau dans cet ordre à chaque coup.",
+                "body": "Scanner le plateau dans cet ordre, à chaque coup : 1) puis-je gagner tout de suite ? "
+                "2) l'adversaire peut-il gagner au prochain coup (menace réelle à bloquer) ? 3) puis-je créer "
+                "une menace réelle, si possible double ? 4) sinon, améliorer mes lignes et ma centralité. "
+                "Cet ordre est exactement celui que suit le moteur.",
+            },
+        ],
+    },
+    {
+        "id": "menaces-fantomes",
+        "title": "La leçon n°1 : les menaces fantômes",
+        "level": "intermédiaire",
+        "duration_min": 6,
+        "sections": [
+            {
+                "heading": "Le point que tout le monde rate",
+                "body": "C'est la découverte la plus importante faite en construisant le moteur : **un alignement "
+                "de trois pions ne sert à rien si la case qui le complète n'est pas adjacente au dernier coup "
+                "joué**. Le plateau est vivant, la frontière se déplace à chaque coup, et une menace qui n'est "
+                "pas jouable maintenant s'éteint presque toujours d'elle-même.",
+            },
+            {
+                "heading": "Pourquoi",
+                "body": "Après chaque coup, on ne peut jouer que sur les 8 voisins du dernier pion posé. "
+                "Donc pour compléter votre ligne au coup suivant, la case de complétion doit être voisine du "
+                "pion que **l'adversaire** va poser — et vous ne choisissez pas son coup. S'il joue à l'opposé, "
+                "votre case de complétion sort de la frontière et vos trois pions deviennent inertes.",
+            },
+            {
+                "heading": "Conséquence pratique",
+                "body": "Avant de compter sur une menace, vérifiez trois choses : la case de complétion est-elle "
+                "**jouable maintenant** ? Si oui, l'adversaire est obligé de la bloquer. Sinon, elle ne force rien "
+                "et vous venez probablement de perdre un temps. L'adversaire, lui, peut « s'éloigner » : jouer "
+                "un coup calme à distance pour éteindre la menace sans dépenser un blocage.",
+            },
+            {
+                "heading": "Le retournement",
+                "body": "Cette règle explique aussi pourquoi les parties durent : aucune victoire forcée "
+                "n'apparaît dans les premières vingtaines de demi-coups, car chaque tentative de menaces "
+                "peut être neutralisée par un coup à distance. Elle donne le plan de jeu défensif de référence : "
+                "face à un alignement de trois, demandez-vous si la case de complétion est jouable **pour "
+                "l'adversaire au prochain tour** — si non, jouez ailleurs.",
+            },
+            {
+                "heading": "Comment s'entraîner",
+                "body": "Ouvrez l'entraîneur et regardez les pourcentages affichés par le moteur : les cases "
+                "qui font chuter le taux adverse sont presque toujours celles qui **créent** une menace réelle "
+                "ou qui **éteignent** celle de l'adversaire. Comparez avec votre coup : l'écart est la leçon.",
             },
         ],
     },
@@ -141,10 +216,12 @@ LESSONS = [
                 "pré-calcule pour évaluer chaque position.",
             },
             {
-                "heading": "Poids heuristiques",
-                "body": "Le Minimax attribue un score selon le nombre de vos pions dans une fenêtre propre : "
-                "1 pion → 1, 2 pions → 10, 3 pions → 100, 4 pions → victoire (10 000). Plus vous remplissez "
-                "une fenêtre sans l'adversaire, plus la position est favorable.",
+                "heading": "Poids heuristiques du moteur",
+                "body": "Le moteur note une position avec trois termes : les **menaces réelles** (une case "
+                "jouable qui complète un 4) valent **60 points** chacune, les **lignes** valent 14 points par "
+                "trois alignés et 2 points par paire, et la **centralité** compte 3 fois la valeur de la case "
+                "(6 au centre contre 0 dans un coin). Un simple trois alignés sans case jouable pèse donc "
+                "quatre fois moins qu'une menace réelle.",
             },
             {
                 "heading": "Fenêtres polluées",
@@ -154,15 +231,23 @@ LESSONS = [
             },
             {
                 "heading": "Exemple concret",
-                "body": "Rouge occupe (2,2) et (2,3) sur la ligne horizontale de la rangée 2, cases (2,1) à (2,4) "
-                "libres : cette fenêtre vaut 10 points. Si Bleu joue en (2,4), la fenêtre est polluée et ne "
-                "compte plus pour personne — un bon blocage préventif.",
+                "body": "Rouge occupe (2,2) et (2,3) : la paire vaut 2 points par fenêtre. Si Bleu joue en (2,4), "
+                "la fenêtre est polluée et ne compte plus pour personne — un bon blocage préventif, mais qui "
+                "coûte un tempo : le moteur ne le joue que si le gain de la pollution dépasse le coup perdu.",
+            },
+            {
+                "heading": "Centre et bords",
+                "body": "La valeur d'une case suit sa distance au centre : (3,3) vaut 6, une case du bord "
+                "milieu vaut 3, un coin vaut 0. Puisque la centralité est multipliée par 3, un pion central "
+                "rapporte 18 points — autant qu'un trois alignés complet. C'est mesurable, et cela explique "
+                "pourquoi le premier coup au centre est le meilleur du jeu.",
             },
             {
                 "heading": "Lien avec les menaces",
-                "body": "Une fenêtre à 3 pions propres correspond à une menace ouverte (score 100). L'évaluation "
-                "des fenêtres guide le moteur en milieu de partie quand aucune victoire ou blocage immédiat "
-                "n'est disponible.",
+                "body": "Une fenêtre à 3 pions propres ne vaut 14 points que si la quatrième case n'est pas "
+                "jouable ; dès qu'elle l'est, la même ligne vaut 60. Tout l'enjeu du milieu de partie est "
+                "de faire coïncider vos trois pions avec la frontière du dernier coup — pour vous comme pour "
+                "l'adversaire.",
             },
         ],
     },
@@ -174,21 +259,24 @@ LESSONS = [
         "sections": [
             {
                 "heading": "Principe",
-                "body": "Une **menace double** survient quand vous créez **deux lignes de 3** (ou plus) que "
-                "l'adversaire ne peut pas bloquer en un seul coup. Au 4mation, un seul pion par tour suffit "
-                "rarement à parer deux alignements simultanés — la partie est souvent gagnée.",
+                "body": "Une **menace double** survient quand vous avez **deux cases de complétion jouables** "
+                "(ou plus) au même tour : deux lignes de 3 dont les quatrièmes cases sont toutes deux sur la "
+                "frontière. L'adversaire ne peut en bloquer qu'une seule — la partie est gagnée. C'est le seul "
+                "motif qui produit des victoires forcées à court terme.",
             },
             {
                 "heading": "Exemple classique",
-                "body": "Imaginez Rouge avec deux lignes de 3 qui se croisent : horizontale (3,1)-(3,2)-(3,3) "
-                "et verticale (1,3)-(2,3)-(3,3), extrémités libres en (3,0), (3,4), (0,3) et (4,3). "
-                "Bleu ne peut bloquer qu'une extrémité ; Rouge complète l'autre et gagne.",
+                "body": "Rouge avec deux lignes de 3 qui se croisent : horizontale (3,1)-(3,2)-(3,3) et "
+                "verticale (1,3)-(2,3)-(3,3), extrémités libres en (3,0), (3,4), (0,3) et (4,3). Encore "
+                "faut-il que **deux** de ces extrémités soient jouables au même moment : c'est la frontière, "
+                "pas le dessin des pions, qui décide.",
             },
             {
                 "heading": "Frontière et timing",
                 "body": "Construire une double menace demande plusieurs coups. Anticipez où sera la frontière "
                 "après chaque réponse adverse : une menace « fantôme » sur une case non jouable ne force rien. "
-                "Guidez la partie pour que vos deux lignes deviennent bloquables au même moment.",
+                "Guidez la partie pour que **vos deux lignes** deviennent jouables au même coup, et non l'une "
+                "après l'autre.",
             },
             {
                 "heading": "Créer la fourchette",
@@ -197,10 +285,11 @@ LESSONS = [
                 "participer à quatre directions différentes.",
             },
             {
-                "heading": "Recherche de quiescence",
-                "body": "Le Minimax prolonge la recherche tant qu'il détecte des menaces (quiescence search) "
-                "pour ne pas sous-estimer une double menace en cours de maturation. Si vous voyez une position "
-                "« instable », calculez un coup de plus — la tactique peut exploser.",
+                "heading": "Comment le moteur la voit",
+                "body": "L'évaluation compte simplement les cases de la frontière qui terminent un 4 : deux "
+                "menaces valent 120 points, soit plus du double de tout ce qu'une position peut rapporter par "
+                "ailleurs. C'est aussi pour cela que le moteur ordonne ses coups en essayant d'abord les "
+                "victoires immédiates, puis les blocages, puis la création de menaces.",
             },
         ],
     },
@@ -211,10 +300,11 @@ LESSONS = [
         "duration_min": 6,
         "sections": [
             {
-                "heading": "Occuper le centre",
-                "body": "Le premier coup en **(3,3)** (ou voisin immédiat) maximise les fenêtres de 4 accessibles "
-                "et la mobilité future. L'explorateur d'ouvertures du dashboard compare les taux de victoire "
-                "selon les premières séquences — le centre domine statistiquement.",
+                "heading": "Répondre au premier coup",
+                "body": "Le deuxième coup est déjà contraint : il doit toucher le premier pion. Votre réponse "
+                "choisit donc la direction de la partie. Répondez en restant proche du centre quand c'est "
+                "possible, et évitez de pousser la partie vers un coin : la frontière s'y referme et vous "
+                "perdez des options avant même la première menace.",
             },
             {
                 "heading": "Suivre la frontière dès le coup 2",
@@ -244,39 +334,45 @@ LESSONS = [
     },
     {
         "id": "mobilite",
-        "title": "Mobilité et frontier",
+        "title": "Mobilité et frontière",
         "level": "avancé",
         "duration_min": 7,
         "sections": [
             {
                 "heading": "Mobilité = coups légaux",
-                "body": "La **mobilité** est le nombre de cases où vous pouvez jouer légalement. Au 4mation, "
+                "body": "La **mobilité** est le nombre de cases où l'on peut jouer légalement. Au 4mation, "
                 "elle dépend entièrement de la **frontière** (voisins du dernier coup, ou règle de secours). "
-                "Plus vous avez d'options, plus vous gardez l'initiative.",
+                "Plus la frontière est large, plus il y a de cases de complétion possibles — pour vous comme "
+                "pour l'adversaire.",
             },
             {
-                "heading": "Évaluation du moteur",
-                "body": "Le Minimax pénalise les positions où l'adversaire a beaucoup de coups légaux "
-                "(malus −0,1 par coup adverse) et récompense légèrement vos propres options (+0,05). "
-                "Réduire la mobilité adverse est un plan de jeu valide, surtout en finale.",
+                "heading": "Ce que le moteur évalue vraiment",
+                "body": "Le moteur ne note pas la mobilité en tant que telle : il note les **menaces réelles** "
+                "(60 points), les lignes (14 et 2 points) et la centralité (×3). Mais la mobilité agit sur les "
+                "menaces : une case de complétion n'est une menace que si elle est sur la frontière. Réduire "
+                "la mobilité adverse est donc un moyen, pas une fin — la fin, c'est de rendre vos lignes "
+                "jouables et les siennes inertes.",
             },
             {
                 "heading": "Enfermer la frontière",
                 "body": "Si les 8 voisins du dernier coup sont occupés, la règle de secours active : seules "
                 "les cases vides **adjacentes à un pion adverse** sont jouables. Vous pouvez guider la "
-                "partie vers cette configuration pour limiter drastiquement les réponses adverses.",
+                "partie vers cette configuration pour limiter drastiquement les réponses adverses — et donc "
+                "le nombre de menaces qu'il peut créer.",
             },
             {
                 "heading": "Exemple sur 7×7",
                 "body": "Bleu vient de jouer en (3,4). Si les cases (2,3) à (4,5) autour sont déjà pleines, "
                 "le rouge ne pourra jouer que sur les cases vides touchant un pion bleu — souvent 1 ou 2 "
-                "choix au lieu de 8. C'est un gain stratégique même sans menace immédiate.",
+                "choix au lieu de 8. Attention : cette configuration peut aussi **armer** l'adversaire, "
+                "puisque ses cases restantes touchent vos pions.",
             },
             {
                 "heading": "Mobilité vs menaces",
-                "body": "Ne sacrifiez pas une menace gagnante pour la mobilité. Mais à score égal tactique, "
-                "préférez le coup qui laisse l'adversaire le moins de cases valides au tour suivant — "
-                "le coach MCTS valorise souvent ces coups dans ses pourcentages.",
+                "body": "Ne sacrifiez jamais une menace réelle pour la mobilité : une menace vaut 60 points, "
+                "la mobilité n'est pas comptée. À score égal, préférez le coup qui laisse le moins de "
+                "**completions jouables** à l'adversaire au tour suivant — c'est cela que regarde le moteur "
+                "à la profondeur suivante, et c'est ce que les pourcentages du coach traduisent.",
             },
         ],
     },
@@ -288,9 +384,11 @@ LESSONS = [
         "sections": [
             {
                 "heading": "Positions résolues",
-                "body": "En finale, quand peu de cases restent libres, le moteur peut consulter une **table de "
-                "finales** (tablebase) qui connaît le résultat exact de la position : victoire, défaite ou nul "
-                "avec la séquence optimale. Le coach affiche alors des pourcentages **exacts**.",
+                "body": "Quand peu de cases restent libres, la position peut être **résolue** : le résultat est "
+                "connu (victoire, défaite ou nulle) avec la séquence optimale, sans aucune estimation. La base "
+                "de finales du site couvre exactement toutes les positions jusqu'à **7 cases vides** ; au-delà, "
+                "la couverture est partielle. Quand la position est résolue, le coach affiche des pourcentages "
+                "**exacts** — 100 %, 50 % ou 0 % — et le meilleur coup n'est pas une opinion.",
             },
             {
                 "heading": "Frontière en finale",
@@ -311,10 +409,12 @@ LESSONS = [
                 "sur les puzzles du pack (3 à 8 coups) pour reconnaître ces motifs.",
             },
             {
-                "heading": "Passer du MCTS à l'exact",
-                "body": "Tant que la position n'est pas en tablebase, le coach utilise le MCTS (estimations). "
-                "Quand la base couvre la position, le label passe à « exact ». En finale, faites confiance "
-                "aux 100 % / 0 % — ils reflètent une résolution complète, pas une intuition.",
+                "heading": "Estimation ou preuve : lire l'étiquette",
+                "body": "En finale, deux étiquettes coexistent. « **Exact (tablebase)** » signifie que le "
+                "résultat est mathématiquement connu : faites-y confiance, les 100 % et 0 % sont définitifs. "
+                "« **Estimation (moteur, profondeur N)** » signifie que le moteur a calculé N demi-coups et "
+                "propose un pourcentage : c'est solide, mais ce n'est pas une preuve. Un « **Mat forcé en N "
+                "coup(s)** » est une preuve trouvée par le moteur : c'est le cas le plus net.",
             },
         ],
     },
@@ -333,26 +433,30 @@ LESSONS = [
             {
                 "heading": "Pourcentages par case",
                 "body": "Chaque case **jouable** affiche un taux de victoire estimé si vous y jouez (du point "
-                "de vue des rouges). Vert = favorable, rouge = défavorable. Ces chiffres viennent du MCTS "
-                "(simulations) ou de la tablebase si la position est résolue.",
+                "de vue des rouges). Vert = favorable, rouge = défavorable. Ces chiffres viennent du moteur "
+                "d'analyse : c'est la lecture de son évaluation sur une échelle **calibrée sur les finales "
+                "exactes**, pas des simulations approximatives.",
             },
             {
                 "heading": "Meilleur coup suggéré",
                 "body": "Le coup recommandé apparaît en **pointillés dorés** sur le plateau. Il correspond au "
-                "`best_move` de l'analyse — victoire immédiate, blocage, ou meilleure continuation heuristique. "
+                "`best_move` de l'analyse — victoire immédiate, blocage, ou meilleure continuation. "
                 "Comparez votre choix au sien après avoir réfléchi.",
             },
             {
                 "heading": "Barre de probabilité",
                 "body": "La barre en bas indique la probabilité de victoire globale des rouges dans la position "
                 "actuelle. Elle se met à jour après chaque coup. Un 50 % signifie position équilibrée ; "
-                "au-delà de 70 %, vous avez un avantage net.",
+                "au-delà de 70 %, vous avez un avantage net. En dessous de 30 %, cherchez d'abord la défense.",
             },
             {
                 "heading": "Exact vs estimé",
-                "body": "Le label « Estimé (MCTS) » signifie que le calcul est approché (simulations limitées). "
-                "« Exact » (tablebase) signifie que le résultat est mathématiquement connu. En début de partie "
-                "sur 7×7, l'estimation est la norme ; en finale, l'exact prend le relais.",
+                "body": "Trois étiquettes à distinguer. « **Exact (tablebase)** » ou « **Mat forcé en N coup(s)** » : "
+                "le résultat est prouvé, les pourcentages sont définitifs. « **Estimation (moteur, profondeur N)** » : "
+                "le moteur a cherché N demi-coups, le pourcentage est une estimation calibrée — fiable, mais "
+                "révisable. « **recherche interrompue** » : le budget temps a été atteint, la profondeur "
+                "atteinte est plus faible. En début de partie sur 7×7, l'estimation est la norme ; en finale, "
+                "l'exact prend le relais.",
             },
         ],
     },

@@ -6,6 +6,14 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { exploreOpening, type OpeningExplore } from "../lib/learnApi";
 
+/** Nom lisible de la source d'une évaluation, pour la barre de probabilité. */
+function sourceLabel(source?: string, exact?: boolean): string {
+  if (source === "tablebase") return exact ? "Valeur exacte (tablebase)" : "Tablebase";
+  if (source === "opening_book") return exact ? "Valeur prouvée par le moteur" : "Estimation du livre";
+  if (source === "engine") return exact ? "Valeur prouvée par le moteur" : "Estimation du moteur";
+  return source ?? "";
+}
+
 export default function OpeningExplorerPage() {
   const [moves, setMoves] = useState<{ row: number; col: number }[]>([]);
   const [data, setData] = useState<OpeningExplore | null>(null);
@@ -84,8 +92,8 @@ export default function OpeningExplorerPage() {
         {data?.book && (
           <WinBar
             winRateP1={data.book.win_rate}
-            label="Position dans le livre"
-            source={data.book.source}
+            label={data.book.exact ? "Position résolue" : "Position dans le livre"}
+            source={sourceLabel(data.book.source, data.book.exact)}
             exact={data.book.exact}
           />
         )}

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Preuve 4mation</title>
+  <style>
+    :root {
+      --bg-1: #1a1a2e;
+      --bg-2: #16213e;
+      --bg-3: #0f3460;
+      --accent: #11f1cc;
+      --text: #fff;
+      --muted: rgba(255, 255, 255, 0.68);
+      --p1: #ff4757;
+      --gold: #feca57;
+      --ok: #7bed9f;
+      --card: rgba(255, 255, 255, 0.06);
+      --line: rgba(255, 255, 255, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(17, 241, 204, 0.16), transparent 50%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2) 45%, var(--bg-3));
+      padding: 28px 18px 48px;
+    }
+    .wrap { width: min(1080px, 100%); margin: 0 auto; }
+    header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+    h1 { font-size: 1.8rem; color: var(--accent); text-shadow: 0 0 18px rgba(17, 241, 204, 0.35); }
+    .sub { color: var(--muted); margin-top: 6px; }
+    .pill {
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .banner {
+      display: none;
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(123, 237, 159, 0.12);
+      border: 1px solid var(--ok);
+    }
+    .banner strong { display: block; font-size: 1.25rem; margin-bottom: 4px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .stat, .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+    .stat span { display: block; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat b { display: block; margin-top: 6px; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+    .stat small { display: block; margin-top: 4px; color: var(--gold); font-size: 0.75rem; line-height: 1.35; min-height: 1.35em; }
+    .grid { display: grid; grid-template-columns: 280px 1fr; gap: 14px; margin-top: 14px; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .cell {
+      aspect-ratio: 1;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+    .cell.on {
+      background: radial-gradient(circle at 35% 30%, #ff8b96, var(--p1));
+      box-shadow: 0 0 16px rgba(255, 71, 87, 0.65);
+    }
+    .cell.on.search { animation: pulse 1.4s ease-in-out infinite; }
+    .cell.win { background: radial-gradient(circle at 35% 30%, #c8ffd8, var(--ok)); box-shadow: none; }
+    .cell.loss { background: rgba(255, 71, 87, 0.35); }
+    .cell.draw { background: rgba(254, 202, 87, 0.55); }
+    @keyframes pulse { 50% { transform: scale(0.92); } }
+    .orbits { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .orbit {
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 14px;
+      padding: 8px;
+      border: 1px solid transparent;
+    }
+    .orbit.searching { border-color: var(--accent); }
+    .orbit .mini { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .orbit .mini i {
+      aspect-ratio: 1;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      display: block;
+    }
+    .orbit .mini i.s { background: var(--p1); }
+    .orbit p { margin-top: 6px; font-size: 0.75rem; color: var(--muted); text-align: center; }
+    .charts { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; margin-top: 14px; }
+    canvas { width: 100%; height: 120px; display: block; margin-top: 8px; }
+    .bars { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin-top: 8px; }
+    .bars div {
+      flex: 1;
+      background: linear-gradient(180deg, var(--accent), rgba(17, 241, 204, 0.2));
+      border-radius: 6px 6px 2px 2px;
+      min-height: 4px;
+      position: relative;
+    }
+    .bars div span {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+    .note { margin-top: 14px; color: var(--muted); font-size: 0.88rem; line-height: 1.45; }
+    @media (max-width: 800px) {
+      .stats, .grid, .charts, .orbits { grid-template-columns: 1fr 1fr; }
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Preuve 4mation</h1>
+        <p class="sub" id="message">Connexion au solveur…</p>
+      </div>
+      <div class="pill" id="phase">en attente</div>
+    </header>
+
+    <div class="banner" id="banner"></div>
+
+    <section class="stats">
+      <div class="stat"><span>Profondeur</span><b id="depth">–</b></div>
+      <div class="stat"><span>Débit</span><b id="nps">–</b></div>
+      <div class="stat"><span>Temps</span><b id="elapsed">–</b></div>
+      <div class="stat"><span>Prochaine profondeur</span><b id="eta">–</b></div>
+      <div class="stat" id="finish-card" title="Projection : chaque profondeur suivante coûte comme les deux dernières, jusqu'à la profondeur 22. Les ouvertures encore en attente sont comptées. Une victoire du joueur 1 termine plus tôt.">
+        <span>Fin estimée</span><b id="finish">–</b><small id="finish-sub"></small>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <span class="sub">Coup en cours</span>
+        <div class="board" id="board"></div>
+        <p class="note" id="opening-label">Le joueur 1 pose le premier pion.</p>
+      </article>
+      <article class="panel">
+        <span class="sub">10 ouvertures, une par symétrie</span>
+        <div class="orbits" id="orbits"></div>
+      </article>
+    </section>
+
+    <section class="charts">
+      <article class="panel">
+        <span class="sub">Débit (positions / seconde)</span>
+        <canvas id="spark" height="120"></canvas>
+      </article>
+      <article class="panel">
+        <span class="sub">Coût des profondeurs déjà finies</span>
+        <div class="bars" id="bars"></div>
+      </article>
+    </section>
+
+    <p class="note" id="foot"></p>
+  </div>
+  <script>
+    const board = document.getElementById("board");
+    for (let i = 0; i < 49; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      board.appendChild(cell);
+    }
+
+    function fmtTime(sec) {
+      sec = Math.max(0, Math.round(sec));
+      const d = Math.floor(sec / 86400);
+      const h = Math.floor((sec % 86400) / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      if (d > 0) return d + " j " + h + " h";
+      if (h > 0) return h + " h " + String(m).padStart(2, "0");
+      return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function fmtWhen(sec) {
+      if (!sec || sec > 86400 * 60) return "";
+      const end = new Date(Date.now() + sec * 1000);
+      const now = new Date();
+      const hm = end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      if (end.toDateString() === now.toDateString()) return "vers " + hm;
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      if (end.toDateString() === tomorrow.toDateString()) return "demain " + hm;
+      if (sec < 86400 * 7) {
+        return end.toLocaleDateString("fr-FR", { weekday: "short" }) + " " + hm;
+      }
+      return "vers le " + end.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    }
+
+    function fmtNps(n) {
+      if (!n) return "–";
+      if (n >= 1e6) return (n / 1e6).toFixed(1).replace(".", ",") + " M/s";
+      if (n >= 1e3) return Math.round(n / 1e3) + " k/s";
+      return Math.round(n) + " /s";
+    }
+
+    function label(status) {
+      return { pending: "en attente", searching: "en cours", win: "victoire", draw: "nulle", loss: "défaite" }[status] || status;
+    }
+
+    function paintBoard(row, col, searching) {
+      [...board.children].forEach((cell, i) => {
+        const r = Math.floor(i / 7);
+        const c = i % 7;
+        cell.className = "cell" + (r === row && c === col ? " on" + (searching ? " search" : "") : "");
+      });
+    }
+
+    function drawSpark(samples) {
+      const canvas = document.getElementById("spark");
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth || 600;
+      const h = 120;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      if (!samples.length) return;
+      const max = Math.max(...samples, 1);
+      ctx.beginPath();
+      samples.forEach((v, i) => {
+        const x = samples.length === 1 ? w / 2 : (i / (samples.length - 1)) * (w - 8) + 4;
+        const y = h - 8 - (v / max) * (h - 20);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "#11f1cc";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    async function refresh() {
+      const data = await (await fetch("/api/status")).json();
+      document.getElementById("message").textContent = data.message || "";
+      const phase = data.phase === "done" ? "prouvé" : data.phase === "search" ? "recherche" : data.phase === "partial" ? "interrompu" : "préparation";
+      document.getElementById("phase").textContent = phase;
+      document.getElementById("depth").textContent = data.depth ? data.depth + " / " + data.max_depth : "–";
+      document.getElementById("nps").textContent = fmtNps(data.nps);
+      document.getElementById("elapsed").textContent = fmtTime(data.elapsed_sec || 0);
+      document.getElementById("eta").textContent = data.phase === "done" ? "terminé" : data.eta_next_sec ? "~ " + fmtTime(data.eta_next_sec) : "–";
+      const finish = document.getElementById("finish");
+      const finishSub = document.getElementById("finish-sub");
+      const card = document.getElementById("finish-card");
+      if (data.phase === "done") {
+        finish.textContent = "terminé";
+        finishSub.textContent = "";
+      } else if (data.eta_finish_sec) {
+        finish.textContent = "~ " + fmtTime(data.eta_finish_sec);
+        const when = fmtWhen(data.eta_finish_sec);
+        const sooner = data.openings_left > 1 && data.eta_win_sec && data.eta_finish_sec > data.eta_win_sec * 1.2
+          ? "si victoire ~ " + fmtTime(data.eta_win_sec)
+          : "";
+        finishSub.textContent = [when, sooner].filter(Boolean).join(" · ");
+        card.title = "Projection jusqu'à la profondeur " + (data.finish_horizon || 22) +
+          ", pour " + (data.openings_left || 1) + " ouverture(s) encore ouverte(s). " +
+          "Chaque profondeur suivante coûte comme les deux dernières. Une victoire du joueur 1 termine plus tôt.";
+      } else {
+        finish.textContent = "–";
+        finishSub.textContent = "";
+      }
+
+      const searching = data.phase === "search";
+      const op = data.opening || { row: 3, col: 3 };
+      paintBoard(op.row, op.col, searching);
+      document.getElementById("opening-label").textContent =
+        "Joueur 1 en (" + op.row + ", " + op.col + "). " +
+        (data.nodes ? data.nodes.toLocaleString("fr-FR") + " positions visitées." : "");
+
+      const banner = document.getElementById("banner");
+      if (data.result === 1 || data.result === 0 || data.result === -1) {
+        const text = data.result === 1 ? "Le joueur 1 gagne" : data.result === 0 ? "Partie nulle" : "Le joueur 1 perd";
+        const best = data.best ? " Meilleur premier coup : (" + data.best.row + ", " + data.best.col + ")." : "";
+        banner.style.display = "block";
+        banner.innerHTML = "<strong>" + text + "</strong>Résultat prouvé." + best;
+      }
+
+      const root = document.getElementById("orbits");
+      root.innerHTML = "";
+      (data.orbits || []).forEach((orbit) => {
+        const card = document.createElement("div");
+        card.className = "orbit " + orbit.status;
+        const mini = document.createElement("div");
+        mini.className = "mini";
+        for (let i = 0; i < 49; i++) {
+          const r = Math.floor(i / 7);
+          const c = i % 7;
+          const dot = document.createElement("i");
+          if (r === orbit.row && c === orbit.col) dot.className = "s";
+          mini.appendChild(dot);
+        }
+        const caption = document.createElement("p");
+        caption.textContent = "(" + orbit.row + "," + orbit.col + ") " + label(orbit.status);
+        card.appendChild(mini);
+        card.appendChild(caption);
+        root.appendChild(card);
+      });
+
+      drawSpark(data.samples || []);
+      const bars = document.getElementById("bars");
+      bars.innerHTML = "";
+      const depths = (data.depths || []).slice(-12);
+      const maxSec = Math.max(...depths.map((d) => d.secs), 0.1);
+      depths.forEach((d) => {
+        const bar = document.createElement("div");
+        bar.style.height = Math.max(6, (d.secs / maxSec) * 100) + "%";
+        const tag = document.createElement("span");
+        tag.textContent = d.depth;
+        bar.appendChild(tag);
+        bar.title = "profondeur " + d.depth + " : " + fmtTime(d.secs);
+        bars.appendChild(bar);
+      });
+
+      document.getElementById("foot").textContent =
+        (data.threads || "–") + " fils · table " + (data.tt_mb || "–") +
+        " Mo · cette profondeur " + fmtTime(data.current_depth_sec || 0) +
+        " · les rotations et les miroirs ne sont calculés qu'une fois. Un pion décalé vers un bord reste une position différente.";
+    }
+
+    refresh().catch(() => {});
+    setInterval(() => refresh().catch(() => {}), 700);
+    window.addEventListener("resize", () => refresh().catch(() => {}));
+  </script>
+</body>
+</html>

@@ -20,6 +20,14 @@ path = "src/local_main.rs"
 name = "4mation-dashboard"
 path = "src/dashboard_main.rs"
 
+[[bin]]
+name = "4mation-proof"
+path = "src/proof_main.rs"
+
+[[bin]]
+name = "4mation-engine"
+path = "src/engine_main.rs"
+
 [dependencies]
 anyhow = "1"
 axum = "0.8"

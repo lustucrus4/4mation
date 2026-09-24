@@ -40,9 +40,14 @@ fn parent_last_moves(
     }
 
     let mut found = Vec::new();
+    let opponent = 3 - player;
     for row in 0..BOARD_SIZE {
         for col in 0..BOARD_SIZE {
-            if board[row][col] == 0 {
+            // Le dernier coup appartient forcément à l'adversaire. Sans ce filtre, un pion
+            // de la couleur au trait était accepté comme dernier coup : le parent obtenu
+            // portait un dernier coup impossible, `frontier_moves` lui inventait des coups
+            // illégaux, et la position devenait irrésoluble (enfants absents de la base).
+            if board[row][col] != opponent {
                 continue;
             }
             let lm = (row, col);
@@ -51,11 +56,6 @@ fn parent_last_moves(
                 found.push(Some(lm));
             }
         }
-    }
-
-    let moves_fallback = frontier_moves(board, None, player);
-    if moves_fallback.iter().any(|&m| m == target_move) && !found.iter().any(|x| x.is_none()) {
-        found.push(None);
     }
 
     found
@@ -93,6 +93,13 @@ pub fn generate_parents(
 
     let mut parents = Vec::new();
     for plm in parent_last_moves(&board_parent, parent_player, (lr, lc)) {
+        // Un parent sans dernier coup n'existe qu'au tout premier coup de la partie :
+        // ailleurs, c'est une position fantôme, jamais atteignable en jeu réel. Le repli
+        // de `parent_last_moves` en émettait et polluait la base (404 651 lignes) tout en
+        // rendant des positions irrésolubles, faute d'enfants réels.
+        if plm.is_none() && empty_cells(&board_parent) != BOARD_SIZE * BOARD_SIZE {
+            continue;
+        }
         parents.push((board_parent, parent_player, plm));
     }
     parents

@@ -34,11 +34,31 @@ import api.realtime  # noqa: F401 — enregistre les handlers Socket.IO
 from api.routes import account_bp, game_bp, learn_bp, rl_bp, solver_bp, solver_workers_bp
 from api.services.postgres import init_schema, is_configured
 
-ALLOWED_ORIGINS = [
-    "https://4mation.lab211.fr",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+def _parse_origins(raw: str) -> list[str]:
+    return [item.strip().rstrip("/") for item in raw.split(",") if item.strip()]
+
+
+def _is_local_origin(origin: str) -> bool:
+    return origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:")
+
+
+def resolve_allowed_origins() -> list[str]:
+    """Whitelist CORS prod-safe : localhost seulement si ALLOW_LOCAL_CORS=true."""
+    configured = _parse_origins(
+        os.environ.get("CORS_ORIGINS", "https://4mation.lab211.fr")
+    )
+    allow_local = os.environ.get("ALLOW_LOCAL_CORS", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    } or os.environ.get("FLASK_ENV", "").strip().lower() == "development"
+    local_defaults = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    if allow_local:
+        return list(dict.fromkeys([*configured, *local_defaults]))
+    return [o for o in configured if not _is_local_origin(o)]
+
+
+ALLOWED_ORIGINS = resolve_allowed_origins()
 
 
 def create_app() -> Flask:

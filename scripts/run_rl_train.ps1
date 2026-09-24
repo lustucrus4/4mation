@@ -12,6 +12,7 @@ $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $rlDir = Join-Path $root "script\rl_rust"
 $dataDir = Join-Path $rlDir "data"
 $log = Join-Path $dataDir "train.log"
+$errLog = Join-Path $dataDir "train_stderr.log"
 $pidFile = Join-Path $dataDir "_train.pid"
 
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
@@ -26,47 +27,28 @@ try {
 }
 
 $trainExe = Join-Path $rlDir "target\release\train.exe"
-$argList = @(
-    "--cores", $Cores,
-    "--self-play-games", $SelfPlayGames,
-    "--eval-every", $EvalEvery,
-    "--data-dir", $dataDir
-)
-if ($Resume) { $argList += "--resume" }
+$argString = "--cores $Cores --self-play-games $SelfPlayGames --eval-every $EvalEvery --data-dir `"$dataDir`""
+if ($Resume) { $argString += " --resume" }
 
 $env:PYTHONPATH = "$root;$root\script"
 $env:RUST_LOG = "formation_rl=info"
 
-$psi = New-Object System.Diagnostics.ProcessStartInfo
-$psi.FileName = $trainExe
-$psi.Arguments = ($argList -join " ")
-$psi.WorkingDirectory = $root
-$psi.UseShellExecute = $false
-$psi.CreateNoWindow = $true
-$psi.RedirectStandardOutput = $true
-$psi.RedirectStandardError = $true
-foreach ($key in @("PYTHONPATH", "RUST_LOG")) {
-    if (Test-Path "env:$key") {
-        $psi.EnvironmentVariables[$key] = (Get-Item "env:$key").Value
-    }
-}
-
-$proc = New-Object System.Diagnostics.Process
-$proc.StartInfo = $psi
-$null = $proc.Start()
+# Start-Process détaché : le shell parent peut se fermer sans couper train.exe
+$proc = Start-Process -FilePath $trainExe `
+    -ArgumentList $argString `
+    -WorkingDirectory $root `
+    -RedirectStandardOutput $log `
+    -RedirectStandardError $errLog `
+    -PassThru `
+    -WindowStyle Hidden
 
 @"
 PID=$($proc.Id)
 LOG=$log
+ERR=$errLog
 START=$(Get-Date -Format o)
-CMD=$trainExe $($psi.Arguments)
+CMD=$trainExe $($argList -join ' ')
 "@ | Set-Content -Path $pidFile -Encoding UTF8
-
-$outWriter = [System.IO.StreamWriter]::new($log, $false, [System.Text.UTF8Encoding]::new($false))
-$proc.add_OutputDataReceived({ param($s, $e) if ($null -ne $e.Data) { $outWriter.WriteLine($e.Data); $outWriter.Flush() } })
-$proc.add_ErrorDataReceived({ param($s, $e) if ($null -ne $e.Data) { $outWriter.WriteLine($e.Data); $outWriter.Flush() } })
-$proc.BeginOutputReadLine()
-$proc.BeginErrorReadLine()
 
 Write-Host "Entrainement RL demarre PID=$($proc.Id)"
 Write-Host "Log: $log"

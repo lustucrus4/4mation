@@ -37,7 +37,7 @@ cargo build --release
 ## Lancer l'entraînement
 
 ```powershell
-cargo run --release --bin train -- --cores 16 --self-play-games 1000 --eval-every 5000
+cargo run --release --bin train -- --cores 16 --self-play-games 1000 --eval-every 5000 --data-dir data
 ```
 
 Options utiles :
@@ -51,7 +51,7 @@ Options utiles :
 | `--mcts-sims` | 8 | Rollouts MCTS par coup (0 = policy seule) |
 | `--resume` | — | Reprend `data/checkpoints/latest.json` |
 | `--max-steps` | 0 | 0 = boucle infinie |
-| `--data-dir` | `script/rl_rust/data` | Persistance |
+| `--data-dir` | `data` (relatif à la crate `rl_rust`) | Persistance |
 
 ### Arrière-plan Windows
 

@@ -4,7 +4,7 @@ use formation_worker::game::{frontier_moves, Board, Move};
 use rand::Rng;
 
 use crate::game_session::GameSession;
-use crate::policy::LinearPolicy;
+use crate::policy::PolicyNet;
 
 pub struct MctsLite {
     pub sims_per_move: u32,
@@ -19,7 +19,7 @@ impl Default for MctsLite {
 impl MctsLite {
     pub fn choose_move(
         &self,
-        policy: &LinearPolicy,
+        policy: &PolicyNet,
         session: &GameSession,
         rng: &mut impl Rng,
     ) -> Option<Move> {
@@ -65,7 +65,7 @@ impl MctsLite {
 
 fn rollout_value(
     session: &mut GameSession,
-    policy: &LinearPolicy,
+    policy: &PolicyNet,
     root: i8,
     rng: &mut impl Rng,
 ) -> f64 {
@@ -98,7 +98,7 @@ fn rollout_value(
 
 #[allow(dead_code)]
 pub fn policy_move(
-    policy: &LinearPolicy,
+    policy: &PolicyNet,
     board: &Board,
     player: i8,
     last_move: Option<Move>,

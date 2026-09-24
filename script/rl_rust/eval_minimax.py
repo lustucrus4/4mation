@@ -53,16 +53,45 @@ def _engine_from_request(data: dict) -> GameEngine:
     return engine
 
 
-def cmd_move() -> None:
-    raw = sys.stdin.read()
-    data = json.loads(raw)
+def _choose_move_from_data(data: dict) -> Tuple[int, int]:
     bot_id = data.get("bot_id", "level_5")
     engine = _engine_from_request(data)
     move = bot_registry.choose_move(bot_id, engine)
     if move is None:
         valid = engine.get_valid_actions()
         move = valid[0] if valid else (0, 0)
-    print(json.dumps({"row": int(move[0]), "col": int(move[1])}))
+    return int(move[0]), int(move[1])
+
+
+def cmd_move() -> None:
+    raw = sys.stdin.read()
+    data = json.loads(raw)
+    row, col = _choose_move_from_data(data)
+    print(json.dumps({"row": row, "col": col}))
+
+
+def cmd_daemon() -> None:
+    """Mode serveur : une ligne JSON stdin → une ligne JSON stdout (rapide pour eval Rust)."""
+    # Pré-chauffe les bots (tablebase / minimax) au démarrage pour éviter le cold-start par coup.
+    warmup = GameEngine()
+    for bot_id in ("level_3", "level_5"):
+        try:
+            bot_registry.choose_move(bot_id, warmup)
+        except Exception:
+            pass
+
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            data = json.loads(line)
+            row, col = _choose_move_from_data(data)
+            sys.stdout.write(json.dumps({"row": row, "col": col}) + "\n")
+            sys.stdout.flush()
+        except Exception as exc:
+            sys.stdout.write(json.dumps({"error": str(exc)}) + "\n")
+            sys.stdout.flush()
 
 
 def _move_features(board: np.ndarray, mv: Tuple[int, int], player: int, last_move) -> List[float]:
@@ -183,6 +212,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("move")
+    sub.add_parser("daemon")
     p_im = sub.add_parser("imitate")
     p_im.add_argument("--games", type=int, default=300)
     p_im.add_argument("--depth", type=int, default=7)
@@ -190,6 +220,8 @@ def main() -> None:
 
     if args.cmd == "move":
         cmd_move()
+    elif args.cmd == "daemon":
+        cmd_daemon()
     elif args.cmd == "imitate":
         cmd_imitate(args.games, args.depth)
 

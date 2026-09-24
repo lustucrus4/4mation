@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use crate::features::move_features;
 use crate::game_session::GameSession;
-use crate::policy::{LinearPolicy, TrajectoryStep};
+use crate::policy::{reinforce_update, PolicyNet, TrajectoryStep};
 
 #[derive(Deserialize)]
 struct ImitationSample {
@@ -28,7 +28,7 @@ pub struct ImitationConfig {
     pub project_root: PathBuf,
 }
 
-pub fn run_imitation_bootstrap(policy: &mut LinearPolicy, cfg: &ImitationConfig) -> Result<usize> {
+pub fn run_imitation_bootstrap(policy: &mut PolicyNet, cfg: &ImitationConfig) -> Result<usize> {
     let script = if cfg.script_path.is_absolute() {
         cfg.script_path.clone()
     } else {
@@ -71,13 +71,13 @@ pub fn run_imitation_bootstrap(policy: &mut LinearPolicy, cfg: &ImitationConfig)
         for (i, v) in sample.features.iter().enumerate().take(feats.len()) {
             feats[i] = *v;
         }
-        let reward = 1.0;
         let step = TrajectoryStep {
             features: feats,
-            reward,
+            pos_features: [0.0; crate::features::POS_DIM],
+            reward: 1.0,
             player: 1,
         };
-        crate::policy::reinforce_update(policy, std::slice::from_ref(&step), lr);
+        crate::policy::reinforce_update(policy, std::slice::from_ref(&step), lr, 0.01);
         samples += 1;
     }
 
@@ -89,7 +89,7 @@ pub fn run_imitation_bootstrap(policy: &mut LinearPolicy, cfg: &ImitationConfig)
 }
 
 /// Heuristique Rust rapide si Python indisponible.
-pub fn heuristic_bootstrap(policy: &mut LinearPolicy, games: usize, seed: u64) -> usize {
+pub fn heuristic_bootstrap(policy: &mut PolicyNet, games: usize, seed: u64) -> usize {
     use formation_worker::game::is_winning_move;
 
     let mut rng = StdRng::seed_from_u64(seed);
@@ -126,12 +126,18 @@ pub fn heuristic_bootstrap(policy: &mut LinearPolicy, games: usize, seed: u64) -
                 });
 
             let feats = move_features(&session.board, chosen, player, session.last_move);
+            let pos = crate::features::position_features(
+                &session.board,
+                player,
+                session.last_move,
+            );
             let step = TrajectoryStep {
                 features: feats,
+                pos_features: pos,
                 reward: 1.0,
                 player,
             };
-            crate::policy::reinforce_update(policy, std::slice::from_ref(&step), 0.08);
+            crate::policy::reinforce_update(policy, std::slice::from_ref(&step), 0.08, 0.01);
             samples += 1;
             session.apply(chosen);
 

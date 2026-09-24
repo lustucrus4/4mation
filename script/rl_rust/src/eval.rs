@@ -1,8 +1,8 @@
-//! Évaluation vs Minimax level_5 via subprocess Python.
+//! Évaluation vs Minimax level_5 (processus Python persistant).
 
-use std::io::Write;
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, ChildStdin, Command, Stdio};
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -11,9 +11,10 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
+use crate::az_mcts::MctsAz;
 use crate::game_session::GameSession;
 use crate::mcts::MctsLite;
-use crate::policy::LinearPolicy;
+use crate::policy::PolicyNet;
 
 #[derive(Serialize)]
 struct MoveRequest {
@@ -29,6 +30,7 @@ struct MoveResponse {
     col: usize,
 }
 
+#[derive(Clone)]
 pub struct EvalConfig {
     pub games: usize,
     pub mcts_sims: u32,
@@ -37,76 +39,102 @@ pub struct EvalConfig {
     pub project_root: PathBuf,
     pub bot_id: String,
     pub timeout: Duration,
+    pub max_moves: u32,
+    pub use_az_mcts: bool,
 }
 
 impl Default for EvalConfig {
     fn default() -> Self {
         Self {
-            games: 20,
-            mcts_sims: 12,
+            games: 12,
+            mcts_sims: 16,
             python: "py".to_string(),
             script_path: PathBuf::from("script/rl_rust/eval_minimax.py"),
             project_root: PathBuf::from("."),
             bot_id: "level_5".to_string(),
             timeout: Duration::from_secs(120),
+            max_moves: 120,
+            use_az_mcts: true,
         }
     }
 }
 
-fn board_to_json(board: &Board) -> Vec<Vec<i8>> {
-    board
-        .iter()
-        .map(|row| row.to_vec())
-        .collect()
+/// Processus Python longue durée (`eval_minimax.py daemon`) — évite 1 spawn/coup.
+pub struct MinimaxBridge {
+    _child: Child,
+    stdin: BufWriter<ChildStdin>,
+    stdout: BufReader<std::process::ChildStdout>,
 }
 
-pub fn call_minimax_move(cfg: &EvalConfig, session: &GameSession) -> Result<Option<Move>> {
-    let req = MoveRequest {
-        board: board_to_json(&session.board),
-        current_player: session.current_player,
-        last_move: session.last_move.map(|(r, c)| [r, c]),
-        bot_id: cfg.bot_id.clone(),
-    };
-    let input = serde_json::to_string(&req)?;
-    let script = if cfg.script_path.is_absolute() {
-        cfg.script_path.clone()
-    } else {
-        cfg.project_root.join(&cfg.script_path)
-    };
+impl MinimaxBridge {
+    pub fn spawn(cfg: &EvalConfig) -> Result<Self> {
+        let script = if cfg.script_path.is_absolute() {
+            cfg.script_path.clone()
+        } else {
+            cfg.project_root.join(&cfg.script_path)
+        };
 
-    let mut child = Command::new(&cfg.python)
-        .arg("-3")
-        .arg(&script)
-        .arg("move")
-        .current_dir(&cfg.project_root)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .with_context(|| "lancement eval_minimax.py")?;
+        let mut child = Command::new(&cfg.python)
+            .arg("-3")
+            .arg("-u")
+            .arg(&script)
+            .arg("daemon")
+            .current_dir(&cfg.project_root)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .with_context(|| format!("lancement daemon {script:?}"))?;
 
-    if let Some(stdin) = child.stdin.as_mut() {
-        stdin.write_all(input.as_bytes())?;
+        let stdin = child.stdin.take().context("stdin daemon")?;
+        let stdout = child.stdout.take().context("stdout daemon")?;
+
+        Ok(Self {
+            _child: child,
+            stdin: BufWriter::new(stdin),
+            stdout: BufReader::new(stdout),
+        })
     }
 
-    let output = child.wait_with_output()?;
-    if !output.status.success() {
-        let err = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!("eval_minimax.py échec: {err}");
-    }
+    pub fn choose_move(&mut self, cfg: &EvalConfig, session: &GameSession) -> Result<Option<Move>> {
+        let req = MoveRequest {
+            board: board_to_json(&session.board),
+            current_player: session.current_player,
+            last_move: session.last_move.map(|(r, c)| [r, c]),
+            bot_id: cfg.bot_id.clone(),
+        };
+        let line = serde_json::to_string(&req)?;
+        self.stdin.write_all(line.as_bytes())?;
+        self.stdin.write_all(b"\n")?;
+        self.stdin.flush()?;
 
-    let resp: MoveResponse = serde_json::from_slice(&output.stdout)?;
-    Ok(Some((resp.row, resp.col)))
+        let mut resp_line = String::new();
+        self.stdout.read_line(&mut resp_line)?;
+        if resp_line.trim().is_empty() {
+            anyhow::bail!("daemon Python: réponse vide");
+        }
+        let resp: MoveResponse = serde_json::from_str(resp_line.trim())
+            .context("daemon Python: JSON invalide")?;
+        Ok(Some((resp.row, resp.col)))
+    }
+}
+
+fn board_to_json(board: &Board) -> Vec<Vec<i8>> {
+    board.iter().map(|row| row.to_vec()).collect()
 }
 
 pub fn evaluate_vs_minimax(
-    policy: &LinearPolicy,
+    policy: &PolicyNet,
     cfg: &EvalConfig,
+    bridge: &mut MinimaxBridge,
     seed: u64,
 ) -> Result<EvalResult> {
     let mut rng = StdRng::seed_from_u64(seed);
     let mcts = MctsLite {
         sims_per_move: cfg.mcts_sims,
+    };
+    let az = MctsAz {
+        sims: cfg.mcts_sims,
     };
 
     let mut rl_wins = 0u32;
@@ -117,21 +145,32 @@ pub fn evaluate_vs_minimax(
         let mut session = GameSession::new();
         let rl_player: i8 = if g % 2 == 0 { 1 } else { 2 };
 
-        while !session.is_terminal() && session.move_count < 100 {
+        while !session.is_terminal() && session.move_count < cfg.max_moves {
             let is_rl_turn = session.current_player == rl_player;
             let mv = if is_rl_turn {
-                mcts
-                    .choose_move(policy, &session, &mut rng)
-                    .or_else(|| {
-                        policy.best_move(
-                            &session.board,
-                            &session.legal_moves(),
-                            session.current_player,
-                            session.last_move,
-                        )
-                    })
+                if cfg.use_az_mcts && cfg.mcts_sims > 0 {
+                    az.choose_move(policy, &session, &mut rng)
+                } else if cfg.mcts_sims > 0 {
+                    mcts
+                        .choose_move(policy, &session, &mut rng)
+                        .or_else(|| {
+                            policy.best_move(
+                                &session.board,
+                                &session.legal_moves(),
+                                session.current_player,
+                                session.last_move,
+                            )
+                        })
+                } else {
+                    policy.best_move(
+                        &session.board,
+                        &session.legal_moves(),
+                        session.current_player,
+                        session.last_move,
+                    )
+                }
             } else {
-                call_minimax_move(cfg, &session)?
+                bridge.choose_move(cfg, &session)?
             };
 
             let Some(chosen) = mv else { break };
@@ -165,34 +204,15 @@ pub struct EvalResult {
     pub win_rate: f64,
 }
 
-pub fn resolve_paths(data_dir: &Path) -> (PathBuf, PathBuf) {
-    let rl_dir = data_dir
-        .parent()
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("script/rl_rust"));
-
+pub fn resolve_paths(_data_dir: &Path) -> (PathBuf, PathBuf) {
+    let rl_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let script = rl_dir.join("eval_minimax.py");
-
-    let mut root = rl_dir
+    let project_root = rl_dir
         .parent()
         .and_then(|script_dir| script_dir.parent())
         .map(|p| p.to_path_buf())
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| {
-            std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-        });
-
-    if !script.exists() {
-        if let Ok(cwd) = std::env::current_dir() {
-            let alt = cwd.join("script/rl_rust/eval_minimax.py");
-            if alt.exists() {
-                root = cwd;
-                return (alt, root);
-            }
-        }
-    }
-
-    (script, root)
+        .unwrap_or_else(|| rl_dir.clone());
+    (script, project_root)
 }
 
 #[allow(dead_code)]

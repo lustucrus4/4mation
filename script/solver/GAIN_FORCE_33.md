@@ -1,7 +1,7 @@
 # Gain forcé après le premier coup central
 
 Premier coup : **X en 3,3** (centre).
-Verdict du moteur : **perte forcée du second joueur** (perte, mat en 28 demi-coups), prouvé en 23.0 s à la profondeur 28.
+Verdict du moteur : **perte forcée du second joueur** (perte, mat en 28 demi-coups), prouvé en 27.6 s à la profondeur 28.
 
 ## La ligne principale
 
@@ -15,15 +15,15 @@ X3,3 O3,2 X2,3 O1,3 X2,2 O1,1 X1,2 O2,1 X3,1 O4,2 X4,3 O5,3 X5,4 O4,5 X3,4 O2,4 
 
 | # | Camp | Coup | Score | Verdict | Mat | Prof. | Coups légaux | Résistent | s |
 | ---: | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 2 | O | 3,2 | -99972 | perte | 28 | 28 | 8 | 4/8 | 23.0 |
+| 2 | O | 3,2 | -99972 | perte | 28 | 28 | 8 | 4/8 | 27.6 |
 | 3 | X | 2,3 | 99973 | gain | 27 | 2 | 7 | 2/7 | 0.0 |
-| 4 | O | 1,3 | -99974 | perte | 26 | 22 | 6 | 1/6 | 3.8 |
+| 4 | O | 1,3 | -99974 | perte | 26 | 22 | 6 | 1/6 | 4.7 |
 | 5 | X | 2,2 | 99975 | gain | 25 | 2 | 7 | 1/7 | 0.0 |
-| 6 | O | 1,1 | -99976 | perte | 24 | 20 | 4 | 1/4 | 0.3 |
+| 6 | O | 1,1 | -99976 | perte | 24 | 20 | 4 | 1/4 | 0.2 |
 | 7 | X | 1,2 | 99977 | gain | 23 | 2 | 7 | 1/7 | 0.0 |
-| 8 | O | 2,1 | -99978 | perte | 22 | 20 | 4 | 1/4 | 0.3 |
+| 8 | O | 2,1 | -99978 | perte | 22 | 20 | 4 | 1/4 | 0.4 |
 | 9 | X | 3,1 | 99979 | gain | 21 | 2 | 4 | 1/4 | 0.0 |
-| 10 | O | 4,2 | -99980 | perte | 20 | 18 | 5 | 1/5 | 0.1 |
+| 10 | O | 4,2 | -99980 | perte | 20 | 18 | 5 | 1/5 | 0.2 |
 | 11 | X | 4,3 | 99981 | gain | 19 | 2 | 5 | 1/5 | 0.0 |
 | 12 | O | 5,3 | -99982 | perte | 18 | 10 | 5 | 1/5 | 0.0 |
 | 13 | X | 5,4 | 99983 | gain | 17 | 2 | 6 | 1/6 | 0.0 |
@@ -44,7 +44,7 @@ X3,3 O3,2 X2,3 O1,3 X2,2 O1,1 X1,2 O2,1 X3,1 O4,2 X4,3 O5,3 X5,4 O4,5 X3,4 O2,4 
 | 28 | O | 6,5 | -99998 | perte | 2 | 2 | 2 | 2/2 | 0.0 |
 | 29 | X | 0,1 | 99999 | gain | 1 | 1 | 17 | 3/17 | 0.0 |
 
-Total : 65 305 026 nœuds sur 28 demi-coups analysés.
+Total : 62 111 446 nœuds sur 28 demi-coups analysés.
 
 ## Lecture
 

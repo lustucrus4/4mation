@@ -134,10 +134,21 @@ un bot de production**.
 |-----------|-----------|----------|--------|---------------------|---------------------|
 | `level_3` | 6 | 14 | 0 | 0,10 | 0,50 |
 | `level_5` | 10 | 10 | 0 | 0,50 | 0,50 |
+| `level_6` | 10 | 10 | 0 | 0,70 | 0,30 |
 
-Lecture : échantillon **petit** (10 parties par siège) — les écarts de ±2 parties ne
-sont pas significatifs. Le point remarquable est que le réseau ne domine personne : il
-n'a pas dépassé le stade « fait des coups légaux et bloque les menaces immédiates ».
+Lecture : contre le bot le plus fort du site (`level_6`), le réseau marque **70 % quand il
+commence** et **30 % quand il répond** — exactement la signature de l'avantage du premier
+joueur, désormais **prouvé** (voir `script/solver/GAIN_FORCE_33.md` : le centre gagne de
+force en 28 demi-coups). Le total reste 50 %, donc le réseau n'apporte rien : il joue
+« correctement » sans dominer.
+
+Deux réserves à garder en tête :
+
+- échantillon **petit** (10 parties par siège) : ±2 parties ne veulent rien dire ;
+- le résultat contre `level_3` (10 % en premier) est **contre-intuitif** et n'a pas
+  d'explication satisfaisante : soit bruit statistique, soit le style très aléatoire de
+  `level_3` (12 % de coups au hasard) déstabilise une politique linéaire entraînée contre
+  `level_5`. À re-mesurer avec 100+ parties avant toute conclusion.
 
 ### Bug corrigé (important)
 

@@ -31,14 +31,23 @@ Outils :
 | `scripts/probe_opening_proof.py` | Sonde profonde des 10 ouvertures (preuve ou pas, meilleure réponse) |
 | `scripts/extract_forced_win.py` | Extrait la ligne de gain forcée, demi-coup par demi-coup |
 | `scripts/check_forced_win.py` | Contre-vérifie la ligne avec les règles du site (0 anomalie attendue) |
+| `script/solver/mark_proven_lines.py` | Inscrit la ligne prouvée dans le livre du site (`opening_book`, `exact=1`) |
 
 ```powershell
 python scripts\probe_opening_proof.py --depth 30 --time-ms 90000 --tt-mb 2048
 python scripts\extract_forced_win.py --opening 3,3 --depth 40 --time-ms 120000 --tt-mb 2048
 python scripts\check_forced_win.py script\solver\forced_win_33.json
+python script\solver\mark_proven_lines.py --line script\solver\forced_win_33.json
 ```
 
 Sorties : `script/solver/PREUVE_PROFONDE.md`, `GAIN_FORCE_33.md`, `forced_win_33.json`.
+
+**Ordre important** : `build_opening_book_engine.py` réécrit les entrées du livre par des
+estimations. Marquer la ligne prouvée doit donc être la **dernière** étape, après tout
+rebuild du livre (sinon les valeurs `exact=1` sont écrasées). La racine du livre passe alors
+de « nulle, 58 % » à « gain prouvé, meilleur coup `3,3` », et le site sert ce verdict
+(`position_win_rate` de la position prouvée fait foi, même si certains enfants ne sont
+qu'estimés).
 
 Conséquence pratique : les ouvertures non centrales restent des **estimations** (le moteur
 n'y prouve rien à profondeur 24-26, leurs scores restent proches de l'équilibre), tandis que

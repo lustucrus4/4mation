@@ -147,8 +147,7 @@ def extract(client: EngineClient, opening: Tuple[int, int], depth: int, time_ms:
     winner: Optional[int] = None
     while len(plies) <= max_plies:
         info = step(client, board, player, last, depth, time_ms)
-        moves = info.pop("moves")
-        res = resistance(moves)
+        res = resistance(info["moves"])
         move = info["move"]
         if move is None:
             break
@@ -157,6 +156,10 @@ def extract(client: EngineClient, opening: Tuple[int, int], depth: int, time_ms:
         info["ply"] = len(plies) + 1
         info["move"] = list(move)
         info["resistance"] = res
+        info["candidats"] = [
+            {"coup": list(m["move"]), "score": m["score"], "verdict": m["proven"]}
+            for m in sorted(info.pop("moves"), key=lambda m: -m["score"])
+        ]
         info["board"] = board.copy()
         plies.append(info)
         tag = "X" if player == 1 else "O"

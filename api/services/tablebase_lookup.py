@@ -222,22 +222,25 @@ class TablebaseLookup:
         board: np.ndarray,
         move: Tuple[int, int],
         current_player: int,
-    ) -> Optional[Tuple[str, float]]:
+    ) -> Optional[Tuple[str, float, bool]]:
+        """(résultat, taux, exact) du coup `move`, vus par le joueur au trait."""
         nb = board.copy()
         nb[move[0], move[1]] = current_player
         opponent = 3 - current_player
         h = HASHER.hash_key(nb, opponent, move)
 
         row = conn.execute(
-            "SELECT result, win_rate FROM opening_book WHERE hash=?", (h,)
+            "SELECT result, win_rate, exact FROM opening_book WHERE hash=?", (h,)
         ).fetchone()
+        exact = bool(row["exact"]) if row is not None else True
         if row is None:
             row = conn.execute(
                 "SELECT result, win_rate FROM positions WHERE hash=?", (h,)
             ).fetchone()
         if row is None:
             return None
-        return self._child_win_rate(str(row["result"]), float(row["win_rate"]))
+        res, wr = self._child_win_rate(str(row["result"]), float(row["win_rate"]))
+        return res, wr, exact
 
     def opening_book_coach_analysis(
         self,
@@ -268,28 +271,36 @@ class TablebaseLookup:
                 if self._advisor._is_winning_move(board, move, current_player):
                     moves_out.append({
                         "move": move, "row": move[0], "col": move[1],
-                        "win_rate": 1.0, "result": RESULT_WIN,
+                        "win_rate": 1.0, "result": RESULT_WIN, "exact": True,
                     })
                     continue
                 child = self._lookup_child(conn, board, move, current_player)
                 if child is not None:
-                    res, wr = child
+                    res, wr, child_exact = child
                     moves_out.append({
                         "move": move, "row": move[0], "col": move[1],
-                        "win_rate": wr, "result": res,
+                        "win_rate": wr, "result": res, "exact": child_exact,
                     })
             moves_out.sort(key=lambda m: m["win_rate"], reverse=True)
 
         valid_moves = self._advisor._get_frontier_moves(board, last_move, current_player)
         label = "Exact (livre d'ouverture)" if hit.exact else "Estimé (livre d'ouverture)"
-        position_wr = moves_out[0]["win_rate"] if moves_out else hit.win_rate
-        best_move = moves_out[0]["move"] if moves_out else hit.best_move
+        if hit.exact:
+            # Position prouvée : sa valeur fait foi. Déduire le verdict en inversant les
+            # enfants donnerait un résultat faux dès qu'un enfant n'est qu'estimé (une
+            # position perdue s'afficherait « nulle à 46 % », par exemple).
+            position_wr = float(hit.win_rate)
+            best_move = hit.best_move
+        else:
+            position_wr = moves_out[0]["win_rate"] if moves_out else hit.win_rate
+            best_move = moves_out[0]["move"] if moves_out else hit.best_move
         coverage = (
             100.0 * len(moves_out) / len(valid_moves) if valid_moves else 100.0
         )
         return {
             "moves": moves_out,
             "best_move": best_move,
+            "result": hit.result,
             "current_player": current_player,
             "valid_moves_count": len(valid_moves),
             "elapsed_ms": int((time.perf_counter() - start) * 1000),
@@ -410,7 +421,7 @@ class TablebaseLookup:
             if child is None:
                 all_found = False
                 break
-            res, wr = child
+            res, wr, _child_exact = child
             moves_out.append({
                 "move": move,
                 "row": move[0],

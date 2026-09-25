@@ -146,7 +146,7 @@ export function useGame() {
 
       if (positionStatus === "proven_losing") {
         afterProvenBlunderRef.current = true;
-      } else if (exact && positionStatus !== "proven_losing") {
+      } else if (exact) {
         afterProvenBlunderRef.current = false;
       }
 
@@ -160,8 +160,10 @@ export function useGame() {
 
       setAnalysis({
         winRateP1,
-        label: a.label || (exact ? "Exact (tablebase)" : "Estimé (MCTS)"),
+        label: a.label || (exact ? "Exact (tablebase)" : "Estimation (moteur)"),
         exact,
+        // WinBar affiche ce champ dans le coin de la barre : on y met l'étiquette
+        // lisible, pas l'identifiant technique de la source.
         source: a.label || a.source || "",
         bestMove: Array.isArray(a.best_move)
           ? { row: a.best_move[0], col: a.best_move[1] }

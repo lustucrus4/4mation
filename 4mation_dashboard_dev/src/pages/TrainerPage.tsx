@@ -208,7 +208,7 @@ export default function TrainerPage() {
                 <span className="text-exact">Vert</span> — analyse exacte
               </li>
               <li>
-                <span className="text-accent">Accent</span> — estimation MCTS
+                <span className="text-accent">Accent</span> — estimation du moteur
               </li>
               <li>★ — meilleur coup suggéré</li>
             </ul>

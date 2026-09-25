@@ -1,8 +1,15 @@
-//! Évaluation vs Minimax level_5 via subprocess Python.
+//! Évaluation vs Minimax level_5 via un processus Python persistant.
+//!
+//! Le bot adverse (`eval_minimax.py`) est lancé **une seule fois** en mode `daemon` :
+//! un coup coûtait auparavant un démarrage de Python (imports numpy + moteur + bots),
+//! soit ~1 s par demi-coup, ce qui dominait tout le reste.
+//!
+//! Toute anomalie est fatale : un coup absent ou illégal remontait auparavant comme une
+//! *nulle*, ce qui faisait passer un harnais cassé pour une défense parfaite.
 
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -25,8 +32,21 @@ struct MoveRequest {
 
 #[derive(Deserialize)]
 struct MoveResponse {
-    row: usize,
-    col: usize,
+    row: Option<usize>,
+    col: Option<usize>,
+    error: Option<String>,
+}
+
+impl MoveResponse {
+    fn into_move(self) -> Result<Move> {
+        if let Some(err) = self.error {
+            anyhow::bail!("bot Python en erreur : {err}");
+        }
+        match (self.row, self.col) {
+            (Some(r), Some(c)) => Ok((r, c)),
+            _ => anyhow::bail!("réponse du bot Python sans coup"),
+        }
+    }
 }
 
 pub struct EvalConfig {
@@ -48,55 +68,80 @@ impl Default for EvalConfig {
             script_path: PathBuf::from("script/rl_rust/eval_minimax.py"),
             project_root: PathBuf::from("."),
             bot_id: "level_5".to_string(),
-            timeout: Duration::from_secs(120),
+            timeout: Duration::from_secs(600),
         }
     }
 }
 
 fn board_to_json(board: &Board) -> Vec<Vec<i8>> {
-    board
-        .iter()
-        .map(|row| row.to_vec())
-        .collect()
+    board.iter().map(|row| row.to_vec()).collect()
 }
 
-pub fn call_minimax_move(cfg: &EvalConfig, session: &GameSession) -> Result<Option<Move>> {
-    let req = MoveRequest {
-        board: board_to_json(&session.board),
-        current_player: session.current_player,
-        last_move: session.last_move.map(|(r, c)| [r, c]),
-        bot_id: cfg.bot_id.clone(),
-    };
-    let input = serde_json::to_string(&req)?;
-    let script = if cfg.script_path.is_absolute() {
-        cfg.script_path.clone()
-    } else {
-        cfg.project_root.join(&cfg.script_path)
-    };
+/// Le bot Python gardé ouvert entre les coups.
+struct MinimaxDaemon {
+    child: Child,
+    stdin: ChildStdin,
+    stdout: BufReader<ChildStdout>,
+}
 
-    let mut child = Command::new(&cfg.python)
-        .arg("-3")
-        .arg(&script)
-        .arg("move")
-        .current_dir(&cfg.project_root)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .with_context(|| "lancement eval_minimax.py")?;
+impl MinimaxDaemon {
+    fn spawn(cfg: &EvalConfig) -> Result<Self> {
+        let script = if cfg.script_path.is_absolute() {
+            cfg.script_path.clone()
+        } else {
+            cfg.project_root.join(&cfg.script_path)
+        };
+        let mut command = Command::new(&cfg.python);
+        if cfg.python == "py" {
+            command.arg("-3");
+        }
+        let mut child = command
+            .arg(&script)
+            .arg("daemon")
+            .current_dir(&cfg.project_root)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .with_context(|| format!("lancement du daemon {script:?}"))?;
 
-    if let Some(stdin) = child.stdin.as_mut() {
-        stdin.write_all(input.as_bytes())?;
+        let stdin = child.stdin.take().expect("stdin pipé");
+        let stdout = BufReader::new(child.stdout.take().expect("stdout pipé"));
+        Ok(Self {
+            child,
+            stdin,
+            stdout,
+        })
     }
 
-    let output = child.wait_with_output()?;
-    if !output.status.success() {
-        let err = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!("eval_minimax.py échec: {err}");
-    }
+    fn query(&mut self, cfg: &EvalConfig, session: &GameSession) -> Result<Move> {
+        let req = MoveRequest {
+            board: board_to_json(&session.board),
+            current_player: session.current_player,
+            last_move: session.last_move.map(|(r, c)| [r, c]),
+            bot_id: cfg.bot_id.clone(),
+        };
+        let input = serde_json::to_string(&req)?;
+        writeln!(self.stdin, "{input}")?;
+        self.stdin.flush()?;
 
-    let resp: MoveResponse = serde_json::from_slice(&output.stdout)?;
-    Ok(Some((resp.row, resp.col)))
+        let mut line = String::new();
+        let read = self.stdout.read_line(&mut line)?;
+        if read == 0 {
+            anyhow::bail!("daemon d'évaluation terminé (flux fermé)");
+        }
+        let resp: MoveResponse = serde_json::from_str(line.trim())
+            .with_context(|| format!("réponse illisible du daemon : {}", line.trim()))?;
+        resp.into_move()
+    }
+}
+
+impl Drop for MinimaxDaemon {
+    fn drop(&mut self) {
+        let _ = self.stdin.write_all(b"\n");
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
 }
 
 pub fn evaluate_vs_minimax(
@@ -108,10 +153,16 @@ pub fn evaluate_vs_minimax(
     let mcts = MctsLite {
         sims_per_move: cfg.mcts_sims,
     };
+    let mut daemon = MinimaxDaemon::spawn(cfg)?;
 
     let mut rl_wins = 0u32;
     let mut bot_wins = 0u32;
     let mut draws = 0u32;
+    let mut truncated = 0u32;
+    // Les résultats par siège : dans ce jeu le premier joueur est nettement avantagé,
+    // un score global de 50 % peut donc ne rien dire du réseau. Ce qui compte, c'est
+    // le score du réseau **quand il commence** et **quand il subit**.
+    let mut seat = [SeatStats::default(); 2];
 
     for g in 0..cfg.games {
         let mut session = GameSession::new();
@@ -131,20 +182,54 @@ pub fn evaluate_vs_minimax(
                         )
                     })
             } else {
-                call_minimax_move(cfg, &session)?
+                Some(daemon.query(cfg, &session)?)
             };
 
-            let Some(chosen) = mv else { break };
+            let Some(chosen) = mv else {
+                anyhow::bail!("aucun coup proposé (partie {g}, coup {})", session.move_count);
+            };
             if !session.apply(chosen) {
-                break;
+                anyhow::bail!(
+                    "coup illégal {:?} accepté par personne (partie {g}, coup {})",
+                    chosen,
+                    session.move_count
+                );
             }
         }
 
-        match session.winner() {
-            Some(w) if w == rl_player => rl_wins += 1,
-            Some(_) => bot_wins += 1,
-            None => draws += 1,
+        let bucket = &mut seat[(rl_player - 1) as usize];
+        bucket.games += 1;
+        let plies = session.move_count;
+        if session.is_terminal() {
+            match session.winner() {
+                Some(w) if w == rl_player => {
+                    rl_wins += 1;
+                    bucket.wins += 1;
+                    tracing::info!("partie {g} : réseau = joueur {rl_player}, gagne en {plies} demi-coups");
+                }
+                Some(w) => {
+                    bot_wins += 1;
+                    bucket.losses += 1;
+                    tracing::info!(
+                        "partie {g} : réseau = joueur {rl_player}, perd (joueur {w}) en {plies} demi-coups"
+                    );
+                }
+                None => {
+                    draws += 1;
+                    bucket.draws += 1;
+                    tracing::info!("partie {g} : réseau = joueur {rl_player}, nulle en {plies} demi-coups");
+                }
+            }
+        } else {
+            truncated += 1;
+            draws += 1;
+            bucket.draws += 1;
+            tracing::info!("partie {g} : réseau = joueur {rl_player}, coupée à {plies} demi-coups");
         }
+    }
+
+    if truncated > 0 {
+        tracing::warn!("{truncated} partie(s) coupée(s) à 100 demi-coups, comptées comme nulles");
     }
 
     Ok(EvalResult {
@@ -152,8 +237,29 @@ pub fn evaluate_vs_minimax(
         rl_wins,
         bot_wins,
         draws,
+        truncated,
         win_rate: rl_wins as f64 / cfg.games.max(1) as f64,
+        seat,
     })
+}
+
+/// Résultats du réseau pour un siège donné (1 = il commence, 2 = il subit).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct SeatStats {
+    pub games: u32,
+    pub wins: u32,
+    pub draws: u32,
+    pub losses: u32,
+}
+
+impl SeatStats {
+    /// Score espéré (victoire = 1, nulle = 0,5), la grandeur du jeu.
+    pub fn score(&self) -> f64 {
+        if self.games == 0 {
+            return 0.0;
+        }
+        (self.wins as f64 + 0.5 * self.draws as f64) / self.games as f64
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -162,7 +268,11 @@ pub struct EvalResult {
     pub rl_wins: u32,
     pub bot_wins: u32,
     pub draws: u32,
+    /// Parties arrêtées à la limite de 100 demi-coups faute de vainqueur.
+    pub truncated: u32,
     pub win_rate: f64,
+    /// Index 0 : réseau au premier coup, index 1 : réseau en second.
+    pub seat: [SeatStats; 2],
 }
 
 pub fn resolve_paths(data_dir: &Path) -> (PathBuf, PathBuf) {

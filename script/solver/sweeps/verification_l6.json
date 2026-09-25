@@ -1,0 +1,116 @@
+{
+  "genere_le": "2026-09-24T23:01:20",
+  "config": {},
+  "par_ouverture": [
+    {
+      "ouverture": [
+        0,
+        0
+      ],
+      "parties": 1,
+      "score_defense": 1.0,
+      "defaites": 0,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        0,
+        2
+      ],
+      "parties": 1,
+      "score_defense": 1.0,
+      "defaites": 0,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        0,
+        1
+      ],
+      "parties": 1,
+      "score_defense": 0.5,
+      "defaites": 0,
+      "nulles": 1,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        0,
+        3
+      ],
+      "parties": 1,
+      "score_defense": 0.0,
+      "defaites": 1,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        1,
+        1
+      ],
+      "parties": 1,
+      "score_defense": 0.0,
+      "defaites": 1,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        1,
+        2
+      ],
+      "parties": 1,
+      "score_defense": 0.0,
+      "defaites": 1,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        1,
+        3
+      ],
+      "parties": 1,
+      "score_defense": 0.0,
+      "defaites": 1,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        2,
+        2
+      ],
+      "parties": 1,
+      "score_defense": 0.0,
+      "defaites": 1,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        2,
+        3
+      ],
+      "parties": 1,
+      "score_defense": 0.0,
+      "defaites": 1,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    },
+    {
+      "ouverture": [
+        3,
+        3
+      ],
+      "parties": 1,
+      "score_defense": 0.0,
+      "defaites": 1,
+      "nulles": 0,
+      "duree_moyenne_plies": null
+    }
+  ]
+}

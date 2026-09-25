@@ -1,14 +1,29 @@
-# Routage SPA React : sert les fichiers existants (assets, solver.html), sinon
-# renvoie index.html pour laisser React Router gérer la route côté client.
+# Durcissement sécurité Lab211 (headers + blocage chemins sensibles + SPA)
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  Header always unset X-Powered-By
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Laisser passer la page solveur héritée et les fichiers/dossiers réels
+  # Bloquer fichiers / dossiers sensibles même si un fallback SPA existe
+  RewriteRule (^|/)\.env - [F,L,NC]
+  RewriteRule (^|/)\.git - [F,L,NC]
+  RewriteRule (^|/)\.aws - [F,L,NC]
+  RewriteRule (^|/)(\.htaccess|\.htpasswd|\.npmrc|\.DS_Store)$ - [F,L,NC]
+  RewriteRule (^|/)(backup\.zip|backup\.sql|db\.sql|dump\.sql|phpinfo\.php|info\.php)$ - [F,L,NC]
+
+  # Fichiers / dossiers réels servis tels quels
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Tout le reste → SPA
+  # Fallback SPA
   RewriteRule ^ index.html [L]
 </IfModule>

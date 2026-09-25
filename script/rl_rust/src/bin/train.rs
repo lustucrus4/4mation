@@ -66,6 +66,14 @@ struct Args {
     /// Exécutable Python (Windows: py)
     #[arg(long, default_value = "py")]
     python: String,
+
+    /// Bot Python servant de référence d'évaluation (level_3, level_5, ...)
+    #[arg(long, default_value = "level_5")]
+    bot_id: String,
+
+    /// Mesure seule : évalue le checkpoint contre `--bot-id` puis s'arrête
+    #[arg(long, action = clap::ArgAction::SetTrue)]
+    eval_only: bool,
 }
 
 fn main() -> Result<()> {
@@ -97,5 +105,24 @@ fn main() -> Result<()> {
     };
 
     let mut trainer = Trainer::new(cfg)?;
+    if args.eval_only {
+        let result = trainer.eval_only(args.eval_games, &args.bot_id)?;
+        let seat = |index: usize| result.seat[index];
+        println!(
+            "EVAL bot={} parties={} victoires={} defaites={} nulles={} tronquees={} \
+             score_p1={:.3} ({} part.) score_p2={:.3} ({} part.)",
+            args.bot_id,
+            result.games,
+            result.rl_wins,
+            result.bot_wins,
+            result.draws,
+            result.truncated,
+            seat(0).score(),
+            seat(0).games,
+            seat(1).score(),
+            seat(1).games
+        );
+        return Ok(());
+    }
     trainer.run()
 }

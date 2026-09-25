@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from api.services.engine_analysis import engine_analysis
 from game_tree.optimized_minimax import OptimizedMinimaxAdvisor
 from solver.db_schema import connect, init_db
 from solver.position_hasher import HASHER
@@ -83,10 +84,14 @@ class TablebaseLookup:
             m["proven_loss"] = exact and wr <= 0.005
             m["proven_win"] = exact and wr >= 0.995
 
-        if exact and best_wr <= 0.005:
-            analysis["position_status"] = "proven_losing"
-        elif exact and worst_wr >= 0.995:
+        # Le statut décrit la **valeur de la position**, pas celle de tous les coups : une
+        # position gagnante prouvée reste gagnante même si certains coups la perdent. Exiger
+        # que *tous* les coups gagnent faisait retomber sur « estimated » des positions dont
+        # la valeur était pourtant démontrée, ce qui contredisait le label « Exact ».
+        if exact and best_wr >= 0.995:
             analysis["position_status"] = "proven_winning"
+        elif exact and worst_wr <= 0.005:
+            analysis["position_status"] = "proven_losing"
         elif exact and all(abs(float(m["win_rate"]) - 0.5) < 0.01 for m in moves):
             analysis["position_status"] = "proven_draw"
         else:
@@ -221,22 +226,25 @@ class TablebaseLookup:
         board: np.ndarray,
         move: Tuple[int, int],
         current_player: int,
-    ) -> Optional[Tuple[str, float]]:
+    ) -> Optional[Tuple[str, float, bool]]:
+        """(résultat, taux, exact) du coup `move`, vus par le joueur au trait."""
         nb = board.copy()
         nb[move[0], move[1]] = current_player
         opponent = 3 - current_player
         h = HASHER.hash_key(nb, opponent, move)
 
         row = conn.execute(
-            "SELECT result, win_rate FROM opening_book WHERE hash=?", (h,)
+            "SELECT result, win_rate, exact FROM opening_book WHERE hash=?", (h,)
         ).fetchone()
+        exact = bool(row["exact"]) if row is not None else True
         if row is None:
             row = conn.execute(
                 "SELECT result, win_rate FROM positions WHERE hash=?", (h,)
             ).fetchone()
         if row is None:
             return None
-        return self._child_win_rate(str(row["result"]), float(row["win_rate"]))
+        res, wr = self._child_win_rate(str(row["result"]), float(row["win_rate"]))
+        return res, wr, exact
 
     def opening_book_coach_analysis(
         self,
@@ -267,28 +275,36 @@ class TablebaseLookup:
                 if self._advisor._is_winning_move(board, move, current_player):
                     moves_out.append({
                         "move": move, "row": move[0], "col": move[1],
-                        "win_rate": 1.0, "result": RESULT_WIN,
+                        "win_rate": 1.0, "result": RESULT_WIN, "exact": True,
                     })
                     continue
                 child = self._lookup_child(conn, board, move, current_player)
                 if child is not None:
-                    res, wr = child
+                    res, wr, child_exact = child
                     moves_out.append({
                         "move": move, "row": move[0], "col": move[1],
-                        "win_rate": wr, "result": res,
+                        "win_rate": wr, "result": res, "exact": child_exact,
                     })
             moves_out.sort(key=lambda m: m["win_rate"], reverse=True)
 
         valid_moves = self._advisor._get_frontier_moves(board, last_move, current_player)
         label = "Exact (livre d'ouverture)" if hit.exact else "Estimé (livre d'ouverture)"
-        position_wr = moves_out[0]["win_rate"] if moves_out else hit.win_rate
-        best_move = moves_out[0]["move"] if moves_out else hit.best_move
+        if hit.exact:
+            # Position prouvée : sa valeur fait foi. Déduire le verdict en inversant les
+            # enfants donnerait un résultat faux dès qu'un enfant n'est qu'estimé (une
+            # position perdue s'afficherait « nulle à 46 % », par exemple).
+            position_wr = float(hit.win_rate)
+            best_move = hit.best_move
+        else:
+            position_wr = moves_out[0]["win_rate"] if moves_out else hit.win_rate
+            best_move = moves_out[0]["move"] if moves_out else hit.best_move
         coverage = (
             100.0 * len(moves_out) / len(valid_moves) if valid_moves else 100.0
         )
         return {
             "moves": moves_out,
             "best_move": best_move,
+            "result": hit.result,
             "current_player": current_player,
             "valid_moves_count": len(valid_moves),
             "elapsed_ms": int((time.perf_counter() - start) * 1000),
@@ -305,47 +321,49 @@ class TablebaseLookup:
         board: np.ndarray,
         current_player: int = 1,
         last_move: Optional[Tuple[int, int]] = None,
+        *,
+        engine_depth: Optional[int] = None,
+        engine_time_ms: Optional[int] = None,
+        allow_engine: bool = True,
     ) -> Optional[Dict[str, Any]]:
         """
-        Analyse exacte si toutes les sous-positions sont en base,
-        ou via solveur rétrograde pour endgame.
+        Analyse de la position. Ordre de confiance :
+
+        1. valeur **prouvée** : lecture de la tablebase (finales) ou entrée exacte du
+           livre d'ouverture (mat mis en évidence à la construction) ;
+        2. **moteur Rust** : ouvertures estimées et milieu de partie — c'est le cas
+           courant, et de loin le plus utile (le moteur cherche, il ne devine pas) ;
+        3. replis historiques (remontée des enfants du livre, MCTS) quand le moteur
+           n'est pas installé ou ne répond pas.
+
+        Le moteur partage un processus persistant : sa table de transposition rend les
+        analyses successives d'une même partie très rapides.
         """
         start = time.perf_counter()
         hit = self.lookup(board, current_player, last_move)
 
-        # Livre d'ouverture estimé (exact=0) : MCTS sur toutes les cases pour éviter
-        # des 0 % trompeurs et des sauts livre → MCTS au coup suivant.
-        if hit is not None and hit.source == "opening_book":
-            if not hit.exact:
-                return self._build_mcts_analysis(
-                    board,
-                    current_player,
-                    last_move,
-                    start,
-                    label="Estimé (MCTS)",
-                )
-            book = self._opening_book_analysis(
-                board, current_player, last_move, hit, start
-            )
-            if book.get("partial") or not book.get("moves"):
-                return self._build_mcts_analysis(
-                    board,
-                    current_player,
-                    last_move,
-                    start,
-                    label="Estimé (MCTS — couverture partielle)",
-                )
-            return self._enrich_analysis_meta(book)
+        # Une entrée du livre non prouvée ne doit pas bloquer le moteur : c'est une
+        # estimation, le moteur en donne une meilleure.
+        book_estimated = (
+            hit is not None and hit.source == "opening_book" and not hit.exact
+        )
 
-        if hit is not None:
-            retro = self._retrograde.analyze_moves(board, current_player, last_move)
-            if retro is not None:
-                retro["source"] = hit.source
-                retro["exact"] = True
-                retro["label"] = "Exact (tablebase)"
-                retro["elapsed_ms"] = int((time.perf_counter() - start) * 1000)
-                retro["coverage_percent"] = 100.0
-                return self._enrich_analysis_meta(retro)
+        if hit is not None and not book_estimated:
+            if hit.source == "opening_book":
+                book = self._opening_book_analysis(
+                    board, current_player, last_move, hit, start
+                )
+                if book.get("moves") and not book.get("partial"):
+                    return self._enrich_analysis_meta(book)
+            else:
+                retro = self._retrograde.analyze_moves(board, current_player, last_move)
+                if retro is not None:
+                    retro["source"] = hit.source
+                    retro["exact"] = True
+                    retro["label"] = "Exact (tablebase)"
+                    retro["elapsed_ms"] = int((time.perf_counter() - start) * 1000)
+                    retro["coverage_percent"] = 100.0
+                    return self._enrich_analysis_meta(retro)
 
         if HASHER.empty_cells(board) <= self.max_endgame_empty:
             retro = self._retrograde.analyze_moves(board, current_player, last_move)
@@ -355,6 +373,31 @@ class TablebaseLookup:
                 retro["label"] = "Exact (tablebase)"
                 retro["elapsed_ms"] = int((time.perf_counter() - start) * 1000)
                 return self._enrich_analysis_meta(retro)
+
+        if allow_engine and self._advisor._get_frontier_moves(
+            board, last_move, current_player
+        ):
+            engine = engine_analysis(
+                board,
+                current_player,
+                last_move,
+                depth=engine_depth,
+                time_ms=engine_time_ms,
+            )
+            if engine is not None:
+                engine["elapsed_ms"] = int((time.perf_counter() - start) * 1000)
+                return self._enrich_analysis_meta(engine)
+
+        # Repli : livre d'ouverture estimé (exact=0) → MCTS sur toutes les cases pour
+        # éviter des 0 % trompeurs et des sauts livre → MCTS au coup suivant.
+        if book_estimated:
+            return self._build_mcts_analysis(
+                board,
+                current_player,
+                last_move,
+                start,
+                label="Estimé (MCTS)",
+            )
 
         conn = self._get_conn()
         if conn is None:
@@ -382,7 +425,7 @@ class TablebaseLookup:
             if child is None:
                 all_found = False
                 break
-            res, wr = child
+            res, wr, _child_exact = child
             moves_out.append({
                 "move": move,
                 "row": move[0],
@@ -436,9 +479,19 @@ class TablebaseLookup:
         current_player: int,
         last_move: Optional[Tuple[int, int]] = None,
         valid_moves: Optional[List[Tuple[int, int]]] = None,
+        *,
+        require_exact: bool = False,
     ) -> Optional[Tuple[int, int]]:
+        """Meilleur coup connu, ou None.
+
+        ``require_exact=True`` ne renvoie que les coups **prouvés** (tablebase exacte ou
+        entrée de livre ``exact=1``), et ignore les estimations du livre : sert aux bots
+        qui ont déjà une recherche propre et ne doivent céder le trait qu'à une preuve.
+        """
         hit = self.lookup(board, current_player, last_move)
         if hit is None or hit.best_move is None:
+            return None
+        if require_exact and not hit.exact:
             return None
         if valid_moves and hit.best_move not in valid_moves:
             return None

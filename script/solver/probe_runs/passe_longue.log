@@ -1,0 +1,15 @@
+﻿`0,0` | meilleure r├®ponse [1, 1] | score 42 | preuve aucune preuve | profondeur 29 | 1 199 793 152 noeuds | 600.0 s
+`0,1` | meilleure r├®ponse [1, 2] | score 30 | preuve aucune preuve | profondeur 27 | 1 260 894 208 noeuds | 600.0 s
+`0,2` | meilleure r├®ponse [1, 3] | score 30 | preuve aucune preuve | profondeur 27 | 1 123 016 704 noeuds | 600.0 s
+`0,3` | meilleure r├®ponse [1, 3] | score 16 | preuve aucune preuve | profondeur 29 | 992 507 904 noeuds | 600.0 s
+﻿`1,1` | meilleure r├®ponse [1, 2] | score -2 | preuve aucune preuve | profondeur 27 | 489 132 032 noeuds | 600.0 s
+`1,2` | meilleure r├®ponse [2, 3] | score 5 | preuve aucune preuve | profondeur 25 | 278 556 672 noeuds | 2339.3 s
+python : Moteur termin├® sans r├®ponse
+Au caractère C:\Users\Lucien\AppData\Local\Temp\ps-script-ec64a594-e4e5-4b0e-80eb-1a33736ab87f.ps1:81 : 33
++ ... G="utf-8" ; python -u scripts\probe_opening_proof.py --depth 40 --tim ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Moteur termin├® sans r├®ponse:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+`1,3` : moteur muet
+sonde terminee

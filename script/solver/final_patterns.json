@@ -1,0 +1,1176 @@
+{
+  "meta": {
+    "genere_le": "2026-09-24T22:55:57",
+    "base": "C:\\Users\\Lucien\\Documents\\Projet code\\4mation\\script\\solver\\data\\tablebase.db",
+    "couches": [
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "sample_par_couche": 600,
+    "rendement": {
+      "7": {
+        "lignes_lues": 3119,
+        "alias_ecartes": 1361,
+        "enfants_manquants": 1158,
+        "incoherentes": 0
+      },
+      "8": {
+        "lignes_lues": 4090,
+        "alias_ecartes": 1997,
+        "enfants_manquants": 1493,
+        "incoherentes": 0
+      },
+      "9": {
+        "lignes_lues": 4035,
+        "alias_ecartes": 1820,
+        "enfants_manquants": 1615,
+        "incoherentes": 0
+      },
+      "10": {
+        "lignes_lues": 4357,
+        "alias_ecartes": 2126,
+        "enfants_manquants": 1631,
+        "incoherentes": 0
+      },
+      "11": {
+        "lignes_lues": 4211,
+        "alias_ecartes": 1905,
+        "enfants_manquants": 1706,
+        "incoherentes": 0
+      }
+    },
+    "trous_rencontres": 5247,
+    "filtres_exercices": {
+      "candidats": 474,
+      "ecartes_doublons": 6,
+      "ecartes_motif_sature": 449,
+      "ecartes_ligne_incomplete": 12,
+      "ecartes_verdict_contredit": 0
+    }
+  },
+  "volumetrie": {
+    "7": {
+      "total": 12944110,
+      "victoires": 8624281,
+      "nulles": 2281726,
+      "defaites": 2038103
+    },
+    "8": {
+      "total": 1459993,
+      "victoires": 924484,
+      "nulles": 240995,
+      "defaites": 294514
+    },
+    "9": {
+      "total": 1621337,
+      "victoires": 1192138,
+      "nulles": 90070,
+      "defaites": 339129
+    },
+    "10": {
+      "total": 2288206,
+      "victoires": 1634155,
+      "nulles": 64234,
+      "defaites": 589817
+    },
+    "11": {
+      "total": 2248413,
+      "victoires": 1656810,
+      "nulles": 25918,
+      "defaites": 565685
+    }
+  },
+  "census": {
+    "7": {
+      "positions_analysables": 600,
+      "issue_du_camp_au_trait": {
+        "L": 254,
+        "W": 212,
+        "D": 134
+      },
+      "par_bucket": {
+        "trait_conclut": {
+          "total": 94,
+          "victoires": 94,
+          "nulles": 0,
+          "defaites": 0
+        },
+        "adversaire_conclut": {
+          "total": 223,
+          "victoires": 0,
+          "nulles": 0,
+          "defaites": 223
+        },
+        "bataille": {
+          "total": 283,
+          "victoires": 118,
+          "nulles": 134,
+          "defaites": 31
+        }
+      },
+      "gains_construits": 118,
+      "gains_par_fourchette": 89,
+      "formes_de_menace_du_gain": {
+        "1": 29,
+        "2": 80,
+        "3": 9
+      },
+      "bataille_avec_case_d_alignement_adverse": 168,
+      "coup_gagnant_unique": 166,
+      "plusieurs_coups_gagnants": 46,
+      "hauteurs_de_preuve": {
+        "1": 50,
+        "2": 30,
+        "3": 19,
+        "4": 9,
+        "5": 27,
+        "6": 10,
+        "7": 455
+      }
+    },
+    "8": {
+      "positions_analysables": 600,
+      "issue_du_camp_au_trait": {
+        "L": 333,
+        "D": 71,
+        "W": 196
+      },
+      "par_bucket": {
+        "trait_conclut": {
+          "total": 110,
+          "victoires": 110,
+          "nulles": 0,
+          "defaites": 0
+        },
+        "adversaire_conclut": {
+          "total": 269,
+          "victoires": 0,
+          "nulles": 0,
+          "defaites": 269
+        },
+        "bataille": {
+          "total": 221,
+          "victoires": 86,
+          "nulles": 71,
+          "defaites": 64
+        }
+      },
+      "gains_construits": 86,
+      "gains_par_fourchette": 67,
+      "formes_de_menace_du_gain": {
+        "0": 1,
+        "1": 18,
+        "2": 58,
+        "3": 9
+      },
+      "bataille_avec_case_d_alignement_adverse": 143,
+      "coup_gagnant_unique": 135,
+      "plusieurs_coups_gagnants": 61,
+      "hauteurs_de_preuve": {
+        "1": 51,
+        "2": 46,
+        "3": 9,
+        "4": 34,
+        "5": 35,
+        "6": 19,
+        "7": 5,
+        "8": 401
+      }
+    },
+    "9": {
+      "positions_analysables": 600,
+      "issue_du_camp_au_trait": {
+        "D": 48,
+        "L": 365,
+        "W": 187
+      },
+      "par_bucket": {
+        "trait_conclut": {
+          "total": 96,
+          "victoires": 96,
+          "nulles": 0,
+          "defaites": 0
+        },
+        "adversaire_conclut": {
+          "total": 323,
+          "victoires": 0,
+          "nulles": 0,
+          "defaites": 323
+        },
+        "bataille": {
+          "total": 181,
+          "victoires": 91,
+          "nulles": 48,
+          "defaites": 42
+        }
+      },
+      "gains_construits": 91,
+      "gains_par_fourchette": 76,
+      "formes_de_menace_du_gain": {
+        "1": 15,
+        "2": 37,
+        "3": 22,
+        "4": 14,
+        "5": 3
+      },
+      "bataille_avec_case_d_alignement_adverse": 110,
+      "coup_gagnant_unique": 143,
+      "plusieurs_coups_gagnants": 44,
+      "hauteurs_de_preuve": {
+        "1": 50,
+        "2": 33,
+        "3": 21,
+        "4": 13,
+        "5": 64,
+        "6": 75,
+        "7": 64,
+        "8": 9,
+        "9": 271
+      }
+    },
+    "10": {
+      "positions_analysables": 600,
+      "issue_du_camp_au_trait": {
+        "L": 418,
+        "W": 174,
+        "D": 8
+      },
+      "par_bucket": {
+        "trait_conclut": {
+          "total": 94,
+          "victoires": 94,
+          "nulles": 0,
+          "defaites": 0
+        },
+        "adversaire_conclut": {
+          "total": 380,
+          "victoires": 0,
+          "nulles": 0,
+          "defaites": 380
+        },
+        "bataille": {
+          "total": 126,
+          "victoires": 80,
+          "nulles": 8,
+          "defaites": 38
+        }
+      },
+      "gains_construits": 80,
+      "gains_par_fourchette": 51,
+      "formes_de_menace_du_gain": {
+        "0": 1,
+        "1": 28,
+        "2": 27,
+        "3": 17,
+        "4": 6,
+        "5": 1
+      },
+      "bataille_avec_case_d_alignement_adverse": 113,
+      "coup_gagnant_unique": 130,
+      "plusieurs_coups_gagnants": 44,
+      "hauteurs_de_preuve": {
+        "1": 40,
+        "2": 77,
+        "3": 9,
+        "4": 23,
+        "5": 19,
+        "6": 40,
+        "7": 12,
+        "8": 103,
+        "9": 34,
+        "10": 243
+      }
+    },
+    "11": {
+      "positions_analysables": 600,
+      "issue_du_camp_au_trait": {
+        "W": 190,
+        "L": 400,
+        "D": 10
+      },
+      "par_bucket": {
+        "trait_conclut": {
+          "total": 86,
+          "victoires": 86,
+          "nulles": 0,
+          "defaites": 0
+        },
+        "adversaire_conclut": {
+          "total": 364,
+          "victoires": 0,
+          "nulles": 0,
+          "defaites": 364
+        },
+        "bataille": {
+          "total": 150,
+          "victoires": 104,
+          "nulles": 10,
+          "defaites": 36
+        }
+      },
+      "gains_construits": 104,
+      "gains_par_fourchette": 84,
+      "formes_de_menace_du_gain": {
+        "0": 11,
+        "1": 9,
+        "2": 30,
+        "3": 38,
+        "4": 7,
+        "5": 9
+      },
+      "bataille_avec_case_d_alignement_adverse": 124,
+      "coup_gagnant_unique": 161,
+      "plusieurs_coups_gagnants": 29,
+      "hauteurs_de_preuve": {
+        "1": 45,
+        "2": 59,
+        "3": 24,
+        "4": 7,
+        "5": 35,
+        "6": 31,
+        "7": 76,
+        "8": 11,
+        "9": 91,
+        "10": 10,
+        "11": 211
+      }
+    }
+  },
+  "regles": [
+    "**Contrôle — quand le trait peut conclure, il conclut** : 480 victoire(s) sur 480 positions où une case d'alignement était jouable (100 % : la base ne se contredit pas).",
+    "**Contrôle — quand l'adversaire conclut quoi qu'il arrive, on perd** : 1559 défaite(s) sur 1559 positions (100 %).",
+    "**La vraie finale est la bataille** : quand ni le trait ni l'adversaire ne peut conclure, le trait gagne 50 % du temps, fait nulle 28 % et perd 22 % (961 positions). C'est le terrain des exercices.",
+    "**La fourchette est le moteur des gains construits** : sur 479 gains sans conclusion immédiate, 367 (77 %) passent par un coup qui crée au moins deux cases d'alignement d'un seul coup.",
+    "**Le gain construit passe presque toujours par une menace** : sur 479 gains sans conclusion immédiate, 3 % en créent 0, 21 % en créent 1, 48 % en créent 2, 20 % en créent 3, 6 % en créent 4, 3 % en créent 5 case(s) d'alignement — une fourchette (deux menaces d'un seul coup) est le cas majoritaire.",
+    "**Le gain a rarement une seule voie** : 224 positions à plusieurs coups gagnants contre 735 à coup gagnant unique — les exercices à solution unique se choisissent, ils ne sont pas la règle.",
+    "**La menace fantôme n'est pas une exception** : dans 68 % des positions de bataille, l'adversaire a une case d'alignement **sur le plateau** alors que la position n'est pas perdue — cette case n'est pas jouable pour lui. C'est exactement ce que la leçon du site appelle une menace fantôme."
+  ],
+  "puzzles": [
+    {
+      "numero": 1,
+      "hash": "0000d916a5ed7fce",
+      "cellules_vides": 7,
+      "camp": 1,
+      "plateau": [
+        [
+          0,
+          2,
+          0,
+          0,
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          2,
+          0,
+          2
+        ],
+        [
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          1,
+          2,
+          1,
+          0,
+          1,
+          1
+        ]
+      ],
+      "dernier_coup": [
+        2,
+        2
+      ],
+      "motif": "fourchette",
+      "solution": [
+        [
+          3,
+          1
+        ]
+      ],
+      "distance_du_gain": 3,
+      "hauteur_de_preuve": 3,
+      "ligne_verifiee": true,
+      "ligne": [
+        {
+          "joueur": 1,
+          "coup": [
+            3,
+            1
+          ],
+          "alignement": false,
+          "menaces_apres": 3
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            3,
+            0
+          ],
+          "alignement": false,
+          "menaces_apres": 0
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            6,
+            4
+          ],
+          "alignement": true,
+          "menaces_apres": 0
+        }
+      ],
+      "explication": "Le coup gagnant crée 3 case(s) d'alignement : l'adversaire ne peut pas parer les deux, le gain est forcé. Au départ, le trait n'a aucune case d'alignement jouable, et l'adversaire non plus : aucun des deux ne conclut sur-le-champ."
+    },
+    {
+      "numero": 2,
+      "hash": "00012e6397743592",
+      "cellules_vides": 7,
+      "camp": 1,
+      "plateau": [
+        [
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          0,
+          1,
+          2,
+          0,
+          1
+        ],
+        [
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          1,
+          2,
+          1
+        ]
+      ],
+      "dernier_coup": [
+        2,
+        0
+      ],
+      "motif": "fourchette",
+      "solution": [
+        [
+          1,
+          1
+        ]
+      ],
+      "distance_du_gain": 3,
+      "hauteur_de_preuve": 3,
+      "ligne_verifiee": true,
+      "ligne": [
+        {
+          "joueur": 1,
+          "coup": [
+            1,
+            1
+          ],
+          "alignement": false,
+          "menaces_apres": 2
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            2,
+            2
+          ],
+          "alignement": false,
+          "menaces_apres": 2
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            4,
+            0
+          ],
+          "alignement": true,
+          "menaces_apres": 0
+        }
+      ],
+      "explication": "Le coup gagnant crée 2 case(s) d'alignement : l'adversaire ne peut pas parer les deux, le gain est forcé. Au départ, le trait n'a aucune case d'alignement jouable, et l'adversaire non plus : aucun des deux ne conclut sur-le-champ."
+    },
+    {
+      "numero": 3,
+      "hash": "000154a1e6010eee",
+      "cellules_vides": 7,
+      "camp": 1,
+      "plateau": [
+        [
+          2,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          2,
+          0,
+          1,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          0,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          1,
+          2,
+          1,
+          2,
+          0,
+          2,
+          1
+        ]
+      ],
+      "dernier_coup": [
+        0,
+        3
+      ],
+      "motif": "fourchette",
+      "solution": [
+        [
+          1,
+          3
+        ]
+      ],
+      "distance_du_gain": 3,
+      "hauteur_de_preuve": 3,
+      "ligne_verifiee": true,
+      "ligne": [
+        {
+          "joueur": 1,
+          "coup": [
+            1,
+            3
+          ],
+          "alignement": false,
+          "menaces_apres": 2
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            2,
+            2
+          ],
+          "alignement": false,
+          "menaces_apres": 0
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            4,
+            0
+          ],
+          "alignement": true,
+          "menaces_apres": 0
+        }
+      ],
+      "explication": "Le coup gagnant crée 2 case(s) d'alignement : l'adversaire ne peut pas parer les deux, le gain est forcé. Au départ, le trait n'a aucune case d'alignement jouable, et l'adversaire non plus : aucun des deux ne conclut sur-le-champ."
+    },
+    {
+      "numero": 4,
+      "hash": "00017e23c0844b3a",
+      "cellules_vides": 7,
+      "camp": 1,
+      "plateau": [
+        [
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          2,
+          2,
+          0,
+          2
+        ],
+        [
+          0,
+          2,
+          2,
+          0,
+          1,
+          1,
+          2
+        ],
+        [
+          1,
+          0,
+          1,
+          2,
+          2,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2
+        ],
+        [
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          2,
+          1,
+          2
+        ]
+      ],
+      "dernier_coup": [
+        4,
+        2
+      ],
+      "motif": "menace unique",
+      "solution": [
+        [
+          3,
+          1
+        ]
+      ],
+      "distance_du_gain": 3,
+      "hauteur_de_preuve": 3,
+      "ligne_verifiee": true,
+      "ligne": [
+        {
+          "joueur": 1,
+          "coup": [
+            3,
+            1
+          ],
+          "alignement": false,
+          "menaces_apres": 1
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            4,
+            0
+          ],
+          "alignement": false,
+          "menaces_apres": 1
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            6,
+            1
+          ],
+          "alignement": true,
+          "menaces_apres": 0
+        }
+      ],
+      "explication": "Le coup gagnant crée 1 case(s) d'alignement : il doit parer, ce qui laisse le trait conclure. Au départ, le trait n'a aucune case d'alignement jouable, et l'adversaire non plus : aucun des deux ne conclut sur-le-champ."
+    },
+    {
+      "numero": 5,
+      "hash": "0001b81d58c470c5",
+      "cellules_vides": 7,
+      "camp": 1,
+      "plateau": [
+        [
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          0,
+          1,
+          2,
+          2,
+          0
+        ],
+        [
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          2,
+          2,
+          2,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          2,
+          1,
+          0
+        ]
+      ],
+      "dernier_coup": [
+        4,
+        1
+      ],
+      "motif": "menace unique",
+      "solution": [
+        [
+          5,
+          0
+        ]
+      ],
+      "distance_du_gain": 3,
+      "hauteur_de_preuve": 3,
+      "ligne_verifiee": true,
+      "ligne": [
+        {
+          "joueur": 1,
+          "coup": [
+            5,
+            0
+          ],
+          "alignement": false,
+          "menaces_apres": 1
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            6,
+            0
+          ],
+          "alignement": false,
+          "menaces_apres": 1
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            4,
+            4
+          ],
+          "alignement": true,
+          "menaces_apres": 0
+        }
+      ],
+      "explication": "Le coup gagnant crée 1 case(s) d'alignement : il doit parer, ce qui laisse le trait conclure. Au départ, le trait n'a aucune case d'alignement jouable, et l'adversaire non plus : aucun des deux ne conclut sur-le-champ."
+    },
+    {
+      "numero": 6,
+      "hash": "00018591f46bb492",
+      "cellules_vides": 8,
+      "camp": 2,
+      "plateau": [
+        [
+          1,
+          2,
+          0,
+          1,
+          0,
+          1,
+          2
+        ],
+        [
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          0,
+          0,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          1,
+          2,
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          2,
+          0,
+          0,
+          1,
+          2,
+          2,
+          1
+        ]
+      ],
+      "dernier_coup": [
+        3,
+        2
+      ],
+      "motif": "menace unique",
+      "solution": [
+        [
+          3,
+          3
+        ]
+      ],
+      "distance_du_gain": 3,
+      "hauteur_de_preuve": 3,
+      "ligne_verifiee": true,
+      "ligne": [
+        {
+          "joueur": 2,
+          "coup": [
+            3,
+            3
+          ],
+          "alignement": false,
+          "menaces_apres": 1
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            3,
+            4
+          ],
+          "alignement": false,
+          "menaces_apres": 0
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            5,
+            5
+          ],
+          "alignement": true,
+          "menaces_apres": 0
+        }
+      ],
+      "explication": "Le coup gagnant crée 1 case(s) d'alignement : il doit parer, ce qui laisse le trait conclure. Au départ, le trait n'a aucune case d'alignement jouable, et l'adversaire non plus : aucun des deux ne conclut sur-le-champ."
+    },
+    {
+      "numero": 7,
+      "hash": "0008b96c2f25f0ec",
+      "cellules_vides": 10,
+      "camp": 2,
+      "plateau": [
+        [
+          2,
+          2,
+          0,
+          0,
+          0,
+          1,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          1,
+          0,
+          1,
+          2,
+          2
+        ],
+        [
+          1,
+          2,
+          1,
+          2,
+          0,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          2,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          0,
+          1,
+          2,
+          1
+        ]
+      ],
+      "dernier_coup": [
+        6,
+        6
+      ],
+      "motif": "prise de tempo",
+      "solution": [
+        [
+          5,
+          6
+        ]
+      ],
+      "distance_du_gain": 5,
+      "hauteur_de_preuve": 10,
+      "ligne_verifiee": true,
+      "ligne": [
+        {
+          "joueur": 2,
+          "coup": [
+            5,
+            6
+          ],
+          "alignement": false,
+          "menaces_apres": 0
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            4,
+            6
+          ],
+          "alignement": false,
+          "menaces_apres": 2
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            2,
+            3
+          ],
+          "alignement": false,
+          "menaces_apres": 1
+        },
+        {
+          "joueur": 1,
+          "coup": [
+            3,
+            4
+          ],
+          "alignement": false,
+          "menaces_apres": 2
+        },
+        {
+          "joueur": 2,
+          "coup": [
+            0,
+            3
+          ],
+          "alignement": true,
+          "menaces_apres": 0
+        }
+      ],
+      "explication": "Le coup gagnant crée 0 case(s) d'alignement : le gain ne passe pas par une menace directe mais par le tempo. Au départ, le trait n'a aucune case d'alignement jouable, et l'adversaire non plus : aucun des deux ne conclut sur-le-champ."
+    }
+  ]
+}

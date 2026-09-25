@@ -182,19 +182,29 @@ Les fichiers sont générés dans `4mation_dashboard_deploy/`.
 
 
 
-| ID | Profondeur | Description |
+| ID | Profondeur | Budget | Description |
 
-|----|------------|-------------|
+|----|------------|--------|-------------|
 
-| `random` | — | Aléatoire |
+| `level_1` | 1 | 120 ms | Débutant — 55 % de coups approximatifs |
 
-| `minimax_d2` | 2 | Minimax optimisé, rapide |
+| `level_2` | 2 | 250 ms | Facile — 30 % de coups approximatifs |
 
-| `minimax_d4` | 4 | **Défaut** — débutant |
+| `level_3` | 4 | 600 ms | Intermédiaire — **défaut** |
 
-| `minimax_d6` | 6 | Intermédiaire |
+| `level_4` | 6 | 1 000 ms | Avancé — tablebase activée |
 
-| `minimax_d8` | 8 | Avancé |
+| `level_5` | 10 | 1 600 ms | Expert — recherche maximale + tablebase |
+
+| `level_6` | 22 | 2 500 ms | Maître — **moteur Rust** `4mation-engine`, finales exactes |
+
+
+
+Chaque niveau s'approprie un Elo à la fin des parties classiques (voir
+
+`api/README.md`). Le niveau 6 retombe automatiquement sur le chemin du niveau 5 si le
+
+binaire du moteur est absent.
 
 
 
@@ -202,15 +212,23 @@ Les fichiers sont générés dans `4mation_dashboard_deploy/`.
 
 
 
-- Session `mode: "learning"` : coach invisible (MCTS) joue après chaque coup humain.
+- Session `mode: "learning"` : le coach joue après chaque coup humain.
 
-- Frontend affiche le **% victoire MCTS** sur chaque coup légal.
+- Frontend affiche le **taux de victoire estimé** de chaque coup légal, calculé par le
+
+  moteur d'analyse (`4mation-engine` en mode analyse, ou la tablebase quand la position
+
+  est exacte).
 
 - Boutons **Annuler coup** et **Nouvelle variante** (undo + rejouer).
 
 
 
-> En mode classique, les scores Minimax sont des **scores estimés** heuristiques (pas un vrai % victoire).
+> Les pourcentages affichés sont une **estimation calibrée** (échelle mesurée sur les
+
+> finales exactes), sauf quand l'étiquette indique « Exact (tablebase) » ou « Mat forcé
+
+> en N coup(s) » : il s'agit alors d'une valeur prouvée.
 
 
 
@@ -250,13 +268,25 @@ python script/test_mcts_advisor.py
 
 | Sites Hostinger shared hosting | ⏭ N/A (projet sur VPS) |
 
-| Déploiement fichiers VPS (SSH) | ❌ **Manuel requis** |
+| Déploiement fichiers VPS (SSH) | ✅ Fait |
 
-| Nginx + Gunicorn + SSL certbot | ❌ **Manuel requis** |
+| Nginx + Gunicorn + SSL certbot | ✅ Fait |
 
 
 
-HTTP actuel : `404` sur les deux domaines (DNS OK, vhosts non configurés sur le VPS).
+Vérifié le 24/09/2026 : `https://4mation.lab211.fr` et `https://api-4mation.lab211.fr/api/health`
+
+répondent **200**, HTTPS actif, PostgreSQL `ready`, tablebase disponible.
+
+
+
+⚠️ La base déployée sur le VPS est **beaucoup plus petite** que celle du poste local
+
+(`/api/health` annonce 1,5 M de positions et 900 entrées de livre, contre 24,4 M et
+
+des dizaines de milliers en local). Le moteur `4mation-engine` est donc plus fort en
+
+local qu'en production : voir la note de déploiement du moteur dans `api/README.md`.
 
 
 

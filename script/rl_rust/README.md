@@ -11,11 +11,12 @@ script/rl_rust/
 │   ├── policy.rs        # Softmax linéaire + REINFORCE
 │   ├── mcts.rs          # Rollouts policy/aléatoire par coup racine
 │   ├── self_play.rs     # Batch parallèle rayon
-│   ├── eval.rs          # Matchs vs bot level_5 (Python)
+│   ├── eval.rs          # Évaluation vs bot Python (process persistant « daemon »)
 │   ├── imitation.rs     # Bootstrap Minimax d6–d8
 │   ├── persistence.rs   # checkpoints JSON + metrics JSONL/SQLite
-│   └── bin/train.rs     # CLI
-├── eval_minimax.py      # Pont Python (move + imitate)
+│   ├── trainer.rs       # Boucle d'entraînement
+│   └── bin/train.rs     # CLI (`--eval-only` pour mesurer sans entraîner)
+├── eval_minimax.py      # Pont Python (modes `move`, `daemon`, `imitate`)
 └── data/                # status.json, metrics, checkpoints
 ```
 
@@ -109,6 +110,88 @@ Variable optionnelle : `RL_DATA_DIR` pour pointer vers un autre dossier `data/`.
 - Batch eval Python (parties complètes en un subprocess)
 - Arena vs checkpoint précédent (league training)
 - Intégration bot_registry pour jouer en prod après seuil de win rate
+
+## Où en est le chantier (état réel, honnête)
+
+**Statut : en pause.** Le RL est un chantier exploratoire ; la priorité est donnée au
+solveur exact (tablebase + livre d'ouvertures), qui alimente déjà le site et les cours.
+Le RL est conservé tel quel, corrigé et documenté, mais **il n'est pas prêt à produire
+un bot de production**.
+
+### Ce qui fonctionne
+
+- Self-play parallèle (rayon) avec policy linéaire + MCTS-lite, checkpoints et metrics.
+- Reproduction d'un checkpoint via `--resume`.
+- Évaluation contre les bots du site (`level_1` … `level_6`) : `level_3`, `level_5`,
+  `level_6` sont mesurés, le reste est disponible via `--bot-id`.
+- Mesure **par siège** : le score quand le réseau commence (`score_p1`) et quand il
+  répond (`score_p2`) sont désormais séparés, car le premier joueur a un avantage
+  structurel dans 4mation.
+
+### Mesures réelles (20 parties par bot, réseau = policy + MCTS 8 simulations)
+
+| Adversaire | Victoires | Défaites | Nulles | score_p1 (10 part.) | score_p2 (10 part.) |
+|-----------|-----------|----------|--------|---------------------|---------------------|
+| `level_3` | 6 | 14 | 0 | 0,10 | 0,50 |
+| `level_5` | 10 | 10 | 0 | 0,50 | 0,50 |
+| `level_6` | 10 | 10 | 0 | 0,70 | 0,30 |
+
+Lecture : contre le bot le plus fort du site (`level_6`), le réseau marque **70 % quand il
+commence** et **30 % quand il répond** — exactement la signature de l'avantage du premier
+joueur, désormais **prouvé** (voir `script/solver/GAIN_FORCE_33.md` : le centre gagne de
+force en 28 demi-coups). Le total reste 50 %, donc le réseau n'apporte rien : il joue
+« correctement » sans dominer.
+
+Deux réserves à garder en tête :
+
+- échantillon **petit** (10 parties par siège) : ±2 parties ne veulent rien dire ;
+- le résultat contre `level_3` (10 % en premier) est **contre-intuitif** et n'a pas
+  d'explication satisfaisante : soit bruit statistique, soit le style très aléatoire de
+  `level_3` (12 % de coups au hasard) déstabilise une politique linéaire entraînée contre
+  `level_5`. À re-mesurer avec 100+ parties avant toute conclusion.
+
+### Bug corrigé (important)
+
+Le pont Python envoyait la position au bot, mais le bot **rejouait depuis un plateau
+vide** : toutes les évaluations antérieures (et donc la phase 1) étaient fausses, et les
+échecs de communication étaient comptés comme des nulles. Correction :
+
+- `eval_minimax.py` reconstruit correctement l'état (`engine.state`) ;
+- le pont utilise un **process persistant** (`daemon`) au lieu d'un interpréteur Python
+  par coup ;
+- côté Rust, toute réponse vide, illégale ou en erreur **fait échouer l'évaluation**
+  (`anyhow::bail!`) au lieu d'être comptée comme nulle ;
+- `scripts/check_rl_eval_bridge.py` contrôle le pont sur 9 positions de référence, dont une
+  à **gain immédiat** : la conclusion doit être trouvée, ce qui est impossible depuis un
+  plateau vide — le bug historique ne peut donc plus passer inaperçu.
+
+### Le daemon n'est pas reproductible (et ce n'est pas un bug)
+
+Le daemon garde le même bot d'une requête à l'autre, donc la même table de transposition
+réchauffée, et la recherche est bornée par un budget de temps. Deux interrogations de la
+même position peuvent donc conclure à deux coups **également bons** (mesuré : 4 cas sur
+27 pour `level_3`, `level_5`, `level_6`). Le contrôle exige donc ce qui compte — coups
+légaux, gain immédiat trouvé — et **signale** ces variations sans échouer. Conséquence
+pratique : ne jamais supposer deux exécutions identiques au coup près.
+
+Conséquence : **les mesures ci-dessus sont les premières fiables**. Elles remplacent les
+anciens « taux » (et le 50/50 historique vs `level_5`, qui était un artefact).
+
+### Limites connues
+
+- Policy **linéaire** (12 features), pas de réseau profond → plafond de force modéré.
+- Aucun accès à la tablebase pendant l'entraînement (les finales exactes ne sont pas
+  exploitées ; c'est justement là que le solveur est imbattable).
+- Pas de league/arène entre checkpoints, pas de curriculum.
+- L'évaluation reste lente : 20 parties ≈ 1 à 3 minutes selon le bot.
+
+### Prochaine étape si le chantier reprend
+
+1. Bootstrap d'imitation depuis le moteur exact (`4mation-engine`) plutôt que Minimax.
+2. Ajouter les features de finale (distance au gain tablebase) au jeu de features.
+3. Curriculum : commencer par des positions ouvertes à 8–10 cases vides (tablebase) et
+   remonter, ce qui rend le signal bien plus dense qu'un self-play depuis le vide.
+4. Arena contre checkpoint précédent pour suivre la progression réelle.
 
 ## Optimisations Ryzen 9955HX
 

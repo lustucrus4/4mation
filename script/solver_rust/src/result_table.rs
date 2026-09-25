@@ -114,6 +114,12 @@ impl ResultTable {
         let key = Self::key_for(board, player, last_move);
         self.map.get(&key).map(|v| unpack(*v))
     }
+
+    /// Vrai si la clé canonique est déjà connue (déduplication du balayage).
+    #[inline]
+    pub fn contains_key(&self, key: u64) -> bool {
+        self.map.contains_key(&key)
+    }
 }
 
 impl Default for ResultTable {

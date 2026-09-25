@@ -1,0 +1,3743 @@
+{
+  "opening": [
+    3,
+    3
+  ],
+  "winner": 1,
+  "plies": [
+    {
+      "ply": 1,
+      "player": 1,
+      "move": [
+        3,
+        3
+      ],
+      "score": null,
+      "proven": "ouverture",
+      "mate_in": null,
+      "depth": 0,
+      "nodes": 0,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 1,
+      "tb_exact": false,
+      "resistance": null,
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        3,
+        2
+      ],
+      "score": -99972,
+      "proven": "perte",
+      "mate_in": 28,
+      "depth": 28,
+      "nodes": 50646423,
+      "elapsed_ms": 27601,
+      "truncated": false,
+      "legal": 8,
+      "tb_exact": true,
+      "ply": 2,
+      "resistance": {
+        "best": -99972,
+        "same": 4,
+        "worst_score": -99974,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            3,
+            2
+          ],
+          "score": -99972,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            3
+          ],
+          "score": -99972,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            4
+          ],
+          "score": -99972,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            3
+          ],
+          "score": -99972,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            2
+          ],
+          "score": -99974,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            4
+          ],
+          "score": -99974,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            2
+          ],
+          "score": -99974,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": -99974,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        2,
+        3
+      ],
+      "score": 99973,
+      "proven": "gain",
+      "mate_in": 27,
+      "depth": 2,
+      "nodes": 44,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 7,
+      "tb_exact": true,
+      "ply": 3,
+      "resistance": {
+        "best": 99973,
+        "same": 2,
+        "worst_score": -2,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            2,
+            3
+          ],
+          "score": 99973,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            4,
+            3
+          ],
+          "score": 99973,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            3,
+            1
+          ],
+          "score": 1,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            2
+          ],
+          "score": 0,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            4,
+            2
+          ],
+          "score": 0,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            1
+          ],
+          "score": -2,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            4,
+            1
+          ],
+          "score": -2,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        1,
+        3
+      ],
+      "score": -99974,
+      "proven": "perte",
+      "mate_in": 26,
+      "depth": 22,
+      "nodes": 9519363,
+      "elapsed_ms": 4668,
+      "truncated": false,
+      "legal": 6,
+      "tb_exact": true,
+      "ply": 4,
+      "resistance": {
+        "best": -99974,
+        "same": 1,
+        "worst_score": -99984,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            1,
+            3
+          ],
+          "score": -99974,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": -99978,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            4
+          ],
+          "score": -99980,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": -99980,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            4
+          ],
+          "score": -99982,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            2
+          ],
+          "score": -99984,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        2,
+        2
+      ],
+      "score": 99975,
+      "proven": "gain",
+      "mate_in": 25,
+      "depth": 2,
+      "nodes": 38,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 7,
+      "tb_exact": true,
+      "ply": 5,
+      "resistance": {
+        "best": 99975,
+        "same": 1,
+        "worst_score": 3,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            2,
+            2
+          ],
+          "score": 99975,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            2,
+            4
+          ],
+          "score": 237,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            3
+          ],
+          "score": 6,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": 5,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": 3,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            2
+          ],
+          "score": 3,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            4
+          ],
+          "score": 3,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        1,
+        1
+      ],
+      "score": -99976,
+      "proven": "perte",
+      "mate_in": 24,
+      "depth": 20,
+      "nodes": 606676,
+      "elapsed_ms": 244,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 6,
+      "resistance": {
+        "best": -99976,
+        "same": 1,
+        "worst_score": -99982,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            1,
+            1
+          ],
+          "score": -99976,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            1
+          ],
+          "score": -99980,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": -99982,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            1
+          ],
+          "score": -99982,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        1,
+        2
+      ],
+      "score": 99977,
+      "proven": "gain",
+      "mate_in": 23,
+      "depth": 2,
+      "nodes": 36,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 7,
+      "tb_exact": true,
+      "ply": 7,
+      "resistance": {
+        "best": 99977,
+        "same": 1,
+        "worst_score": -6,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            1,
+            2
+          ],
+          "score": 99977,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            2,
+            1
+          ],
+          "score": 16,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            0
+          ],
+          "score": 13,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            0
+          ],
+          "score": 11,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            0
+          ],
+          "score": 8,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            2
+          ],
+          "score": -3,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            1
+          ],
+          "score": -6,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        2,
+        1
+      ],
+      "score": -99978,
+      "proven": "perte",
+      "mate_in": 22,
+      "depth": 20,
+      "nodes": 918172,
+      "elapsed_ms": 386,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 8,
+      "resistance": {
+        "best": -99978,
+        "same": 1,
+        "worst_score": -99982,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            2,
+            1
+          ],
+          "score": -99978,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            0,
+            2
+          ],
+          "score": -99980,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            0,
+            1
+          ],
+          "score": -99980,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            0,
+            3
+          ],
+          "score": -99982,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        3,
+        1
+      ],
+      "score": 99979,
+      "proven": "gain",
+      "mate_in": 21,
+      "depth": 2,
+      "nodes": 18,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 9,
+      "resistance": {
+        "best": 99979,
+        "same": 1,
+        "worst_score": -66,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            3,
+            1
+          ],
+          "score": 99979,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            1,
+            0
+          ],
+          "score": 2,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            3,
+            0
+          ],
+          "score": -63,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            0
+          ],
+          "score": -66,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        4,
+        2
+      ],
+      "score": -99980,
+      "proven": "perte",
+      "mate_in": 20,
+      "depth": 18,
+      "nodes": 388698,
+      "elapsed_ms": 169,
+      "truncated": false,
+      "legal": 5,
+      "tb_exact": true,
+      "ply": 10,
+      "resistance": {
+        "best": -99980,
+        "same": 1,
+        "worst_score": -99986,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            4,
+            2
+          ],
+          "score": -99980,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            0
+          ],
+          "score": -99982,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            1
+          ],
+          "score": -99984,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            0
+          ],
+          "score": -99984,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            0
+          ],
+          "score": -99986,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        4,
+        3
+      ],
+      "score": 99981,
+      "proven": "gain",
+      "mate_in": 19,
+      "depth": 2,
+      "nodes": 36,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 5,
+      "tb_exact": true,
+      "ply": 11,
+      "resistance": {
+        "best": 99981,
+        "same": 1,
+        "worst_score": -66,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            4,
+            3
+          ],
+          "score": 99981,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            4,
+            1
+          ],
+          "score": -56,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            1
+          ],
+          "score": -61,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            3
+          ],
+          "score": -63,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            2
+          ],
+          "score": -66,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        5,
+        3
+      ],
+      "score": -99982,
+      "proven": "perte",
+      "mate_in": 18,
+      "depth": 10,
+      "nodes": 8338,
+      "elapsed_ms": 2,
+      "truncated": false,
+      "legal": 5,
+      "tb_exact": true,
+      "ply": 12,
+      "resistance": {
+        "best": -99982,
+        "same": 1,
+        "worst_score": -99998,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            5,
+            3
+          ],
+          "score": -99982,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            4
+          ],
+          "score": -99990,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            5,
+            2
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            5,
+            4
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        5,
+        4
+      ],
+      "score": 99983,
+      "proven": "gain",
+      "mate_in": 17,
+      "depth": 2,
+      "nodes": 34,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 6,
+      "tb_exact": true,
+      "ply": 13,
+      "resistance": {
+        "best": 99983,
+        "same": 1,
+        "worst_score": -43,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            5,
+            4
+          ],
+          "score": 99983,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": 50,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            2
+          ],
+          "score": 33,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            6,
+            4
+          ],
+          "score": 30,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            6,
+            2
+          ],
+          "score": 14,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            6,
+            3
+          ],
+          "score": -43,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        4,
+        5
+      ],
+      "score": -99984,
+      "proven": "perte",
+      "mate_in": 16,
+      "depth": 12,
+      "nodes": 18373,
+      "elapsed_ms": 5,
+      "truncated": false,
+      "legal": 6,
+      "tb_exact": true,
+      "ply": 14,
+      "resistance": {
+        "best": -99984,
+        "same": 1,
+        "worst_score": -99990,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            4,
+            5
+          ],
+          "score": -99984,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": -99988,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            6,
+            3
+          ],
+          "score": -99988,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            6,
+            5
+          ],
+          "score": -99988,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            6,
+            4
+          ],
+          "score": -99990,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            5,
+            5
+          ],
+          "score": -99990,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        3,
+        4
+      ],
+      "score": 99985,
+      "proven": "gain",
+      "mate_in": 15,
+      "depth": 2,
+      "nodes": 42,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 7,
+      "tb_exact": true,
+      "ply": 15,
+      "resistance": {
+        "best": 99985,
+        "same": 1,
+        "worst_score": 23,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            3,
+            4
+          ],
+          "score": 99985,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": 52,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": 32,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            3,
+            6
+          ],
+          "score": 32,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            6
+          ],
+          "score": 32,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            4,
+            6
+          ],
+          "score": 29,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            5
+          ],
+          "score": 23,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        2,
+        4
+      ],
+      "score": -99986,
+      "proven": "perte",
+      "mate_in": 14,
+      "depth": 12,
+      "nodes": 3263,
+      "elapsed_ms": 1,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 16,
+      "resistance": {
+        "best": -99986,
+        "same": 1,
+        "worst_score": -99996,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            2,
+            4
+          ],
+          "score": -99986,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            5
+          ],
+          "score": -99988,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": -99990,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": -99996,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        2,
+        5
+      ],
+      "score": 99987,
+      "proven": "gain",
+      "mate_in": 13,
+      "depth": 2,
+      "nodes": 25,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 17,
+      "resistance": {
+        "best": 99987,
+        "same": 1,
+        "worst_score": 51,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            2,
+            5
+          ],
+          "score": 99987,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": 70,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": 58,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            5
+          ],
+          "score": 51,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        1,
+        6
+      ],
+      "score": -99988,
+      "proven": "perte",
+      "mate_in": 12,
+      "depth": 8,
+      "nodes": 1190,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 6,
+      "tb_exact": true,
+      "ply": 18,
+      "resistance": {
+        "best": -99988,
+        "same": 1,
+        "worst_score": -99998,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            1,
+            6
+          ],
+          "score": -99988,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": -99992,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            6
+          ],
+          "score": -99992,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": -99996,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            1,
+            5
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            2,
+            6
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        0,
+        5
+      ],
+      "score": 99989,
+      "proven": "gain",
+      "mate_in": 11,
+      "depth": 2,
+      "nodes": 18,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 19,
+      "resistance": {
+        "best": 99989,
+        "same": 1,
+        "worst_score": -2,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            0,
+            5
+          ],
+          "score": 99989,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            1,
+            5
+          ],
+          "score": 75,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            6
+          ],
+          "score": 10,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            6
+          ],
+          "score": -2,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        1,
+        5
+      ],
+      "score": -99990,
+      "proven": "perte",
+      "mate_in": 10,
+      "depth": 6,
+      "nodes": 164,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 20,
+      "resistance": {
+        "best": -99990,
+        "same": 1,
+        "worst_score": -99994,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            1,
+            5
+          ],
+          "score": -99990,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            0,
+            4
+          ],
+          "score": -99994,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": -99994,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            0,
+            6
+          ],
+          "score": -99994,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        2,
+        6
+      ],
+      "score": 99991,
+      "proven": "gain",
+      "mate_in": 9,
+      "depth": 5,
+      "nodes": 325,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 4,
+      "tb_exact": true,
+      "ply": 21,
+      "resistance": {
+        "best": 99991,
+        "same": 1,
+        "worst_score": -99998,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            2,
+            6
+          ],
+          "score": 99991,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": 97,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            6
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            0,
+            4
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        3,
+        6
+      ],
+      "score": -99992,
+      "proven": "perte",
+      "mate_in": 8,
+      "depth": 4,
+      "nodes": 23,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 2,
+      "tb_exact": true,
+      "ply": 22,
+      "resistance": {
+        "best": -99992,
+        "same": 1,
+        "worst_score": -99996,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            3,
+            6
+          ],
+          "score": -99992,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": -99996,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        4,
+        6
+      ],
+      "score": 99993,
+      "proven": "gain",
+      "mate_in": 7,
+      "depth": 2,
+      "nodes": 6,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 2,
+      "tb_exact": true,
+      "ply": 23,
+      "resistance": {
+        "best": 99993,
+        "same": 1,
+        "worst_score": 86,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            4,
+            6
+          ],
+          "score": 99993,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": 86,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        5,
+        6
+      ],
+      "score": -99994,
+      "proven": "perte",
+      "mate_in": 6,
+      "depth": 4,
+      "nodes": 68,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 3,
+      "tb_exact": true,
+      "ply": 24,
+      "resistance": {
+        "best": -99994,
+        "same": 1,
+        "worst_score": -99996,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            5,
+            6
+          ],
+          "score": -99994,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            5,
+            5
+          ],
+          "score": -99996,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": -99996,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        6,
+        6
+      ],
+      "score": 99995,
+      "proven": "gain",
+      "mate_in": 5,
+      "depth": 2,
+      "nodes": 13,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 3,
+      "tb_exact": true,
+      "ply": 25,
+      "resistance": {
+        "best": 99995,
+        "same": 1,
+        "worst_score": 59,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            6,
+            6
+          ],
+          "score": 99995,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            6,
+            5
+          ],
+          "score": 68,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            5
+          ],
+          "score": 59,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        5,
+        5
+      ],
+      "score": -99996,
+      "proven": "perte",
+      "mate_in": 4,
+      "depth": 4,
+      "nodes": 19,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 2,
+      "tb_exact": true,
+      "ply": 26,
+      "resistance": {
+        "best": -99996,
+        "same": 2,
+        "worst_score": -99996,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            5,
+            5
+          ],
+          "score": -99996,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            6,
+            5
+          ],
+          "score": -99996,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        6,
+        4
+      ],
+      "score": 99997,
+      "proven": "gain",
+      "mate_in": 3,
+      "depth": 2,
+      "nodes": 8,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 3,
+      "tb_exact": true,
+      "ply": 27,
+      "resistance": {
+        "best": 99997,
+        "same": 1,
+        "worst_score": 58,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            6,
+            4
+          ],
+          "score": 99997,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": 63,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            6,
+            5
+          ],
+          "score": 58,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "player": 2,
+      "move": [
+        6,
+        5
+      ],
+      "score": -99998,
+      "proven": "perte",
+      "mate_in": 2,
+      "depth": 2,
+      "nodes": 19,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 2,
+      "tb_exact": true,
+      "ply": 28,
+      "resistance": {
+        "best": -99998,
+        "same": 2,
+        "worst_score": -99998,
+        "all_lose": true
+      },
+      "candidats": [
+        {
+          "coup": [
+            6,
+            5
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        },
+        {
+          "coup": [
+            6,
+            3
+          ],
+          "score": -99998,
+          "verdict": "perte"
+        }
+      ],
+      "board": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "player": 1,
+      "move": [
+        0,
+        1
+      ],
+      "score": 99999,
+      "proven": "gain",
+      "mate_in": 1,
+      "depth": 1,
+      "nodes": 14,
+      "elapsed_ms": 0,
+      "truncated": false,
+      "legal": 17,
+      "tb_exact": true,
+      "ply": 29,
+      "resistance": {
+        "best": 99999,
+        "same": 3,
+        "worst_score": -4,
+        "all_lose": false
+      },
+      "candidats": [
+        {
+          "coup": [
+            0,
+            1
+          ],
+          "score": 99999,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            4,
+            4
+          ],
+          "score": 99999,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            5,
+            2
+          ],
+          "score": 99999,
+          "verdict": "gain"
+        },
+        {
+          "coup": [
+            3,
+            5
+          ],
+          "score": 142,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            2
+          ],
+          "score": 130,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            6,
+            3
+          ],
+          "score": 121,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            4,
+            1
+          ],
+          "score": 119,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            5,
+            1
+          ],
+          "score": 114,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            6,
+            2
+          ],
+          "score": 114,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            0
+          ],
+          "score": 111,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            6
+          ],
+          "score": 110,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            0
+          ],
+          "score": 108,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            1,
+            4
+          ],
+          "score": 77,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            3,
+            0
+          ],
+          "score": 59,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            2,
+            0
+          ],
+          "score": 56,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            3
+          ],
+          "score": -1,
+          "verdict": "estimation"
+        },
+        {
+          "coup": [
+            0,
+            4
+          ],
+          "score": -4,
+          "verdict": "estimation"
+        }
+      ],
+      "board": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          2,
+          0,
+          2,
+          2
+        ],
+        [
+          0,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          1,
+          0,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          1
+        ]
+      ]
+    }
+  ],
+  "depth": 40,
+  "time_ms": 120000,
+  "genere_le": "2026-09-24T23:31:32"
+}

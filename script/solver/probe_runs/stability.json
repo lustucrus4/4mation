@@ -1,0 +1,253 @@
+{
+  "genere_le": "2026-09-25T08:34:44",
+  "passes": [
+    {
+      "label": "courte",
+      "source": "script\\solver\\preuve_profonde.json",
+      "ouvertures_mesurees": 10,
+      "budget_s": null
+    },
+    {
+      "label": "longue",
+      "source": "script\\solver\\probe_runs\\passe_longue.log",
+      "ouvertures_mesurees": 6,
+      "budget_s": null
+    }
+  ],
+  "ouvertures": [
+    {
+      "ouverture": [
+        0,
+        0
+      ],
+      "scores": {
+        "courte": -5,
+        "longue": 42
+      },
+      "min": -5,
+      "max": 42,
+      "ecart": 47,
+      "verdict_inverse": true,
+      "instable": true,
+      "profondeurs": {
+        "courte": 26,
+        "longue": 29
+      }
+    },
+    {
+      "ouverture": [
+        0,
+        1
+      ],
+      "scores": {
+        "courte": -13,
+        "longue": 30
+      },
+      "min": -13,
+      "max": 30,
+      "ecart": 43,
+      "verdict_inverse": true,
+      "instable": true,
+      "profondeurs": {
+        "courte": 24,
+        "longue": 27
+      }
+    },
+    {
+      "ouverture": [
+        0,
+        2
+      ],
+      "scores": {
+        "courte": 22,
+        "longue": 30
+      },
+      "min": 22,
+      "max": 30,
+      "ecart": 8,
+      "verdict_inverse": false,
+      "instable": false,
+      "profondeurs": {
+        "courte": 25,
+        "longue": 27
+      }
+    },
+    {
+      "ouverture": [
+        0,
+        3
+      ],
+      "scores": {
+        "courte": -39,
+        "longue": 16
+      },
+      "min": -39,
+      "max": 16,
+      "ecart": 55,
+      "verdict_inverse": true,
+      "instable": true,
+      "profondeurs": {
+        "courte": 26,
+        "longue": 29
+      }
+    },
+    {
+      "ouverture": [
+        1,
+        1
+      ],
+      "scores": {
+        "courte": 5,
+        "longue": -2
+      },
+      "min": -2,
+      "max": 5,
+      "ecart": 7,
+      "verdict_inverse": true,
+      "instable": false,
+      "profondeurs": {
+        "courte": 25,
+        "longue": 27
+      }
+    },
+    {
+      "ouverture": [
+        1,
+        2
+      ],
+      "scores": {
+        "courte": -42,
+        "longue": 5
+      },
+      "min": -42,
+      "max": 5,
+      "ecart": 47,
+      "verdict_inverse": true,
+      "instable": true,
+      "profondeurs": {
+        "courte": 24,
+        "longue": 25
+      }
+    }
+  ],
+  "classements": {
+    "courte": [
+      [
+        [
+          3,
+          3
+        ],
+        -99972
+      ],
+      [
+        [
+          2,
+          2
+        ],
+        -63
+      ],
+      [
+        [
+          2,
+          3
+        ],
+        -53
+      ],
+      [
+        [
+          1,
+          2
+        ],
+        -42
+      ],
+      [
+        [
+          0,
+          3
+        ],
+        -39
+      ],
+      [
+        [
+          0,
+          1
+        ],
+        -13
+      ],
+      [
+        [
+          1,
+          3
+        ],
+        -12
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        -5
+      ],
+      [
+        [
+          1,
+          1
+        ],
+        5
+      ],
+      [
+        [
+          0,
+          2
+        ],
+        22
+      ]
+    ],
+    "longue": [
+      [
+        [
+          1,
+          1
+        ],
+        -2
+      ],
+      [
+        [
+          1,
+          2
+        ],
+        5
+      ],
+      [
+        [
+          0,
+          3
+        ],
+        16
+      ],
+      [
+        [
+          0,
+          1
+        ],
+        30
+      ],
+      [
+        [
+          0,
+          2
+        ],
+        30
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        42
+      ]
+    ]
+  },
+  "ordre_identique": false,
+  "verdict": "les scores ne sont pas reproductibles : 4 ouverture(s) sur 6 varient de plus de 20 points entre deux passes (5 changent même de signe) et l'ordre du classement change. Aucun classement ne doit être publié ; seule la valeur prouvée du centre est enseignable."
+}

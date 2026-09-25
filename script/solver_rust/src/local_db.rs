@@ -26,6 +26,19 @@ pub struct OpeningBookRow {
     pub last_move: Option<Move>,
 }
 
+/// Ligne à insérer dans `positions` par le balayage de couche.
+pub struct SolvedRow {
+    pub hash: String,
+    pub board_blob: Vec<u8>,
+    pub player: i8,
+    pub last_move: Option<Move>,
+    pub result: char,
+    pub win_rate: f64,
+    pub best_move: Option<Move>,
+    pub depth_remaining: u32,
+    pub empty_cells: i32,
+}
+
 const SCHEMA_SQL: &str = r#"
 CREATE TABLE IF NOT EXISTS positions (
     hash TEXT PRIMARY KEY,
@@ -175,15 +188,20 @@ impl LocalDb {
 
     fn conn(&self) -> Result<Connection> {
         let conn = Connection::open(&self.path)?;
+        // `journal_mode=WAL` est persistant dans le fichier de base : le rejouer à
+        // chaque ouverture de connexion exigeait un verrou d'écriture et faisait
+        // échouer les opérations concurrentes du solveur (`database is locked`).
+        // Il n'est donc posé qu'une seule fois, dans `init_schema`.
         conn.execute_batch(
-            "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=10000;
-             PRAGMA cache_size=-256000; PRAGMA temp_store=MEMORY; PRAGMA mmap_size=268435456;",
+            "PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL;
+             PRAGMA cache_size=-65536; PRAGMA temp_store=MEMORY; PRAGMA mmap_size=268435456;",
         )?;
         Ok(conn)
     }
 
     pub fn init_schema(&self) -> Result<()> {
         let conn = self.conn()?;
+        conn.execute_batch("PRAGMA journal_mode=WAL")?;
         conn.execute_batch(SCHEMA_SQL)?;
         for sql in MIGRATIONS {
             let _ = conn.execute_batch(sql);
@@ -771,6 +789,110 @@ impl LocalDb {
             f(&hash, &result, depth);
             n += 1;
         }
+        Ok(n)
+    }
+
+    /// Nombre de positions stockées pour une couche exacte (nombre de cases vides).
+    pub fn count_at_layer(&self, empty: usize) -> Result<i64> {
+        let conn = self.conn()?;
+        let n: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM positions WHERE empty_cells = ?1",
+            [empty as i64],
+            |r| r.get(0),
+        )?;
+        Ok(n)
+    }
+
+    /// Page de positions d'une couche, en pagination par clé (`hash > after`).
+    /// Le parcours est stable et sans `OFFSET` : indispensable pour balayer
+    /// plusieurs millions de lignes sans coût quadratique.
+    #[allow(clippy::type_complexity)]
+    pub fn load_layer_page(
+        &self,
+        empty: usize,
+        after_hash: &str,
+        limit: usize,
+    ) -> Result<Vec<(String, Board, i8, Option<Move>, String)>> {
+        let conn = self.conn()?;
+        let mut stmt = conn.prepare(
+            "SELECT hash, board_blob, board_json, current_player,
+                    pos_last_move_row, pos_last_move_col, result
+             FROM positions
+             WHERE empty_cells = ?1 AND hash > ?2
+               AND (board_blob IS NOT NULL OR board_json IS NOT NULL)
+               AND current_player IS NOT NULL
+             ORDER BY hash LIMIT ?3",
+        )?;
+        let rows = stmt.query_map(params![empty as i64, after_hash, limit as i64], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<Vec<u8>>>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, i32>(3)?,
+                row.get::<_, Option<i32>>(4)?,
+                row.get::<_, Option<i32>>(5)?,
+                row.get::<_, String>(6)?,
+            ))
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            let (hash, blob, json, player, lmr, lmc, result) = r?;
+            let board = decode_board(blob.as_deref(), json.as_deref());
+            let last_move = lmr
+                .filter(|&x| x >= 0)
+                .map(|x| (x as usize, lmc.unwrap_or(-1).max(0) as usize));
+            out.push((hash, board, player as i8, last_move, result));
+        }
+        Ok(out)
+    }
+
+    /// Insère un lot de positions résolues par balayage de couche.
+    pub fn bulk_insert_positions(&self, rows: &[SolvedRow]) -> Result<usize> {
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        let conn = self.conn()?;
+        conn.execute("BEGIN IMMEDIATE", [])?;
+        let mut n = 0usize;
+        {
+            let mut stmt = conn.prepare(
+                "INSERT OR REPLACE INTO positions
+                 (hash, result, win_rate, best_move_row, best_move_col, depth_remaining,
+                  board_blob, empty_cells, current_player, pos_last_move_row,
+                  pos_last_move_col, solved_at)
+                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,CURRENT_TIMESTAMP)",
+            )?;
+            for row in rows {
+                let (br, bc) = row
+                    .best_move
+                    .map(|(r, c)| (r as i64, c as i64))
+                    .unwrap_or((-1, -1));
+                let (lmr, lmc) = row
+                    .last_move
+                    .map(|(r, c)| (r as i64, c as i64))
+                    .unwrap_or((-1, -1));
+                if stmt
+                    .execute(params![
+                        row.hash,
+                        row.result.to_string(),
+                        row.win_rate,
+                        br,
+                        bc,
+                        row.depth_remaining as i64,
+                        row.board_blob,
+                        row.empty_cells as i64,
+                        row.player as i64,
+                        lmr,
+                        lmc,
+                    ])
+                    .is_err()
+                {
+                    continue;
+                }
+                n += 1;
+            }
+        }
+        conn.execute("COMMIT", [])?;
         Ok(n)
     }
 

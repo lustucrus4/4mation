@@ -295,10 +295,37 @@ Mesure du 24/09/2026 (10 orbites, `level_6` contre lui-même, 1 partie par orbit
 | `(0,1)` | 50 % | nulle |
 | `(0,3)` → `(3,3)` | 0 % | le premier joueur gagne, d'autant plus vite que le coup est central |
 
-Le classement des parties réelles suit celui du livre (plus le premier coup est central,
-plus il rapporte), et il est plus tranché : les ouvertures centrales ne laissent aucun point
+Le résultat est plus tranché que le livre : les ouvertures centrales ne laissent aucun point
 au second joueur, même avec une défense quatre fois plus lente que l'attaque. Les pertes du
 niveau 6 en second joueur ne sont donc pas un défaut du bot.
+
+Réserve de méthode : **une seule partie par ouverture**. Ces chiffres illustrent, ils ne
+démontrent pas, et ils ne constituent pas un classement. Le classement *estimé* du livre
+n'est d'ailleurs pas reproductible d'une passe de sonde à l'autre : voir la section
+« Stabilité des scores » ci-dessous.
+
+### Stabilité des scores (`compare_probe_passes.py`)
+
+Les scores de la sonde et du livre ne sont **pas des preuves** : ils viennent d'une
+recherche arrêtée par un budget de temps. Deux passes sur la même position peuvent donc
+diverger. Ce script compare plusieurs passes et conclut sur leur reproductibilité — il ne
+lance aucun calcul, il relit des fichiers déjà présents.
+
+```bash
+python script/solver/compare_probe_passes.py \
+  --passe "courte=script/solver/preuve_profonde.json" \
+  --passe "longue=script/solver/probe_runs/passe_longue.log"
+#    -> script/solver/probe_runs/stability.json
+```
+
+**Résultat du 25/09/2026** : sur les 6 ouvertures mesurées deux fois (90 s puis 600 s de
+budget), 4 varient de plus de 20 points et 5 changent de signe — `(1,2)` vaut −42 puis +5.
+L'ordre du classement est entièrement rebattu.
+
+**Conséquence appliquée** : aucun classement d'ouvertures n'est publié, ni dans les cours du
+site, ni dans `THEORIE_OUVERTURE.md`. Seul le gain forcé du centre `(3,3)` est présenté comme
+une valeur ferme. `build_lessons.py` et `extract_opening_theory.py` lisent `stability.json`
+pour l'expliquer dans le texte des leçons.
 
 ### Motifs des finales exactes (`mine_final_patterns.py`)
 

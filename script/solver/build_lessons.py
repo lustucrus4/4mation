@@ -71,42 +71,106 @@ def board_block(board: List[List[int]], last: Optional[Any] = None) -> str:
     return "\n".join(lines)
 
 
-def opening_section(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]]) -> str:
-    """Texte de la leçon « ouvertures », chiffré par la sonde profonde."""
-    if not probe or not probe.get("ouvertures"):
+CENTRE = (3, 3)
+
+
+def _cell_of(row: Dict[str, Any]) -> Tuple[int, int]:
+    ouv = row.get("ouverture") or (9, 9)
+    return int(ouv[0]), int(ouv[1])
+
+
+def _centre_reply_from_theory(theory: Optional[Dict[str, Any]]) -> Optional[Any]:
+    """Défense du centre, lue dans la ligne principale du livre (repli seulement)."""
+    if not theory:
+        return None
+    ligne = theory.get("ligne_principale") or theory.get("main_line") or []
+    if len(ligne) >= 2 and isinstance(ligne[1], dict):
+        return ligne[1].get("coup")
+    return None
+
+
+def opening_section(
+    probe: Optional[Dict[str, Any]],
+    theory: Optional[Dict[str, Any]] = None,
+    stability: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Texte de la leçon « ouvertures ».
+
+    Aucun classement chiffré des 10 premiers coups n'est publié ici. Les mêmes
+    ouvertures, chiffrées deux fois par la sonde avec des budgets différents, donnent
+    des scores qui changent de signe (`script/solver/compare_probe_passes.py`) : un
+    tableau de valeurs serait un faux enseignement. Seul le centre, démontré gagnant,
+    est présenté comme une valeur ferme.
+    """
+    rows = [r for r in (probe or {}).get("ouvertures", []) if not r.get("erreur")]
+    if not rows:
         return (
             "La sonde profonde n'a pas encore tourné : lancez "
             "`python scripts/probe_opening_proof.py` pour chiffrer cette leçon."
         )
 
-    rows = [r for r in probe["ouvertures"] if not r.get("erreur")]
-    # `win_rate` de la sonde est celle du camp au trait (le second joueur, après le
-    # premier coup). La valeur du premier coup pour X est donc son complément.
-    rows.sort(key=lambda r: float(r.get("win_rate") or 0.0))
+    centre = next((r for r in rows if _cell_of(r) == CENTRE), None)
+    autres = sorted((r for r in rows if _cell_of(r) != CENTRE), key=_cell_of)
 
     lines = [
         "Sur les 49 cases du plateau vide, il n'existe que **10 premiers coups "
         "réellement différents** : les 39 autres sont des rotations ou des miroirs. "
-        "Le tableau ci-dessous les classe par valeur, mesurée par le moteur à une "
-        f"profondeur de {probe.get('depth')} (soit plusieurs centaines de millions de "
-        "positions par coup).",
+        "Un seul est **démontré gagnant** ; les neuf autres ne sont pas départageables "
+        "par nos mesures actuelles.",
         "",
-        "| Premier coup | Second joueur | Meilleure réponse | Profondeur |",
+        "| Premier coup | Nature | Profondeur atteinte | Meilleure réponse connue |",
         "| --- | --- | --- | --- |",
     ]
-    for row in rows:
-        ouv = move_txt(row["ouverture"])
-        second = float(row.get("win_rate") or 0.0)
-        reply = move_txt(row.get("reponse"))
+    if centre is not None:
+        reply = centre.get("reponse") or _centre_reply_from_theory(theory)
         lines.append(
-            f"| {ouv} | {second * 100:.0f} % | {reply} | {row.get('profondeur')} |"
+            f"| {move_txt(centre.get('ouverture'))} | **gagnant, démontré** | "
+            f"{centre.get('profondeur', '—')} | {move_txt(reply)} |"
+        )
+    for row in autres:
+        lines.append(
+            f"| {move_txt(row.get('ouverture'))} | estimé, non départagé | "
+            f"{row.get('profondeur', '—')} | {move_txt(row.get('reponse'))} |"
+        )
+
+    lines += [
+        "",
+        "**« Nature » compte plus que n'importe quel chiffre.** Le centre est démontré : "
+        "il gagne quoi que fasse l'adversaire. Les neuf autres coups sont seulement "
+        "*estimés* par une recherche interrompue par son budget de temps.",
+        "",
+        "**Pourquoi il n'y a pas de classement ici.** Les mêmes positions ont été "
+        "chiffrées deux fois avec des budgets différents, et les scores changent de sens.",
+    ]
+    instables = [o for o in (stability or {}).get("ouvertures", []) if o.get("instable")]
+    if instables:
+        exemples = " ; ".join(
+            f"{move_txt(o['ouverture'])} : {min(o['scores'].values())} puis "
+            f"{max(o['scores'].values())}"
+            for o in instables[:3]
+        )
+        total = len((stability or {}).get("ouvertures", []))
+        lines.append(
+            f"Sur les {total} ouvertures mesurées deux fois, {len(instables)} varient de "
+            f"plus de 20 points ({exemples}). L'ordre du classement est rebattu. Publier "
+            "un tableau de scores donnerait donc l'air d'un fait à ce qui n'est que le "
+            "bruit d'une recherche arrêtée trop tôt."
+        )
+    else:
+        lines.append(
+            "Aucune mesure doublée n'est disponible pour l'instant : lancez "
+            "`python script/solver/compare_probe_passes.py` pour vérifier la stabilité "
+            "avant toute publication de chiffres."
         )
     lines += [
         "",
-        "**« Second joueur » = ce que vaut sa position après votre premier coup.** "
-        "Plus il est bas, meilleur est le coup pour vous. Le centre `(3,3)` laisse au "
-        "second joueur sa pire position ; les coins `(0,0)` et `(0,1)` la lui laissent "
-        "la meilleure — ce sont les coups les plus « gentils ».",
+        "Ce que cela change en pratique :",
+        "",
+        "- **Vous commencez** : jouez `(3,3)`. C'est le seul coup dont la victoire est "
+        "démontrée (voir la leçon « Preuve »).",
+        "- **Vous voulez varier** : les neuf autres coups sont jouables, aucun n'est "
+        "démontré perdant, et nos mesures ne permettent pas de dire lequel est le "
+        "meilleur. Choisissez-les pour la variété, pas pour un avantage chiffré.",
     ]
     return "\n".join(lines)
 
@@ -411,12 +475,15 @@ def finales_section(
 
 def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
           schemas: Dict[str, Optional[Dict[str, Any]]], patterns: Optional[Dict[str, Any]],
-          proof: Optional[Dict[str, Any]], db_path: Path) -> Dict[str, Any]:
+          proof: Optional[Dict[str, Any]], db_path: Path,
+          stability: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     source_app = []
     if probe:
         source_app.append(f"sonde profonde du {probe.get('genere_le', '?')}")
     if theory:
         source_app.append(f"théorie du livre du {theory.get('genere_le', '?')}")
+    if stability:
+        source_app.append(f"stabilité des passes du {stability.get('genere_le', '?')}")
     if proof:
         source_app.append(f"preuve du centre du {proof.get('genere_le', '?')}")
     for key, payload in schemas.items():
@@ -442,8 +509,8 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                     ),
                 },
                 {
-                    "heading": "Le classement des 10 premiers coups",
-                    "body": opening_section(probe, theory),
+                    "heading": "Les 10 premiers coups, et pourquoi on ne les classe pas",
+                    "body": opening_section(probe, theory, stability),
                 },
                 {
                     "heading": "Pourquoi le centre domine",
@@ -459,8 +526,8 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                 {
                     "heading": "Ce que ça change pour vous",
                     "body": (
-                        "- Vous commencez : jouez (3,3), et c'est **démontré gagnant** — le reste "
-                        "du classement n'est qu'indicatif.\n"
+                        "- Vous commencez : jouez (3,3), et c'est **démontré gagnant** — c'est "
+                        "la seule valeur ferme de cette leçon.\n"
                         "- Vous êtes second : après (3,3) la position est perdue de force ; "
                         "jouez la défense la plus tenace (voir la leçon « Preuve ») et attendez "
                         "l'erreur, c'est votre seule ressource."
@@ -472,9 +539,10 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                         "Chaque valeur vient d'une recherche du moteur (alpha-bêta, table de "
                         "transposition, finales exactes branchées en dessous de 12 cases vides). "
                         "Sauf le premier coup central, qui est **prouvé gagnant**, ces nombres ne "
-                        "sont pas des preuves : le jeu complet n'est pas résolu. Ce sont des "
-                        "évaluations très profondes, cohérentes entre elles, et vérifiées en "
-                        "parties réelles contre des défenses variées."
+                        "sont pas des preuves : le jeu complet n'est pas résolu. Et ils ne sont "
+                        "pas non plus reproductibles — deux passes de la même sonde, à des "
+                        "budgets différents, donnent des scores qui changent de signe. C'est "
+                        "pourquoi cette leçon ne publie pas de classement des neuf autres coups."
                     ),
                 },
             ],
@@ -495,16 +563,17 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                 proof_first,
                 {
                     "heading": "Ce que la preuve change",
-                    "body": (
-                        "Une estimation dit « ce coup est bon » ; une preuve dit « ce coup "
-                        "gagne, et voici comment, quoi que fasse l'adversaire ». La différence "
-                        "est capitale pour progresser : face à un adversaire exact, la première "
-                        "ouverture non centrale vous laisse l'initiative, l'ouverture centrale "
-                        "vous donne la partie.",
-                        "",
-                        "Retenez la *structure* : deux pions alignés au centre, puis un coup qui "
-                        "crée **deux** menaces à la fois. L'adversaire ne peut en bloquer qu'une ; "
-                        "la seconde conclut. C'est le même ressort dans toutes les finales gagnantes."
+                    "body": "\n\n".join(
+                        [
+                            "Une estimation dit « ce coup est bon » ; une preuve dit « ce coup "
+                            "gagne, et voici comment, quoi que fasse l'adversaire ». La différence "
+                            "est capitale pour progresser : face à un adversaire exact, la première "
+                            "ouverture non centrale vous laisse l'initiative, l'ouverture centrale "
+                            "vous donne la partie.",
+                            "Retenez la *structure* : deux pions alignés au centre, puis un coup qui "
+                            "crée **deux** menaces à la fois. L'adversaire ne peut en bloquer qu'une ; "
+                            "la seconde conclut. C'est le même ressort dans toutes les finales gagnantes.",
+                        ]
                     ),
                 },
             ],
@@ -577,6 +646,11 @@ def main() -> int:
     parser.add_argument("--theory", default=str(SOLVER / "opening_theory.json"))
     parser.add_argument("--patterns", default=str(SOLVER / "final_patterns.json"))
     parser.add_argument("--proof", default=str(SOLVER / "forced_win_33.json"))
+    parser.add_argument(
+        "--stability",
+        default=str(SOLVER / "probe_runs" / "stability.json"),
+        help="comparaison de passes de la sonde (compare_probe_passes.py)",
+    )
     parser.add_argument("--db", default=str(SOLVER / "data" / "tablebase.db"))
     parser.add_argument(
         "--schema",
@@ -603,7 +677,22 @@ def main() -> int:
         load_json(Path(args.patterns)),
         load_json(Path(args.proof)),
         Path(args.db),
+        load_json(Path(args.stability)),
     )
+
+    # Un corps de section doit être une chaîne : un texte accidentellement écrit sous
+    # forme de tuple/liste (virgule en trop) se retrouve sérialisé en tableau JSON et
+    # s'affiche tel quel sur le site. On refuse de générer dans ce cas.
+    defauts = [
+        f"{lesson['id']}/{section.get('heading')}"
+        for lesson in payload["lessons"]
+        for section in lesson.get("sections", [])
+        if not isinstance(section.get("body"), str)
+    ]
+    if defauts:
+        raise SystemExit(
+            "Corps de section non textuel (attendu : str) : " + ", ".join(defauts)
+        )
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

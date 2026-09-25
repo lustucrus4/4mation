@@ -93,6 +93,12 @@ Chaque résultat porte son degré de confiance, que l'interface doit montrer :
 | `coverage_percent` | part des coups légaux effectivement notés |
 | `truncated` | `true` = recherche arrêtée au temps imparti (les scores viennent de la dernière profondeur terminée) |
 
+**Une estimation ne classe pas.** Les scores estimés viennent d'une recherche arrêtée par un
+budget de temps : ils ne sont pas reproductibles d'une passe à l'autre (mesure reproductible
+via `script/solver/compare_probe_passes.py`). Ils servent à explorer une position, jamais à
+établir un classement. C'est pourquoi la leçon « Ouvertures » du site ne publie ni ordre de
+valeur ni taux de victoire, mais la profondeur atteinte et la meilleure réponse connue.
+
 ### Jouer : la preuve passe avant la recherche
 
 Même ordre de confiance pour le choix des coups des bots (`DifficultyBot.choose_move`) :

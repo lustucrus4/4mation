@@ -1,6 +1,6 @@
 # Théorie d'ouverture
 
-Extraite du livre d'ouverture évalué par `4mation-engine` (2026-09-24T23:01:20, demi-coups 0 à 6).
+Extraite du livre d'ouverture évalué par `4mation-engine` (2026-09-25T08:34:46, demi-coups 0 à 6).
 
 Deux natures de valeurs, jamais confondues : **prouvé** (`exact=1`, mat forcé ou verdict de la tablebase) et **estimé** (évaluation du moteur convertie en taux de victoire par une sigmoïde calibrée, échelle 281).
 
@@ -9,26 +9,37 @@ Deux natures de valeurs, jamais confondues : **prouvé** (`exact=1`, mat forcé 
 | Mesure | Valeur |
 |--------|--------|
 | Meilleur coup | (3, 3) |
-| Score espéré du 1ᵉʳ joueur (V=1, N=0,5) | 58.1 % |
-| Lecture | équilibré |
-| Nature | estimé |
+| Score espéré du 1ᵉʳ joueur (V=1, N=0,5) | 100.0 % |
+| Lecture | prouvé |
+| Nature | prouvé |
+
+Une position **prouvée gagnante** affiche 100 % par convention : ce n'est pas une estimation, c'est un verdict (gain forcé, quoi que joue l'adversaire).
 
 ## Les 10 ouvertures uniques
 
-Le plateau est symétrique (rotations et miroir) : ces dix coups couvrent les 49 cases de départ.
+Le plateau est symétrique (rotations et miroir) : ces dix coups couvrent les 49 cases de départ. Un seul est **démontré** ; les neuf autres sont **estimés** et doivent se lire avec la section « Fiabilité des chiffres ».
 
-| Case | Taille d'orbite | Score espéré (1ᵉʳ joueur) | Écart au meilleur | Meilleure réponse | Lecture | Nature |
-|------|-----------------|----------------------------|-------------------|-------------------|---------|--------|
-| (3, 3) | 1 | 58.1 % | 0.0 % | (2, 2) | équilibré | estimé |
-| (2, 3) | 4 | 55.0 % | 3.1 % | (3, 3) | équilibré | estimé |
-| (1, 3) | 4 | 54.5 % | 3.6 % | (2, 3) | équilibré | estimé |
-| (1, 2) | 8 | 52.8 % | 5.3 % | (2, 3) | équilibré | estimé |
-| (1, 1) | 4 | 52.5 % | 5.6 % | (1, 2) | équilibré | estimé |
-| (2, 2) | 4 | 52.3 % | 5.8 % | (3, 3) | équilibré | estimé |
-| (0, 0) | 4 | 51.9 % | 6.2 % | (1, 1) | équilibré | estimé |
-| (0, 2) | 8 | 51.8 % | 6.3 % | (1, 3) | équilibré | estimé |
-| (0, 3) | 4 | 51.5 % | 6.6 % | (1, 3) | équilibré | estimé |
-| (0, 1) | 8 | 47.5 % | 10.6 % | (1, 2) | équilibré | estimé |
+### Coups démontrés
+
+| Case | Taille d'orbite | Verdict | Meilleure réponse |
+|------|-----------------|---------|-------------------|
+| (3, 3) | 1 | prouvé | (3, 2) |
+
+### Coups estimés (aucun n'est départagé par nos mesures)
+
+| Case | Taille d'orbite | Score espéré (1ᵉʳ joueur) | Écart au meilleur estimé | Meilleure réponse |
+|------|-----------------|----------------------------|--------------------------|-------------------|
+| (2, 3) | 4 | 55.0 % | 0.0 % | (3, 3) |
+| (1, 3) | 4 | 54.5 % | 0.4 % | (2, 3) |
+| (1, 2) | 8 | 52.8 % | 2.1 % | (2, 3) |
+| (1, 1) | 4 | 52.5 % | 2.5 % | (1, 2) |
+| (2, 2) | 4 | 52.3 % | 2.6 % | (3, 3) |
+| (0, 0) | 4 | 51.9 % | 3.1 % | (1, 1) |
+| (0, 2) | 8 | 51.8 % | 3.2 % | (1, 3) |
+| (0, 3) | 4 | 51.5 % | 3.4 % | (1, 3) |
+| (0, 1) | 8 | 47.5 % | 7.4 % | (1, 2) |
+
+Les écarts de ce second tableau portent sur des estimations non reproductibles : ils ne doivent pas servir à classer les coups.
 
 ## Ligne principale
 
@@ -36,13 +47,13 @@ Meilleur jeu supposé des deux camps, demi-coup par demi-coup.
 
 | Demi-coup | Camp | Coup | Score espéré (1ᵉʳ joueur) | Lecture |
 |-----------|------|------|----------------------------|---------|
-| 0 | 1 | (3, 3) | 58.1 % | équilibré |
-| 1 | 2 | (2, 2) | 58.1 % | équilibré |
-| 2 | 1 | (3, 2) | 54.0 % | équilibré |
-| 3 | 2 | (4, 3) | 56.5 % | équilibré |
-| 4 | 1 | (3, 4) | 54.2 % | équilibré |
-| 5 | 2 | (3, 5) | 61.6 % | équilibré |
-| 6 | 1 | (2, 4) | 56.2 % | équilibré |
+| 0 | 1 | (3, 3) | 100.0 % | prouvé |
+| 1 | 2 | (3, 2) | 100.0 % | prouvé |
+| 2 | 1 | (2, 3) | 100.0 % | prouvé |
+| 3 | 2 | (1, 3) | 100.0 % | prouvé |
+| 4 | 1 | (2, 2) | 100.0 % | prouvé |
+| 5 | 2 | (1, 1) | 100.0 % | prouvé |
+| 6 | 1 | (1, 2) | 100.0 % | prouvé |
 
 ## Alternatives après le premier coup
 
@@ -65,9 +76,26 @@ Le livre est une évaluation ; voici ce que donnent de **vraies parties** entre 
 | (1, 3) | 1 | 0 % | 1 | 0 | — | 54.5 % |
 | (2, 2) | 1 | 0 % | 1 | 0 | — | 52.3 % |
 | (2, 3) | 1 | 0 % | 1 | 0 | — | 55.0 % |
-| (3, 3) | 1 | 0 % | 1 | 0 | — | 58.1 % |
+| (3, 3) | 1 | 0 % | 1 | 0 | — | 100.0 % |
 
 Un écart entre les deux colonnes n'est pas une contradiction : le livre note une **espérance** (une position perdue peut encore rapporter un demi-point si l'adversaire se trompe), la partie note un **résultat**. L'écart mesure donc la capacité de la défense à convertir son espérance en points — c'est exactement ce qu'un cours doit enseigner.
+
+## Fiabilité des chiffres
+
+Les valeurs de ce document ne sont pas des preuves : elles viennent d'une recherche arrêtée par un budget de temps. Les mêmes ouvertures ont été chiffrées plusieurs fois pour vérifier si elles tiennent.
+
+| Ouverture | courte | longue | Écart | Lecture |
+|-----------|---------|---------|---------|---------|
+| (0, 0) | -5 | 42 | 47 | **instable** |
+| (0, 1) | -13 | 30 | 43 | **instable** |
+| (0, 2) | 22 | 30 | 8 | stable |
+| (0, 3) | -39 | 16 | 55 | **instable** |
+| (1, 1) | 5 | -2 | 7 | signe instable (amplitude faible) |
+| (1, 2) | -42 | 5 | 47 | **instable** |
+
+**Conclusion :** les scores ne sont pas reproductibles : 4 ouverture(s) sur 6 varient de plus de 20 points entre deux passes (5 changent même de signe) et l'ordre du classement change. Aucun classement ne doit être publié ; seule la valeur prouvée du centre est enseignable.
+
+Reproduire cette mesure : `python script/solver/compare_probe_passes.py --passe libellé=fichier …`
 
 ## Seuils de lecture
 
@@ -91,31 +119,29 @@ Le seuil de ±40 points vient de la table de fiabilité du calibrage : c'est l'�
 
 | Demi-coup | Entrées | dont prouvées |
 |-----------|---------|---------------|
-| 0 | 1 | 0 |
-| 1 | 10 | 0 |
-| 2 | 45 | 0 |
-| 3 | 233 | 0 |
-| 4 | 1077 | 37 |
-| 5 | 5612 | 197 |
-| 6 | 26175 | 2753 |
+| 0 | 1 | 1 |
+| 1 | 10 | 1 |
+| 2 | 45 | 1 |
+| 3 | 233 | 1 |
+| 4 | 1077 | 38 |
+| 5 | 5612 | 198 |
+| 6 | 26175 | 2754 |
 
 ## Avertissements
 
-- ligne principale : 5 demi-coup(s) lu(s) après transport par symétrie
 - alt [2, 3] : ligne principale : 4 demi-coup(s) lu(s) après transport par symétrie
 
 ## Conseils prêts pour un cours
 
-- **Commencer au centre** : (3, 3) donne le meilleur score espéré du premier joueur (58.1 %).
-- **Le premier coup ne décide pas la partie** : les dix ouvertures uniques tiennent dans 10.6 points de score espéré, et aucune n'est classée perdante par le moteur.
-- **Le coup le plus faible** est (0, 1) (47.5 %), soit 10.6 % de moins que le meilleur : de quoi l'écarter, pas de quoi perdre sur-le-champ.
-- **Réponses au premier coup** : (3, 3) → (2, 2) ; (2, 3) → (3, 3) ; (1, 3) → (2, 3) ; (1, 2) → (2, 3) ; (1, 1) → (1, 2).
-- **Aucune ouverture n'est prouvée à ce jour** : tout ce tableau est une estimation du moteur, à présenter comme telle.
-- **Notion à enseigner** : la différence entre une valeur *prouvée* (mat forcé ou verdict de la tablebase) et une *estimation* — le premier coup de la ligne principale illustre les deux cas.
+- **Commencer au centre** : (3, 3) est **démontré gagnant**. C'est la seule valeur de ce document qu'un cours peut affirmer sans réserve.
+- **Ne pas publier de classement** : 4 ouverture(s) changent de plus de 20 points de score entre deux passes de la sonde, et l'ordre du classement se réorganise. Ces scores servent à explorer, pas à classer.
+- **Le premier coup ne décide pas la partie** : aucune des neuf ouvertures non centrales n'est démontrée perdante — un cours peut les présenter comme jouables.
+- **Réponses au premier coup** (indicatif, non prouvé hors du centre) : (3, 3) → (3, 2) ; (2, 3) → (3, 3) ; (1, 3) → (2, 3) ; (1, 2) → (2, 3) ; (1, 1) → (1, 2).
+- **Notion à enseigner** : la différence entre une valeur *prouvée* (mat forcé ou verdict de la tablebase) et une *estimation* — le centre et les neuf autres ouvertures illustrent les deux cas dans la même table.
 
 ## Limites
 
 - La valeur chiffrée est un **score espéré** (victoire = 1, nulle = 0,5, défaite = 0) : c'est la cible sur laquelle la sigmoïde a été calibrée. Ce n'est pas une probabilité de victoire ; dans un jeu où la nulle est fréquente, les deux chiffres diffèrent nettement.
-- Au-delà des positions prouvées, les scores sont des estimations du moteur, pas des résultats exacts : ils servent à classer les coups, pas à trancher une partie.
+- Au-delà des positions prouvées, les scores sont des estimations du moteur, pas des résultats exacts. Ils servent à **explorer** une position, pas à classer les coups (la section « Fiabilité des chiffres » montre qu'ils changent d'une passe à l'autre) ni à trancher une partie.
 - La tablebase exacte couvre les finales (≤ 12 cases vides) ; l'ouverture reste hors de sa portée, c'est le livre qui l'évalue.
 - Les coups sont donnés dans l'orientation du plateau de départ du livre ; pour lire une ligne, le script transporte chaque coup par la symétrie qui fait correspondre la position (voir `reorient`).

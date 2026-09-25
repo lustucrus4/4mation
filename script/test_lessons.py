@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "script"))
 
-from api.routes.learn import LESSONS  # noqa: E402
+from api.routes.learn import LESSONS, all_lessons  # noqa: E402
 
 MIN_BODY = 80
 
@@ -56,6 +56,71 @@ def test_contenu_non_vide():
     print(f"[OK] Contenu non vide — {total} caractères au total")
 
 
+def test_corps_servis_textuels():
+    """Ce que le site sert vraiment (`all_lessons()`) doit être textuel.
+
+    Les leçons regénérées depuis le solveur remplacent les leçons écrites à la main.
+    Un corps de section accidentellement écrit sous forme de tuple (virgule en trop
+    dans un littéral) arrive en tableau JSON côté API et s'affiche tel quel sur le
+    site. Les tests ne regardaient que les leçons écrites à la main : le bug passait.
+    """
+    servies = all_lessons()
+    assert servies, "aucune leçon servie"
+    for lesson in servies:
+        for section in lesson["sections"]:
+            body = section.get("body")
+            assert isinstance(body, str), (
+                f"{lesson['id']} / {section.get('heading')} : corps non textuel "
+                f"({type(body).__name__}) — le site afficherait du JSON brut"
+            )
+    print(f"[OK] {len(servies)} leçons servies, tous les corps textuels")
+
+
+def _toutes_les_versions():
+    """Toutes les leçons susceptibles d'être affichées.
+
+    Le site sert les leçons regénérées *à la place* des leçons écrites à la main ; mais
+    si le fichier généré manque, la version écrite à la main reprend la main. Les deux
+    chemins doivent donc rester justes.
+    """
+    servies = all_lessons()
+    ids_servis = {lesson["id"] for lesson in servies}
+    return servies + [lesson for lesson in LESSONS if lesson["id"] not in ids_servis]
+
+
+def test_pas_de_classement_fragile():
+    """Aucune version d'une leçon ne doit publier de classement chiffré des ouvertures.
+
+    Mesure du 2026-09-25 : deux passes de la sonde donnent des scores qui changent de
+    signe sur la même ouverture (`compare_probe_passes.py`). Un tableau de taux de
+    victoire serait donc un faux enseignement. Le centre doit en revanche y apparaître
+    comme démontré.
+    """
+    for lesson in _toutes_les_versions():
+        for section in lesson["sections"]:
+            body = section.get("body", "")
+            assert "Second joueur" not in body, (
+                f"{lesson['id']} / {section.get('heading')} : classement par taux de victoire, "
+                "non reproductible d'une passe à l'autre"
+            )
+            # Formulations absolues devenues fausses depuis la preuve du centre : elles
+            # affirmaient qu'aucun gain forcé n'existe près de l'ouverture. Un texte qui
+            # nuance (en dehors du centre) s'écrit autrement, donc ces marqueurs restent
+            # des signaux fiables.
+            for marqueur in ("aucune victoire forcée", "le gain, s'il existe, est long"):
+                assert marqueur not in body, (
+                    f"{lesson['id']} / {section.get('heading')} : affirmation périmée "
+                    f"({marqueur!r}) — le centre est prouvé gagnant (voir forced_win_33.json)"
+                )
+
+    servies = {lesson["id"]: lesson for lesson in all_lessons()}
+    ouvertures = servies.get("ouvertures")
+    assert ouvertures, "leçon « ouvertures » absente des leçons servies"
+    texte = "\n".join(section.get("body", "") for section in ouvertures["sections"])
+    assert "démontré" in texte, "la leçon « ouvertures » ne signale plus le centre démontré"
+    print("[OK] Aucune version ne publie de classement fragile, centre signalé démontré")
+
+
 def test_pas_de_reference_au_moteur_retire():
     """Le site ne calcule plus au MCTS ni au Minimax : les leçons ne doivent plus
     l'annoncer, sous peine de décrire un moteur qui n'existe plus."""
@@ -76,5 +141,7 @@ if __name__ == "__main__":
     test_structure()
     test_ids_uniques()
     test_contenu_non_vide()
+    test_corps_servis_textuels()
+    test_pas_de_classement_fragile()
     test_pas_de_reference_au_moteur_retire()
     print("[OK] Tous les tests de leçons passent")

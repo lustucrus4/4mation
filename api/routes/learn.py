@@ -56,33 +56,32 @@ LESSONS = [
                 "importance.",
             },
             {
-                "heading": "Le classement des 10 premiers coups",
+                "heading": "Les 10 premiers coups, et pourquoi on ne les classe pas",
                 "body": "Sur les 49 cases, il n'y a que **10 premiers coups réellement différents** : les 39 "
-                "autres sont des rotations ou des symétries. Voici le classement du moteur, score du joueur 1 "
-                "(profondeur 14) : **(3,3) centre +29**, (2,3) +8, (1,3) +2, (2,2) 0, (1,2) −5, (1,1) −7, "
-                "(0,3) −9, (0,0) −12, (0,1) −16, (0,2) −17. Tout est dit : le centre domine, les bords coûtent.",
+                "autres sont des rotations ou des symétries. Un seul est **démontré gagnant** : le centre "
+                "(3,3), qui mate de force en 28 demi-coups. Les neuf autres ne sont que des estimations, et "
+                "nos mesures ne permettent pas de les départager : deux passes de la même analyse donnent des "
+                "scores qui changent de signe sur la même ouverture. Aucun classement n'est donc publié.",
             },
             {
                 "heading": "Ce que valent ces chiffres",
-                "body": "Le moteur estime le premier coup central à environ **68 % de victoire pour le premier "
-                "joueur**, et une ouverture sur le bord à moins de 40 %. Ce sont des **estimations** issues de "
-                "la recherche et d'une échelle calibrée sur les finales exactes — pas des preuves. Ce qui est "
-                "prouvé, en revanche, c'est qu'aucune victoire forcée de blanc n'existe dans les 19 premiers "
-                "demi-coups depuis le centre : le gain, s'il existe, est long.",
+                "body": "Le centre est une **preuve** : après (3,3), le second joueur perd quoi qu'il fasse. "
+                "Tout le reste est **estimé** par une recherche arrêtée par un budget de temps, et ces "
+                "estimations ne sont pas reproductibles. Retenez la hiérarchie de confiance : un verdict se "
+                "joue les yeux fermés, une estimation ne se joue que comme une indication.",
             },
             {
                 "heading": "Une case décalée n'est pas la même ouverture",
                 "body": "Attention à ne pas confondre **symétrie** et **translation**. (3,3) et (2,2) sont deux "
                 "ouvertures distinctes : le bord change toute la suite de la partie. Une ouverture décalée d'une "
-                "case vers le bord n'a ni les mêmes continuations ni la même évaluation — d'où les écarts de "
-                "score ci-dessus.",
+                "case vers le bord n'a ni les mêmes continuations ni la même valeur.",
             },
             {
                 "heading": "Comment utiliser l'explorateur",
                 "body": "L'**explorateur d'ouvertures** du site rejoue une séquence et affiche, pour chaque "
-                "continuation, le taux de victoire estimé par le moteur. Servez-vous-en pour comparer deux "
-                "coups qui vous semblent équivalents : l'écart de pourcentage est la réponse, et l'étiquette "
-                "vous dit s'il s'agit d'une estimation ou d'une valeur prouvée.",
+                "continuation, ce que vaut la position selon le livre, avec l'étiquette *prouvé* ou *estimé*. "
+                "Servez-vous-en pour comprendre une position, pas pour départager deux coups à quelques points "
+                "près : à cette échelle, l'écart n'est pas fiable.",
             },
         ],
     },
@@ -193,11 +192,11 @@ LESSONS = [
             },
             {
                 "heading": "Le retournement",
-                "body": "Cette règle explique aussi pourquoi les parties durent : aucune victoire forcée "
-                "n'apparaît dans les premières vingtaines de demi-coups, car chaque tentative de menaces "
-                "peut être neutralisée par un coup à distance. Elle donne le plan de jeu défensif de référence : "
-                "face à un alignement de trois, demandez-vous si la case de complétion est jouable **pour "
-                "l'adversaire au prochain tour** — si non, jouez ailleurs.",
+                "body": "Cette règle explique aussi pourquoi la plupart des parties durent : en dehors du gain "
+                "forcé du centre, le gain n'est pas démontré dans les premières vingtaines de demi-coups, car "
+                "chaque tentative de menaces peut être neutralisée par un coup à distance. Elle donne le plan "
+                "de jeu défensif de référence : face à un alignement de trois, demandez-vous si la case de "
+                "complétion est jouable **pour l'adversaire au prochain tour** — si non, jouez ailleurs.",
             },
             {
                 "heading": "Comment s'entraîner",

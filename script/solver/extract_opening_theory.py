@@ -53,6 +53,7 @@ DEFAULT_DB = ROOT / "script" / "solver" / "data" / "tablebase.db"
 DEFAULT_JSON = ROOT / "script" / "solver" / "opening_theory.json"
 DEFAULT_MD = ROOT / "script" / "solver" / "THEORIE_OUVERTURE.md"
 SCALE_FILE = ROOT / "script" / "solver" / "data" / "engine_scale.json"
+DEFAULT_STABILITY = ROOT / "script" / "solver" / "probe_runs" / "stability.json"
 
 # Seuils lus dans la table de fiabilité du calibrage : au-delà de ±40 points
 # d'évaluation, la prédiction s'écarte franchement de 50 % (0,54 / 0,46).
@@ -322,6 +323,12 @@ def main() -> int:
     ap.add_argument("--out-md", type=Path, default=DEFAULT_MD)
     ap.add_argument("--top-lines", type=int, default=3, help="Lignes alternatives à détailler")
     ap.add_argument(
+        "--stability",
+        type=Path,
+        default=DEFAULT_STABILITY,
+        help="comparaison de passes de la sonde (compare_probe_passes.py)",
+    )
+    ap.add_argument(
         "--sweep",
         type=Path,
         default=None,
@@ -489,6 +496,13 @@ def main() -> int:
                 "par_ouverture": rows,
             }
 
+    stability = None
+    if args.stability and args.stability.exists():
+        try:
+            stability = json.loads(args.stability.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            print(f"  (stabilité illisible, ignorée : {args.stability})")
+
     payload = {
         "genere_le": datetime.now().isoformat(timespec="seconds"),
         "base": str(args.db),
@@ -513,6 +527,7 @@ def main() -> int:
         "ligne_principale": report.main_line,
         "lignes_alternatives": alternatives,
         "verification_parties": verification,
+        "stabilite": stability,
         "avertissements": report.warnings,
     }
 
@@ -537,6 +552,51 @@ def _cell(move) -> str:
     return "—" if not move else f"({move[0]}, {move[1]})"
 
 
+def render_stability(payload: dict) -> List[str]:
+    """Section qui dit si les chiffres sont reproductibles avant de s'en servir.
+
+    Les scores d'ouverture viennent d'une recherche limitée par un budget de temps, et
+    non d'une preuve. Deux passages sur la même position peuvent donc diverger. On
+    affiche la comparaison mesurée (`compare_probe_passes.py`) au lieu de laisser
+    croire que le classement est un fait.
+    """
+    stab = payload.get("stabilite")
+    lines: List[str] = []
+    if not stab or not stab.get("ouvertures"):
+        return lines
+    passes = [p["label"] for p in stab.get("passes", [])]
+    lines.append("## Fiabilité des chiffres")
+    lines.append("")
+    lines.append(
+        "Les valeurs de ce document ne sont pas des preuves : elles viennent d'une "
+        "recherche arrêtée par un budget de temps. Les mêmes ouvertures ont été "
+        "chiffrées plusieurs fois pour vérifier si elles tiennent."
+    )
+    lines.append("")
+    lines.append("| Ouverture | " + " | ".join(passes) + " | Écart | Lecture |")
+    lines.append("|-----------|" + "---------|" * (len(passes) + 2))
+    for o in stab["ouvertures"]:
+        valeurs = " | ".join(str(o["scores"].get(lab, "—")) for lab in passes)
+        if o.get("instable"):
+            lecture = "**instable**"
+        elif o.get("verdict_inverse"):
+            lecture = "signe instable (amplitude faible)"
+        else:
+            lecture = "stable"
+        lines.append(
+            f"| {_cell(o['ouverture'])} | {valeurs} | {o['ecart']} | {lecture} |"
+        )
+    lines.append("")
+    lines.append(f"**Conclusion :** {stab.get('verdict', '—')}")
+    lines.append("")
+    lines.append(
+        "Reproduire cette mesure : "
+        "`python script/solver/compare_probe_passes.py --passe libellé=fichier …`"
+    )
+    lines.append("")
+    return lines
+
+
 def render_tips(payload: dict) -> List[str]:
     """Conseils tirés des chiffres du livre, prêts à être enseignés."""
     lines: List[str] = []
@@ -545,25 +605,36 @@ def render_tips(payload: dict) -> List[str]:
         return lines
 
     best = openings[0]
-    worst = openings[-1]
-    spread = best["score_espere_p1"] - worst["score_espere_p1"]
-    proven = sum(1 for o in openings if o["exact"])
+    proven = [o for o in openings if o["exact"]]
+    instables = [
+        o
+        for o in ((payload.get("stabilite") or {}).get("ouvertures") or [])
+        if o.get("instable")
+    ]
 
     lines.append("## Conseils prêts pour un cours")
     lines.append("")
+    if proven:
+        noms = ", ".join(_cell(o["representative"]) for o in proven)
+        lines.append(
+            f"- **Commencer au centre** : {noms} est **démontré gagnant**. C'est la seule "
+            "valeur de ce document qu'un cours peut affirmer sans réserve."
+        )
+    else:
+        lines.append(
+            f"- **Commencer au centre** : {_cell(best['representative'])} est le mieux évalué "
+            f"({_wr(best['score_espere_p1'])}), mais c'est une estimation : aucune ouverture "
+            "n'est prouvée à ce jour."
+        )
+    if instables:
+        lines.append(
+            f"- **Ne pas publier de classement** : {len(instables)} ouverture(s) changent de "
+            "plus de 20 points de score entre deux passes de la sonde, et l'ordre du "
+            "classement se réorganise. Ces scores servent à explorer, pas à classer."
+        )
     lines.append(
-        f"- **Commencer au centre** : {_cell(best['representative'])} donne le meilleur "
-        f"score espéré du premier joueur ({_wr(best['score_espere_p1'])})."
-    )
-    lines.append(
-        f"- **Le premier coup ne décide pas la partie** : les dix ouvertures uniques "
-        f"tiennent dans {spread * 100:.1f} points de score espéré, et aucune n'est "
-        "classée perdante par le moteur."
-    )
-    lines.append(
-        f"- **Le coup le plus faible** est {_cell(worst['representative'])} "
-        f"({_wr(worst['score_espere_p1'])}), soit {_wr(worst['ecart_au_meilleur'])} de moins "
-        "que le meilleur : de quoi l'écarter, pas de quoi perdre sur-le-champ."
+        "- **Le premier coup ne décide pas la partie** : aucune des neuf ouvertures non "
+        "centrales n'est démontrée perdante — un cours peut les présenter comme jouables."
     )
     replies = [
         (o["representative"], o["meilleure_reponse"])
@@ -571,23 +642,15 @@ def render_tips(payload: dict) -> List[str]:
         if o.get("meilleure_reponse")
     ]
     if replies:
-        lines.append("- **Réponses au premier coup** : " + " ; ".join(
-            f"{_cell(mv)} → {_cell(rep)}" for mv, rep in replies[:5]
-        ) + ".")
-    if proven:
         lines.append(
-            f"- **Valeurs prouvées** : {proven} ouverture(s) de cette table sont des "
-            "verdicts, le reste est estimé par le moteur."
-        )
-    else:
-        lines.append(
-            "- **Aucune ouverture n'est prouvée à ce jour** : tout ce tableau est une "
-            "estimation du moteur, à présenter comme telle."
+            "- **Réponses au premier coup** (indicatif, non prouvé hors du centre) : "
+            + " ; ".join(f"{_cell(mv)} → {_cell(rep)}" for mv, rep in replies[:5])
+            + "."
         )
     lines.append(
         "- **Notion à enseigner** : la différence entre une valeur *prouvée* (mat forcé "
-        "ou verdict de la tablebase) et une *estimation* — le premier coup de la ligne "
-        "principale illustre les deux cas."
+        "ou verdict de la tablebase) et une *estimation* — le centre et les neuf autres "
+        "ouvertures illustrent les deux cas dans la même table."
     )
     lines.append("")
     return lines
@@ -619,30 +682,65 @@ def render_markdown(payload: dict, report: Report) -> str:
     lines.append(f"| Lecture | {root['lecture']} |")
     lines.append(f"| Nature | {'prouvé' if root['exact'] else 'estimé'} |")
     lines.append("")
+    if root["exact"]:
+        lines.append(
+            "Une position **prouvée gagnante** affiche 100 % par convention : ce n'est pas "
+            "une estimation, c'est un verdict (gain forcé, quoi que joue l'adversaire)."
+        )
+        lines.append("")
 
     lines.append("## Les 10 ouvertures uniques")
     lines.append("")
     lines.append(
         "Le plateau est symétrique (rotations et miroir) : ces dix coups couvrent les "
-        "49 cases de départ."
+        "49 cases de départ. Un seul est **démontré** ; les neuf autres sont **estimés** "
+        "et doivent se lire avec la section « Fiabilité des chiffres »."
     )
     lines.append("")
-    lines.append(
-        "| Case | Taille d'orbite | Score espéré (1ᵉʳ joueur) | Écart au meilleur | "
-        "Meilleure réponse | Lecture | Nature |"
-    )
-    lines.append(
-        "|------|-----------------|----------------------------|-------------------|"
-        "-------------------|---------|--------|"
-    )
-    for item in payload["ouvertures"]:
+
+    prouvees = [i for i in payload["ouvertures"] if i["exact"]]
+    estimees = [i for i in payload["ouvertures"] if not i["exact"]]
+
+    if prouvees:
+        lines.append("### Coups démontrés")
+        lines.append("")
+        lines.append("| Case | Taille d'orbite | Verdict | Meilleure réponse |")
+        lines.append("|------|-----------------|---------|-------------------|")
+        for item in prouvees:
+            lines.append(
+                f"| {_cell(item['representative'])} | {item['taille_orbite']} | "
+                f"{item['lecture']} | {_cell(item.get('meilleure_reponse'))} |"
+            )
+        lines.append("")
+
+    if estimees:
+        # L'écart se calcule **entre estimations** : comparer une estimation à une valeur
+        # démontrée donnerait un écart de ~45 points qui ne veut rien dire, puisque la
+        # valeur démontrée vaut 100 % contre ~52 % pour des positions à peine évaluées.
+        meilleur_estime = max(i["score_espere_p1"] for i in estimees)
+        lines.append("### Coups estimés (aucun n'est départagé par nos mesures)")
+        lines.append("")
         lines.append(
-            f"| {_cell(item['representative'])} | {item['taille_orbite']} | "
-            f"{_wr(item['score_espere_p1'])} | {_wr(item['ecart_au_meilleur'])} | "
-            f"{_cell(item.get('meilleure_reponse'))} | "
-            f"{item['lecture']} | {'prouvé' if item['exact'] else 'estimé'} |"
+            "| Case | Taille d'orbite | Score espéré (1ᵉʳ joueur) | Écart au meilleur estimé | "
+            "Meilleure réponse |"
         )
-    lines.append("")
+        lines.append(
+            "|------|-----------------|----------------------------|--------------------------|"
+            "-------------------|"
+        )
+        for item in estimees:
+            ecart = meilleur_estime - item["score_espere_p1"]
+            lines.append(
+                f"| {_cell(item['representative'])} | {item['taille_orbite']} | "
+                f"{_wr(item['score_espere_p1'])} | {_wr(ecart)} | "
+                f"{_cell(item.get('meilleure_reponse'))} |"
+            )
+        lines.append("")
+        lines.append(
+            "Les écarts de ce second tableau portent sur des estimations non "
+            "reproductibles : ils ne doivent pas servir à classer les coups."
+        )
+        lines.append("")
 
     lines.append("## Ligne principale")
     lines.append("")
@@ -722,6 +820,8 @@ def render_markdown(payload: dict, report: Report) -> str:
         )
         lines.append("")
 
+    lines.extend(render_stability(payload))
+
     lines.append("## Seuils de lecture")
     lines.append("")
     lines.append("| Bande | Score moteur | Score espéré | Ce que ça veut dire |")
@@ -772,8 +872,9 @@ def render_markdown(payload: dict, report: Report) -> str:
     )
     lines.append(
         "- Au-delà des positions prouvées, les scores sont des estimations du moteur, "
-        "pas des résultats exacts : ils servent à classer les coups, pas à trancher une "
-        "partie."
+        "pas des résultats exacts. Ils servent à **explorer** une position, pas à classer "
+        "les coups (la section « Fiabilité des chiffres » montre qu'ils changent d'une "
+        "passe à l'autre) ni à trancher une partie."
     )
     lines.append(
         "- La tablebase exacte couvre les finales (≤ 12 cases vides) ; l'ouverture reste "

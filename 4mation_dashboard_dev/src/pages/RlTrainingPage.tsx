@@ -79,6 +79,14 @@ export default function RlTrainingPage() {
         </p>
       </header>
 
+      <p className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-white/70">
+        <strong className="text-amber-300">Pipeline en pause.</strong> L&apos;entraînement RL
+        n&apos;est pas en cours : les chiffres de cette page sont ceux de la dernière campagne,
+        pas d&apos;un run actif. Le pont d&apos;évaluation entre le trainer Rust et les bots
+        Python a été corrigé et vérifié ; les mesures par siège de la dernière campagne sont
+        documentées dans <code>script/rl_rust/README.md</code>.
+      </p>
+
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Statut" value={status?.running ? "Actif" : "Arrêté"} accent={status?.running} />
         <StatCard label="Step" value={String(status?.step ?? 0)} />

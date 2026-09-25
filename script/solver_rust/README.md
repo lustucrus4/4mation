@@ -245,20 +245,15 @@ ne veulent plus rien dire d'une couche à l'autre. Voir `api/README.md` pour le 
 | Position de milieu de partie | profondeur 16 en 15 ms |
 | Débit | ~2,2 M nœuds/s |
 
-Classement des 10 premiers coups distincts en mode analyse (profondeur 14,
-score du point de vue du joueur 1) :
+Classement des 10 premiers coups distincts en mode analyse (profondeur 14, score du point
+de vue du joueur 1) : **volontairement non publié ici.**
 
-| Coup | Score | Coup | Score |
-|------|-------|------|-------|
-| (3,3) centre | **+29** | (1,1) | −7 |
-| (2,3) | +8 | (0,3) | −9 |
-| (1,3) | +2 | (0,0) | −12 |
-| (2,2) | 0 | (0,1) | −16 |
-| (1,2) | −5 | (0,2) | −17 |
-
-Ces scores sont des **estimations** issues de la recherche, pas des preuves :
-à cette profondeur aucune victoire forcée n'existe. Seul `4mation-proof` apporte
-une preuve depuis l'ouverture.
+Ces scores bougent trop pour servir de classement. Mesure du 2026-09-25 : les mêmes
+ouvertures chiffrées deux fois (90 s puis 600 s de budget par coup) changent de signe —
+par exemple `(1,2)` vaut −42 puis +5. Outil de vérification :
+`script/solver/compare_probe_passes.py`, preuves conservées dans
+`script/solver/probe_runs/`. Le seul verdict ferme depuis l'ouverture vient de
+`4mation-proof` : le centre `(3,3)` gagne de force, mat en 28 demi-coups.
 
 ### Validation
 

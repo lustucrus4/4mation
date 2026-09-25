@@ -1,5 +1,5 @@
 {
-  "genere_le": "2026-09-24T23:01:20",
+  "genere_le": "2026-09-25T08:34:46",
   "base": "C:\\Users\\Lucien\\Documents\\Projet code\\4mation\\script\\solver\\data\\tablebase.db",
   "max_ply": 6,
   "echelle_score": 281.09,
@@ -50,39 +50,39 @@
     "ply": {
       "0": {
         "entrees": 1,
-        "exactes": 0
+        "exactes": 1
       },
       "1": {
         "entrees": 10,
-        "exactes": 0
+        "exactes": 1
       },
       "2": {
         "entrees": 45,
-        "exactes": 0
+        "exactes": 1
       },
       "3": {
         "entrees": 233,
-        "exactes": 0
+        "exactes": 1
       },
       "4": {
         "entrees": 1077,
-        "exactes": 37
+        "exactes": 38
       },
       "5": {
         "entrees": 5612,
-        "exactes": 197
+        "exactes": 198
       },
       "6": {
         "entrees": 26175,
-        "exactes": 2753
+        "exactes": 2754
       }
     }
   },
   "racine": {
     "hash": "34cbd58d62f1894e",
-    "score_espere_p1": 0.5811,
-    "exact": false,
-    "lecture": "équilibré",
+    "score_espere_p1": 1.0,
+    "exact": true,
+    "lecture": "prouvé",
     "meilleur_coup": [
       3,
       3
@@ -102,12 +102,12 @@
         3
       ],
       "taille_orbite": 1,
-      "score_espere_p1": 0.5811,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "L",
+      "exact": true,
+      "lecture": "prouvé",
       "meilleure_reponse": [
-        2,
+        3,
         2
       ],
       "ecart_au_meilleur": 0.0
@@ -145,7 +145,7 @@
         3,
         3
       ],
-      "ecart_au_meilleur": 0.0315
+      "ecart_au_meilleur": 0.4504
     },
     {
       "hash": "2ea5f1c4d9c6b4e1",
@@ -180,7 +180,7 @@
         2,
         3
       ],
-      "ecart_au_meilleur": 0.0359
+      "ecart_au_meilleur": 0.4548
     },
     {
       "hash": "091171f72818f706",
@@ -231,7 +231,7 @@
         2,
         3
       ],
-      "ecart_au_meilleur": 0.0527
+      "ecart_au_meilleur": 0.4716
     },
     {
       "hash": "709153baa1577af3",
@@ -266,7 +266,7 @@
         1,
         2
       ],
-      "ecart_au_meilleur": 0.0562
+      "ecart_au_meilleur": 0.4751
     },
     {
       "hash": "055d9ff993262e8b",
@@ -301,7 +301,7 @@
         3,
         3
       ],
-      "ecart_au_meilleur": 0.058
+      "ecart_au_meilleur": 0.4769
     },
     {
       "hash": "29fe1799b1394405",
@@ -336,7 +336,7 @@
         1,
         1
       ],
-      "ecart_au_meilleur": 0.0624
+      "ecart_au_meilleur": 0.4813
     },
     {
       "hash": "0a33e324df7fe121",
@@ -387,7 +387,7 @@
         1,
         3
       ],
-      "ecart_au_meilleur": 0.0633
+      "ecart_au_meilleur": 0.4822
     },
     {
       "hash": "1868fa7a868ddf12",
@@ -422,7 +422,7 @@
         1,
         3
       ],
-      "ecart_au_meilleur": 0.066
+      "ecart_au_meilleur": 0.4849
     },
     {
       "hash": "0b56f3786efedecc",
@@ -473,7 +473,7 @@
         1,
         2
       ],
-      "ecart_au_meilleur": 0.106
+      "ecart_au_meilleur": 0.5249
     }
   ],
   "ligne_principale": [
@@ -485,95 +485,95 @@
         3
       ],
       "note": "",
-      "score_espere_p1": 0.5811,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "W",
+      "exact": true,
+      "lecture": "prouvé",
       "hash": "34cbd58d62f1894e"
     },
     {
       "ply": 1,
       "joueur": 2,
       "coup": [
-        2,
+        3,
         2
       ],
       "note": "",
-      "score_espere_p1": 0.5811,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "L",
+      "exact": true,
+      "lecture": "prouvé",
       "hash": "b374a68f5b84f282"
     },
     {
       "ply": 2,
       "joueur": 1,
       "coup": [
-        3,
-        2
+        2,
+        3
       ],
       "note": "",
-      "score_espere_p1": 0.5399,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
-      "hash": "2f96556f5c0c88dd"
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "W",
+      "exact": true,
+      "lecture": "prouvé",
+      "hash": "34af548567cebe0d"
     },
     {
       "ply": 3,
       "joueur": 2,
       "coup": [
-        4,
+        1,
         3
       ],
       "note": "",
-      "score_espere_p1": 0.5654,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
-      "hash": "0fede628d34a4117"
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "L",
+      "exact": true,
+      "lecture": "prouvé",
+      "hash": "2a8d4b639f9637d3"
     },
     {
       "ply": 4,
       "joueur": 1,
       "coup": [
-        3,
-        4
+        2,
+        2
       ],
       "note": "",
-      "score_espere_p1": 0.5417,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
-      "hash": "00bf3d00689c554f"
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "W",
+      "exact": true,
+      "lecture": "prouvé",
+      "hash": "02cb12eebe585232"
     },
     {
       "ply": 5,
       "joueur": 2,
       "coup": [
-        3,
-        5
+        1,
+        1
       ],
       "note": "",
-      "score_espere_p1": 0.6161,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
-      "hash": "18f2fae0ba68840f"
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "L",
+      "exact": true,
+      "lecture": "prouvé",
+      "hash": "07d2db5d66dc883c"
     },
     {
       "ply": 6,
       "joueur": 1,
       "coup": [
-        2,
-        4
+        1,
+        2
       ],
       "note": "",
-      "score_espere_p1": 0.5619,
-      "resultat_camp_au_trait": "D",
-      "exact": false,
-      "lecture": "équilibré",
-      "hash": "0c6ed0525ebf769e"
+      "score_espere_p1": 1.0,
+      "resultat_camp_au_trait": "W",
+      "exact": true,
+      "lecture": "prouvé",
+      "hash": "101ffa3d7dbff5ab"
     }
   ],
   "lignes_alternatives": [
@@ -768,7 +768,7 @@
     }
   ],
   "verification_parties": {
-    "source": "_tmp_sweep_l6.json",
+    "source": "script\\solver\\sweeps\\verification_l6.json",
     "config": {},
     "par_ouverture": [
       {
@@ -898,13 +898,265 @@
         "defaites": 1,
         "nulles": 0,
         "duree_moyenne_plies": null,
-        "score_espere_p1_livre": 0.5811,
-        "exact_livre": false
+        "score_espere_p1_livre": 1.0,
+        "exact_livre": true
       }
     ]
   },
+  "stabilite": {
+    "genere_le": "2026-09-25T08:34:44",
+    "passes": [
+      {
+        "label": "courte",
+        "source": "script\\solver\\preuve_profonde.json",
+        "ouvertures_mesurees": 10,
+        "budget_s": null
+      },
+      {
+        "label": "longue",
+        "source": "script\\solver\\probe_runs\\passe_longue.log",
+        "ouvertures_mesurees": 6,
+        "budget_s": null
+      }
+    ],
+    "ouvertures": [
+      {
+        "ouverture": [
+          0,
+          0
+        ],
+        "scores": {
+          "courte": -5,
+          "longue": 42
+        },
+        "min": -5,
+        "max": 42,
+        "ecart": 47,
+        "verdict_inverse": true,
+        "instable": true,
+        "profondeurs": {
+          "courte": 26,
+          "longue": 29
+        }
+      },
+      {
+        "ouverture": [
+          0,
+          1
+        ],
+        "scores": {
+          "courte": -13,
+          "longue": 30
+        },
+        "min": -13,
+        "max": 30,
+        "ecart": 43,
+        "verdict_inverse": true,
+        "instable": true,
+        "profondeurs": {
+          "courte": 24,
+          "longue": 27
+        }
+      },
+      {
+        "ouverture": [
+          0,
+          2
+        ],
+        "scores": {
+          "courte": 22,
+          "longue": 30
+        },
+        "min": 22,
+        "max": 30,
+        "ecart": 8,
+        "verdict_inverse": false,
+        "instable": false,
+        "profondeurs": {
+          "courte": 25,
+          "longue": 27
+        }
+      },
+      {
+        "ouverture": [
+          0,
+          3
+        ],
+        "scores": {
+          "courte": -39,
+          "longue": 16
+        },
+        "min": -39,
+        "max": 16,
+        "ecart": 55,
+        "verdict_inverse": true,
+        "instable": true,
+        "profondeurs": {
+          "courte": 26,
+          "longue": 29
+        }
+      },
+      {
+        "ouverture": [
+          1,
+          1
+        ],
+        "scores": {
+          "courte": 5,
+          "longue": -2
+        },
+        "min": -2,
+        "max": 5,
+        "ecart": 7,
+        "verdict_inverse": true,
+        "instable": false,
+        "profondeurs": {
+          "courte": 25,
+          "longue": 27
+        }
+      },
+      {
+        "ouverture": [
+          1,
+          2
+        ],
+        "scores": {
+          "courte": -42,
+          "longue": 5
+        },
+        "min": -42,
+        "max": 5,
+        "ecart": 47,
+        "verdict_inverse": true,
+        "instable": true,
+        "profondeurs": {
+          "courte": 24,
+          "longue": 25
+        }
+      }
+    ],
+    "classements": {
+      "courte": [
+        [
+          [
+            3,
+            3
+          ],
+          -99972
+        ],
+        [
+          [
+            2,
+            2
+          ],
+          -63
+        ],
+        [
+          [
+            2,
+            3
+          ],
+          -53
+        ],
+        [
+          [
+            1,
+            2
+          ],
+          -42
+        ],
+        [
+          [
+            0,
+            3
+          ],
+          -39
+        ],
+        [
+          [
+            0,
+            1
+          ],
+          -13
+        ],
+        [
+          [
+            1,
+            3
+          ],
+          -12
+        ],
+        [
+          [
+            0,
+            0
+          ],
+          -5
+        ],
+        [
+          [
+            1,
+            1
+          ],
+          5
+        ],
+        [
+          [
+            0,
+            2
+          ],
+          22
+        ]
+      ],
+      "longue": [
+        [
+          [
+            1,
+            1
+          ],
+          -2
+        ],
+        [
+          [
+            1,
+            2
+          ],
+          5
+        ],
+        [
+          [
+            0,
+            3
+          ],
+          16
+        ],
+        [
+          [
+            0,
+            1
+          ],
+          30
+        ],
+        [
+          [
+            0,
+            2
+          ],
+          30
+        ],
+        [
+          [
+            0,
+            0
+          ],
+          42
+        ]
+      ]
+    },
+    "ordre_identique": false,
+    "verdict": "les scores ne sont pas reproductibles : 4 ouverture(s) sur 6 varient de plus de 20 points entre deux passes (5 changent même de signe) et l'ordre du classement change. Aucun classement ne doit être publié ; seule la valeur prouvée du centre est enseignable."
+  },
   "avertissements": [
-    "ligne principale : 5 demi-coup(s) lu(s) après transport par symétrie",
     "alt [2, 3] : ligne principale : 4 demi-coup(s) lu(s) après transport par symétrie"
   ]
 }

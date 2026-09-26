@@ -84,19 +84,22 @@ class OptimizedMinimaxAdvisor:
         """Initialise les clés Zobrist pour le hash"""
         # Clés pour chaque case et chaque joueur (0=vide, 1=joueur1, 2=joueur2)
         self.zobrist_keys = {}
-        random.seed(42)  # Seed fixe pour reproductibilité
-        
+        # Générateur dédié : un `random.seed(42)` sur le module global rejouerait la même
+        # séquence pour TOUT le processus (erreurs volontaires des bots, tirages des arènes),
+        # ce qui rendait les « coups au hasard » parfaitement déterministes.
+        keygen = random.Random(42)  # Seed fixe pour reproductibilité des clés
+
         for row in range(7):
             for col in range(7):
                 for player in [0, 1, 2]:
                     # Générer une clé aléatoire 64 bits
-                    key = random.getrandbits(64)
+                    key = keygen.getrandbits(64)
                     self.zobrist_keys[(row, col, player)] = key
         
         # Clé pour le joueur courant
         self.zobrist_player_keys = {
-            1: random.getrandbits(64),
-            2: random.getrandbits(64)
+            1: keygen.getrandbits(64),
+            2: keygen.getrandbits(64)
         }
     
     def _init_segments(self):

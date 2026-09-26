@@ -28,15 +28,19 @@ from game.game_engine import GameEngine  # noqa: E402
 MAX_MOVES = 90
 
 
-def play_game(p1: str, p2: str, registry: BotRegistry) -> dict:
-    """Joue une partie : `p1` a les pierres du joueur 1, `p2` celles du joueur 2."""
+def play_game(p1: str, p2: str, registry: BotRegistry, max_moves: int = MAX_MOVES) -> dict:
+    """Joue une partie : `p1` a les pierres du joueur 1, `p2` celles du joueur 2.
+
+    `max_moves` borne la partie (garde-fou anti-boucle) ; il est paramétrable pour
+    que `bot_arena.py` puisse aligner sa limite sur son option `--max-moves`.
+    """
     engine = GameEngine()
     engine.reset()
 
     moves: list[str] = []
     winner = None
     start = time.perf_counter()
-    while not engine.is_terminal() and len(moves) < MAX_MOVES:
+    while not engine.is_terminal() and len(moves) < max_moves:
         player = int(engine.get_current_player())
         bot_id = p1 if player == 1 else p2
         move = registry.choose_move(bot_id, engine)
@@ -59,7 +63,7 @@ def play_game(p1: str, p2: str, registry: BotRegistry) -> dict:
         "winner": winner,
         "moves": len(moves),
         "secs": time.perf_counter() - start,
-        "truncated": len(moves) >= MAX_MOVES and winner is None,
+        "truncated": len(moves) >= max_moves and winner is None,
     }
 
 

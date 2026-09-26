@@ -14,14 +14,20 @@ coup) et en mode `daemon` (processus persistant), et exige :
 - que le daemon **réponde le même coup** quand on lui repose deux fois la même position
   (une dérive d'état d'une requête à l'autre trahirait un plateau mal réinitialisé) ;
 - qu'un **coup gagnant immédiat** soit bien trouvé (`menace-immediate`) : impossible à
-  trouver depuis un plateau vide, c'est le piège historique rendu impossible.
+  trouver depuis un plateau vide, c'est le piège historique rendu impossible. Cette
+  exigence ne porte que sur les bots **sans erreur volontaire** : un bot dont le
+  réglage prévoit de jouer un coup moins bon ne peut pas être sommé de conclure ; pour
+  les autres, la garantie du pont repose sur la légalité des coups et sur la stabilité
+  des réponses, ce qui suffit à détecter le bug historique (un bot qui évalue depuis un
+  plateau vide renvoie des coups illégaux).
 
 Deux exécutions séparées du même bot ne renvoient pas forcément le *même* coup : le
 daemon réutilise le même bot (donc la même table de transposition réchauffée) alors que le
 mode `move` part d'un processus froid. Sur des positions quasi équilibrées, les deux choix
 sont également bons. Cet écart est donc **signalé**, pas compté comme une panne.
 
-    python scripts/check_rl_eval_bridge.py --bot level_5 --bot level_3
+    python scripts/check_rl_eval_bridge.py                       # level_5, level_3, level_6
+    python scripts/check_rl_eval_bridge.py --bot level_6         # un seul bot
 """
 
 from __future__ import annotations
@@ -182,11 +188,28 @@ def blunder_rate(bot_id: str) -> float:
         return 0.0
 
 
+def inaccuracy_rate(bot_id: str) -> float:
+    """Taux d'erreur *graduée* : le bot choisit alors un coup volontairement moins bon.
+
+    Un bot qui s'écarte exprès de la preuve ne peut pas être sommé de conclure un gain
+    immédiat : l'exiger produirait un faux positif dès que l'écart tombe sur cette position.
+    """
+    try:
+        from api.services.bot_registry import BotRegistry
+
+        return float(BotRegistry._LEVELS.get(bot_id, {}).get("inaccuracy_rate", 0.0))
+    except Exception:
+        return 0.0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Contrôle du pont d'évaluation RL")
     parser.add_argument("--bot", action="append", default=[], help="bot à contrôler (répétable)")
     args = parser.parse_args()
-    bots = args.bot or ["level_5", "level_3"]
+    # `level_6` est le seul bot sans erreur volontaire : c'est donc le seul sur lequel
+    # l'exigence « conclure un gain immédiat » reste testable. Il est lent (profondeur 26),
+    # mais le retirer éteindrait le détecteur du bug historique « évalue depuis un plateau vide ».
+    bots = args.bot or ["level_5", "level_3", "level_6"]
 
     anomalies = 0
     drifts = 0
@@ -194,9 +217,15 @@ def main() -> int:
     daemon = Daemon()
     try:
         for bot_id in bots:
-            flaky = blunder_rate(bot_id) > 0.0
+            blunders = blunder_rate(bot_id)
+            inaccuracies = inaccuracy_rate(bot_id)
+            flaky = blunders > 0.0 or inaccuracies > 0.0
             if flaky:
-                print(f"[{bot_id}] blunder_rate > 0 : les coups peuvent être volontairement perdants")
+                print(
+                    f"[{bot_id}] erreur volontaire (blunder_rate={blunders:g}, "
+                    f"inaccuracy_rate={inaccuracies:g}) : les coups peuvent être "
+                    f"délibérément moins bons"
+                )
             for index, (engine, request, label, must_win) in enumerate(reference_positions()):
                 legal = [(int(a), int(b)) for a, b in engine.get_valid_actions()]
                 direct = query_move(bot_id, request)
@@ -270,7 +299,10 @@ def main() -> int:
     if anomalies:
         print(f"ÉCHEC : {anomalies} anomalie(s)")
         return 1
-    print("OK : pont d'évaluation fiable (coups légaux, gains immédiats trouvés)")
+    print(
+        "OK : pont d'évaluation fiable (coups légaux, réponses stables, "
+        "gain immédiat conclu par les bots sans erreur volontaire)"
+    )
     return 0
 
 

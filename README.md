@@ -182,29 +182,103 @@ Les fichiers sont générés dans `4mation_dashboard_deploy/`.
 
 
 
-| ID | Profondeur | Budget | Description |
+| ID | Profondeur | Budget | Levier principal | Description |
 
-|----|------------|--------|-------------|
+|----|------------|--------|------------------|-------------|
 
-| `level_1` | 1 | 120 ms | Débutant — 55 % de coups approximatifs |
+| `level_1` | 1 | 60 ms | ~95 % de coups au hasard | Très facile — un débutant gagne presque à tous les coups |
 
-| `level_2` | 2 | 250 ms | Facile — 30 % de coups approximatifs |
+| `level_2` | 2 | 120 ms | ~70 % de coups au hasard | Facile — il voit une menace immédiate, mais se trompe souvent |
 
-| `level_3` | 4 | 600 ms | Intermédiaire — **défaut** |
+| `level_3` | 4 | 300 ms | ~40 % de coups au hasard | Moyen (**défaut**) — joue correctement, laisse encore des ouvertures |
 
-| `level_4` | 6 | 1 000 ms | Avancé — tablebase activée |
+| `level_4` | 8 | 1 200 ms | ~16 % d'erreurs graduées + tablebase | Difficile — moteur + tablebase + livre prouvé |
 
-| `level_5` | 10 | 1 600 ms | Expert — recherche maximale + tablebase |
+| `level_5` | 18 | 2 000 ms | ~8 % d'erreurs graduées | Très difficile — très profonde, s'écarte rarement de la preuve |
 
-| `level_6` | 22 | 2 500 ms | Maître — **moteur Rust** `4mation-engine`, finales exactes |
+| `level_6` | 26 | 3 000 ms | aucune erreur | Impossible — joue les **lignes prouvées** sans jamais se tromper |
 
 
 
-Chaque niveau s'approprie un Elo à la fin des parties classiques (voir
+Les niveaux 1 à 3 sont gradués par un **taux de coup au hasard** — une faute franche,
+immédiatement exploitable. Les niveaux 4 à 6 jouent la **même** ligne prouvée (livre
+exact + tablebase) : leur seule différence est le **taux d'erreur graduée** (probabilité
+de jouer le 2ᵉ choix du moteur au lieu du meilleur). Le niveau 6 a un taux nul : c'est
+le seul infaillible **dans la zone résolue**, d'où son nom. Chaque niveau retombe
+automatiquement sur le chemin du niveau inférieur si le binaire du moteur est absent.
 
-`api/README.md`). Le niveau 6 retombe automatiquement sur le chemin du niveau 5 si le
+#### Limite honnête du niveau 6
 
-binaire du moteur est absent.
+« Impossible » signifie *infaillible là où la base prouve la position* (livre d'ouverture
++ tablebase exacte). L'ouverture du 4mation n'est pas résolue : hors de cette zone, le
+niveau 6 est le plus fort moteur de l'échelle mais reste faillible. Mesuré : une sonde
+qui joue en profondeur 8 avec 6 % d'erreurs marque encore ~0,28 contre lui (~0,17 en
+profondeur 6, ~0,03 en profondeur 2 et ~0,01 en profondeur 4). Augmenter la profondeur ne
+corrige pas ce taux (mesuré : profondeur 34 / 6 s fait *moins* bien que 26 / 3 s) : le
+facteur limitant est la **couverture de la base**, pas la vitesse de recherche.
+
+### Arène mesurée (`scripts/bot_arena.py`)
+
+Les niveaux sont **mesurés** par paire en round-robin (sièges alternés) par
+`scripts/bot_arena.py`, rapport `scripts/ARENA_BOTS.md` (Elo Bradley-Terry + IC 95 %).
+Mesure du 26/09/2026 : 60 parties par paire (900 parties) et 4 profils de sonde
+(96 parties par bot et par profil) :
+
+`level_1` 1109 < `level_2` 1234 < `level_3` 1413 < `level_4` 1640 < `level_5` 1750 < `level_6` 1855.
+
+L'ordre est strictement croissant, avec des écarts de **+125, +179, +227, +110, +105**
+Elo. Le plus court (`level_5` → `level_6`) reste le plus délicat : ces deux niveaux jouent
+la même ligne prouvée et ne diffèrent que par le taux d'erreur graduée, donc la
+confrontation directe ne les sépare pas nettement (0,39 [0,28, 0,52]) — ce sont les quatre
+profils de sonde qui tranchent. Attention d'une manière générale : l'Elo sature vers le
+haut (dans ce jeu, jouer le centre gagne de force, donc un bot fort gagne presque toujours
+dans le siège du premier joueur).
+
+Le rapport fournit donc une seconde mesure, la **courbe de difficulté** : des sondeurs
+de référence jouent *toujours en siège 1* (la configuration réelle du site) contre chaque
+niveau. Quatre profils, du plus faible au plus fort, couvrent toute l'échelle — un profil
+seul ne peut pas séparer les six niveaux, car il sature (un débutant ne marque jamais
+contre les niveaux 5-6, un joueur avancé écrase les niveaux 1-3) :
+
+| Profil | Profondeur | Erreurs | Bande de l'échelle qu'il sépare |
+|--------|------------|---------|--------------------------------|
+| `novice` | 4 | 30 % | niveaux 1 à 4 |
+| `debutant` | 2 | 45 % | niveaux 1 à 4 |
+| `moyen` | 6 | 15 % | niveaux 3 à 6 |
+| `avance` | 8 | 6 % | niveaux 4 à 6 |
+
+Score du sondeur en siège 1, 96 parties par niveau et par profil (plus bas = plus dur) :
+
+| Profil | `level_1` | `level_2` | `level_3` | `level_4` | `level_5` | `level_6` |
+|--------|---:|---:|---:|---:|---:|---:|
+| `novice` | 0,99 | 0,91 | 0,77 | 0,61 | 0,26 | 0,01 |
+| `debutant` | 0,94 | 0,80 | 0,60 | 0,29 | 0,14 | 0,03 |
+| `moyen` | 1,00 | 0,96 | 0,91 | 0,72 | 0,51 | 0,17 |
+| `avance` | 1,00 | 0,98 | 0,98 | 0,87 | 0,56 | 0,28 |
+
+L'échelle est validée sur **deux affirmations distinctes**, car elles ne mesurent pas la
+même chose — et les deux sont vertes :
+
+- **la force** — le niveau supérieur gagne plus souvent en confrontation directe (sièges
+  alternés) ou est plus dur à battre pour au moins une sonde. Une paire est validée si la
+  confrontation directe ne démontre jamais l'inverse **et** qu'au moins un instrument
+  démontre la séparation ; la démonstration porte sur la **différence** des scores
+  (intervalle hybride de Newcombe excluant 0), et non sur la comparaison de deux
+  intervalles de Wilson isolés, qui serait trop conservatrice. Verdict : **les 5 paires
+  adjacentes sont validées**, et chacune est désormais démontrée par les **quatre** profils
+  de sonde ;
+- **la difficulté ressentie** — la courbe de sonde est **strictement décroissante** sur les
+  quatre profils : aucun niveau n'est plus facile à battre que le précédent, pour aucun
+  type d'adversaire. Ce point n'allait pas de soi : une version antérieure où `level_5` ne
+  s'écartait de la preuve que 4 % du temps le rendait *plus prévisible*, donc plus facile à
+  battre que `level_4` (0,89 contre 0,77 pour la sonde `avance`). Le réglage retenu
+  (profondeur 18, 8 % d'écarts) fait s'écarter `level_5` plus souvent mais en choisissant
+  mieux ses écarts, ce qui restaure la monotonie sans casser la séparation directe. Le
+  contrôle est automatisé : `scripts/check_bot_arena.py` échoue si une inversion de
+  difficulté réapparaît.
+
+`scripts/ARENA_BOTS.md` conserve les intervalles, les caveats et le verdict paire par
+paire.
 
 
 

@@ -33,6 +33,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
+# La console Windows (cp1252) ne sait pas encoder « ≤ » : sans ce garde-fou, afficher
+# l'aide ou une position échoue sur UnicodeEncodeError au lieu de dégrader l'affichage.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
+
 ROOT = Path(__file__).resolve().parents[1]
 for _p in (str(ROOT), str(ROOT / "script"), str(ROOT / "script" / "solver")):
     if _p not in sys.path:

@@ -4,16 +4,28 @@ from __future__ import annotations
 
 from typing import Tuple
 
-# Elo de référence par niveau de bot (calibré pour progresser de façon lisible).
+# Elo de référence par niveau de bot.
+#
+# Ces valeurs sont les Elo mesurés par l'arène round-robin
+# (`scripts/bot_arena.py`, `scripts/ARENA_BOTS.md`, Bradley-Terry, 60 parties par paire,
+# 900 parties, 4 profils de sonde, mesure du 26/09/2026). Elles servent à convertir les
+# résultats de l'humain en Elo lisible : si elles s'écartaient de la mesure, le classement
+# affiché contredirait la force réelle des bots. Toute recalibration de l'échelle doit donc
+# mettre ces valeurs à jour — `scripts/check_bot_arena.py` échoue si les deux divergent.
+#
+# Écarts mesurés : +125, +179, +227, +110, +105. L'écart `level_5` → `level_6` reste le
+# plus court, mais les deux niveaux sont désormais séparés par les quatre profils de sonde
+# (la confrontation directe, elle, ne tranche pas : 0.39 [0.28, 0.52]).
 BOT_ELO: dict[str, int] = {
-    "level_1": 800,
-    "level_2": 1000,
-    "level_3": 1200,
-    "level_4": 1500,
-    "level_5": 1800,
+    "level_1": 1109,
+    "level_2": 1234,
+    "level_3": 1413,
+    "level_4": 1640,
+    "level_5": 1750,
+    "level_6": 1855,
 }
 
-DEFAULT_BOT_ELO = 1200
+DEFAULT_BOT_ELO = BOT_ELO["level_3"]
 K_FACTOR = 32
 
 

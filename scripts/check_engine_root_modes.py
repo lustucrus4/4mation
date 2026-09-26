@@ -9,8 +9,8 @@ analyses — un écart invisible pour l'utilisateur et impossible à diagnostiqu
 Le script rejoue une position à plusieurs profondeurs, dans les deux modes, et affiche
 le coup retenu, le score, le temps et le taux de victoire des coups surveillés.
 
-    python scripts/check_engine_root_modes.py --json _tmp_partie_diag.json
-    python scripts/check_engine_root_modes.py --board 0000000/0000100/0002132/0002210/... 
+    python scripts/check_engine_root_modes.py --json _tmp_partie_diag.json --ply 9
+    python scripts/check_engine_root_modes.py --board 1000000/0200000/1200000/2110000/1220200/2111000/2120000 --player 1
 """
 
 from __future__ import annotations
@@ -46,6 +46,23 @@ def position_from_diag(path: Path, ply: int) -> Dict[str, Any]:
                 "played": tuple(entry["move"]),
             }
     raise SystemExit(f"ply {ply} absent de {path}")
+
+
+def board_from_spec(spec: str, player: int) -> np.ndarray:
+    """Convertit `0000000/0000100/…` (un chiffre par case : 0 vide, 1 X, 2 O) en plateau."""
+    rows = [row.strip() for row in spec.replace(" ", "").split("/") if row.strip()]
+    grid: List[List[int]] = []
+    for row in rows:
+        for char in row:
+            if char not in "012":
+                raise SystemExit(
+                    f"case invalide {char!r} dans {spec!r} : attendu 0 (vide), 1 (X) ou 2 (O)"
+                )
+        grid.append([int(char) for char in row])
+    side = len(grid)
+    if side == 0 or any(len(row) != side for row in grid):
+        raise SystemExit(f"plateau non carré : {spec!r}")
+    return np.array(grid, dtype=np.int8)
 
 
 def scan(
@@ -100,6 +117,17 @@ def scan(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Comparaison des modes de racine du moteur")
     parser.add_argument("--json", default="_tmp_partie_diag.json")
+    parser.add_argument(
+        "--board",
+        default=None,
+        help="position directe, `0000000/0000100/…` (0 vide, 1 X, 2 O), sans journal",
+    )
+    parser.add_argument("--player", type=int, default=1, help="camp au trait avec --board")
+    parser.add_argument(
+        "--last",
+        default=None,
+        help="dernier coup joué, `r,c` (avec --board ; sert aussi de coup surveillé)",
+    )
     parser.add_argument("--ply", type=int, default=9)
     parser.add_argument("--time-ms", type=int, default=2500)
     parser.add_argument(
@@ -116,13 +144,24 @@ def main() -> int:
     args = parser.parse_args()
 
     diag = Path(args.json)
-    if diag.exists():
+    played: Optional[Tuple[int, int]] = None
+    if args.board:
+        board = board_from_spec(args.board, args.player)
+        player = int(args.player)
+        last = None
+        if args.last:
+            last = tuple(int(x) for x in args.last.split(","))
+        played = last
+        print(f"Position fournie — joueur {player} au trait")
+    elif diag.exists():
         pos = position_from_diag(diag, args.ply)
         board, player, last = pos["board"], pos["player"], pos["last_move"]
         played = pos["played"]
         print(f"Position du ply {args.ply} de {diag.name} — joueur {player} au trait")
     else:
-        raise SystemExit(f"Journal introuvable : {diag}")
+        raise SystemExit(
+            f"Journal introuvable : {diag} (ou passez --board 0000000/… pour une position directe)"
+        )
 
     print("Plateau :")
     for row in board:
@@ -136,8 +175,10 @@ def main() -> int:
 
     if args.watch:
         watched = [tuple(int(x) for x in part.split(",")) for part in args.watch.split()]
-    else:
+    elif played is not None:
         watched = [played]
+    else:
+        watched = []
 
     modes = {"rapid": [False], "exact": [True], "both": [False, True]}[args.modes]
     for exact in modes:

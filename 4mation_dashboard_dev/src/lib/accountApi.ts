@@ -172,10 +172,9 @@ export function fetchGameReview(gameId: string): Promise<{
   game: SavedGameDetail;
   review: GameReview;
 }> {
-  return apiFetch(`/api/me/games/${gameId}/review`).then((d: {
-    game: SavedGameDetail;
-    review: GameReview;
-  }) => ({ game: d.game, review: d.review }));
+  return apiFetch<{ game: SavedGameDetail; review: GameReview }>(
+    `/api/me/games/${gameId}/review`
+  ).then((d) => ({ game: d.game, review: d.review }));
 }
 
 const API_BASE = getApiBase();

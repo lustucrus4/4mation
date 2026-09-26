@@ -17,6 +17,7 @@
 use anyhow::Result;
 use rayon::prelude::*;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::time::Instant;
 
 use crate::explorer::generate_parents;
@@ -37,8 +38,10 @@ pub struct SweepStats {
     pub generated: u64,
     /// Positions écrites en base.
     pub inserted: u64,
-    /// Parents déjà connus, ignorés.
+    /// Parents déjà connus, ignorés (ou déjà cohérents en mode réparation).
     pub known: u64,
+    /// Valeurs stockées incohérentes avec les enfants, réécrites (mode `--repair`).
+    pub repaired: u64,
     /// Parents dont un enfant manquait : la couche source a un trou.
     pub incomplete: u64,
     pub elapsed_secs: f64,
@@ -55,17 +58,37 @@ impl SweepStats {
 /// `table` doit contenir au moins la couche `from` ; il est enrichi au fil du balayage,
 /// ce qui sert aussi de déduplication globale : une position atteinte depuis plusieurs
 /// enfants n'est résolue qu'une fois.
-pub fn sweep_layer(db: &LocalDb, from: usize, table: &ResultTable) -> Result<SweepStats> {
+///
+/// Avec `force = true` (mode réparation), les positions déjà connues ne sont plus
+/// sautées : leur valeur est recalculée depuis les enfants et **réécrite si elle
+/// diffère**. C'est le correctif des valeurs restées périmées après la correction d'un
+/// enfant — un balayage normal les ignore à jamais, puisqu'elles sont « déjà là ». À
+/// lancer **du bas vers le haut** (`--sweep-from 1 --repair`) pour propager les
+/// corrections de proche en proche.
+pub fn sweep_layer(
+    db: &LocalDb,
+    from: usize,
+    table: &ResultTable,
+    force: bool,
+) -> Result<SweepStats> {
     let target = from + 1;
     let start = Instant::now();
     let mut cursor = String::new();
     let mut stats = SweepStats::default();
 
     let source = db.count_at_layer(from).unwrap_or(-1);
-    tracing::info!("Balayage : couche {from} → {target}, {source} positions sources");
+    tracing::info!(
+        "Balayage : couche {from} → {target}, {source} positions sources{}",
+        if force {
+            " (réparation : valeurs réécrites si incohérentes)"
+        } else {
+            ""
+        }
+    );
 
     let known = AtomicU64::new(0);
     let incomplete = AtomicU64::new(0);
+    let repaired = AtomicU64::new(0);
 
     loop {
         let page = db.load_layer_page(from, &cursor, PAGE)?;
@@ -92,7 +115,8 @@ pub fn sweep_layer(db: &LocalDb, from: usize, table: &ResultTable) -> Result<Swe
                 let (cb, cp, clm) =
                     crate::symmetry::canonical_position(&parent.0, parent.1, parent.2);
                 let key = ResultTable::key_for(&cb, cp, clm);
-                if table.contains_key(key) {
+                let existing = table.get(&cb, cp, clm).map(|(result, _)| result);
+                if !force && existing.is_some() {
                     known.fetch_add(1, Ordering::Relaxed);
                     return None;
                 }
@@ -100,7 +124,16 @@ pub fn sweep_layer(db: &LocalDb, from: usize, table: &ResultTable) -> Result<Swe
                     incomplete.fetch_add(1, Ordering::Relaxed);
                     return None;
                 };
-                // Publication immédiate : les doublons suivants sont ignorés.
+                if let Some(previous) = existing {
+                    if previous == solved.result {
+                        // Déjà cohérent : rien à réécrire, on ne touche pas au disque.
+                        known.fetch_add(1, Ordering::Relaxed);
+                        return None;
+                    }
+                    // Valeur périmée (l'enfant a été corrigé après coup) : réécriture.
+                    repaired.fetch_add(1, Ordering::Relaxed);
+                }
+                // Publication immédiate : les doublons suivants voient la valeur à jour.
                 table.insert_position(&cb, cp, clm, solved.result, solved.depth_remaining);
                 Some(SolvedRow {
                     hash: format!("{key:016x}"),
@@ -123,14 +156,16 @@ pub fn sweep_layer(db: &LocalDb, from: usize, table: &ResultTable) -> Result<Swe
 
         stats.known = known.load(Ordering::Relaxed);
         stats.incomplete = incomplete.load(Ordering::Relaxed);
+        stats.repaired = repaired.load(Ordering::Relaxed);
         stats.elapsed_secs = start.elapsed().as_secs_f64();
         tracing::info!(
-            "Couche {target} — {}/{} enfants lus, {} résolues ({:.0}/s), {} connues, {} inconnues",
+            "Couche {target} — {}/{} enfants lus, {} résolues ({:.0}/s), {} connues, {} réparées, {} inconnues",
             stats.children,
             source,
             stats.inserted,
             stats.rate(),
             stats.known,
+            stats.repaired,
             stats.incomplete
         );
     }
@@ -256,10 +291,15 @@ fn resolvable(
 /// Vérifie la base : recalcule la valeur de chaque position depuis ses enfants et la
 /// compare à la valeur stockée. Trois verdicts :
 ///   - `ok` : la valeur stockée est cohérente avec les enfants ;
-///   - `faux` : elle les contredit — donnée à corriger ;
+///   - `faux` : elle les contredit — donnée à corriger (voir `--repair`) ;
 ///   - `indécidable` : au moins un enfant manque. Ces lignes sont soit des alias
 ///     fantômes (plateau résoluble sous un autre dernier coup, donc inoffensif), soit
 ///     de vrais trous (position inutilisable).
+///
+/// La vérification parallélise les lignes d'une même page : c'est de la lecture pure,
+/// les compteurs sont atomiques. Sans cela, 30 M de positions prennent plus d'une heure
+/// sur un seul cœur, ce qui décourage la re-vérification — et une base qu'on ne
+/// revérifie pas dérive.
 pub fn verify(db: &LocalDb, layers: std::ops::RangeInclusive<usize>, sample: usize) -> Result<()> {
     let table = ResultTable::load_from_db(db)?;
     println!("Table chargée : {} positions", table.len());
@@ -267,17 +307,21 @@ pub fn verify(db: &LocalDb, layers: std::ops::RangeInclusive<usize>, sample: usi
     let mut grand_ok = 0u64;
     let mut grand_faux = 0u64;
     let mut grand_ind = 0u64;
-    let mut alias_sample = 0u64;
-    let mut hole_sample = 0u64;
-    let mut sampled = 0usize;
+    let mut alias_sample_total = 0u64;
+    let mut hole_sample_total = 0u64;
+    let mut sampled_total = 0usize;
 
     for layer in layers {
         let mut cursor = String::new();
-        let mut total = 0u64;
-        let mut ok = 0u64;
-        let mut faux = 0u64;
-        let mut ind = 0u64;
-        let mut shown = 0usize;
+        let total = AtomicU64::new(0);
+        let ok = AtomicU64::new(0);
+        let faux = AtomicU64::new(0);
+        let ind = AtomicU64::new(0);
+        let shown = AtomicU64::new(0);
+        let sampled = AtomicU64::new(0);
+        let alias_sample = AtomicU64::new(0);
+        let hole_sample = AtomicU64::new(0);
+        let samples: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
         loop {
             let page = db.load_layer_page(layer, &cursor, PAGE)?;
@@ -286,31 +330,31 @@ pub fn verify(db: &LocalDb, layers: std::ops::RangeInclusive<usize>, sample: usi
             }
             cursor = page.last().map(|p| p.0.clone()).unwrap_or(cursor);
 
-            for (hash, board, player, last_move, stored) in &page {
-                total += 1;
+            page.par_iter().for_each(|(hash, board, player, last_move, stored)| {
+                total.fetch_add(1, Ordering::Relaxed);
                 let (cb, cp, clm) = crate::symmetry::canonical_position(board, *player, *last_move);
                 match resolve_via_children(&cb, cp, clm, &table) {
                     Some(solved) => {
                         let sr = stored.chars().next().unwrap_or('D');
                         if solved.result == sr {
-                            ok += 1;
+                            ok.fetch_add(1, Ordering::Relaxed);
                         } else {
-                            faux += 1;
-                            if shown < 5 {
-                                shown += 1;
-                                println!(
-                                    "  FAUX {hash} : stocké {sr}, recalculé {} ({} vides, joueur {cp})",
-                                    solved.result,
-                                    empty_cells(&cb)
-                                );
-                                println!("{}", render(&cb));
+                            faux.fetch_add(1, Ordering::Relaxed);
+                            if shown.fetch_add(1, Ordering::Relaxed) < 5 {
+                                if let Ok(mut guard) = samples.lock() {
+                                    guard.push(format!(
+                                        "  FAUX {hash} : stocké {sr}, recalculé {} ({} vides, joueur {cp})\n{}",
+                                        solved.result,
+                                        empty_cells(&cb),
+                                        render(&cb)
+                                    ));
+                                }
                             }
                         }
                     }
                     None => {
-                        ind += 1;
-                        if sampled < sample {
-                            sampled += 1;
+                        ind.fetch_add(1, Ordering::Relaxed);
+                        if sampled.fetch_add(1, Ordering::Relaxed) < sample as u64 {
                             let mut other = false;
                             for r in 0..crate::game::BOARD_SIZE {
                                 for c in 0..crate::game::BOARD_SIZE {
@@ -323,15 +367,32 @@ pub fn verify(db: &LocalDb, layers: std::ops::RangeInclusive<usize>, sample: usi
                                 }
                             }
                             if other {
-                                alias_sample += 1;
+                                alias_sample.fetch_add(1, Ordering::Relaxed);
                             } else {
-                                hole_sample += 1;
+                                hole_sample.fetch_add(1, Ordering::Relaxed);
                             }
                         }
                     }
                 }
+            });
+        }
+
+        if let Ok(guard) = samples.lock() {
+            for line in guard.iter() {
+                println!("{line}");
             }
         }
+
+        let total = total.load(Ordering::Relaxed);
+        let ok = ok.load(Ordering::Relaxed);
+        let faux = faux.load(Ordering::Relaxed);
+        let ind = ind.load(Ordering::Relaxed);
+        let indecidables = sampled.load(Ordering::Relaxed);
+        // Seuls les premiers `sample` indécidables sont réellement triés alias/trou ;
+        // annoncer le total donnerait un échantillon bien plus gros qu'il ne l'est.
+        let sampled = indecidables.min(sample as u64) as usize;
+        let alias_sample = alias_sample.load(Ordering::Relaxed);
+        let hole_sample = hole_sample.load(Ordering::Relaxed);
 
         println!(
             "couche {layer:>2} : {total:>11} lignes | {ok:>11} ok | {faux:>7} faux | {ind:>11} indécidables"
@@ -339,13 +400,16 @@ pub fn verify(db: &LocalDb, layers: std::ops::RangeInclusive<usize>, sample: usi
         grand_ok += ok;
         grand_faux += faux;
         grand_ind += ind;
+        alias_sample_total += alias_sample;
+        hole_sample_total += hole_sample;
+        sampled_total += sampled;
     }
 
     println!();
     println!("BILAN : {grand_ok} ok | {grand_faux} faux | {grand_ind} indécidables");
-    if sampled > 0 {
+    if sampled_total > 0 {
         println!(
-            "Échantillon de {sampled} indécidables : {alias_sample} alias fantômes, {hole_sample} vrais trous"
+            "Échantillon de {sampled_total} indécidables (sur {grand_ind}) : {alias_sample_total} alias fantômes, {hole_sample_total} vrais trous"
         );
     }
     Ok(())

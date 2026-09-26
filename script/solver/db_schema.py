@@ -61,6 +61,9 @@ CREATE INDEX IF NOT EXISTS idx_positions_solved_at ON positions(solved_at);
 CREATE INDEX IF NOT EXISTS idx_opening_ply ON opening_book(ply);
 CREATE INDEX IF NOT EXISTS idx_work_queue_status ON work_queue(status);
 CREATE INDEX IF NOT EXISTS idx_work_queue_claimed ON work_queue(claimed_at);
+-- Pagination par couche (WHERE empty_cells=? AND hash>? ORDER BY hash) : sans index
+-- composite, SQLite trie toute la couche à chaque page — coût quadratique.
+CREATE INDEX IF NOT EXISTS idx_positions_layer_hash ON positions(empty_cells, hash);
 """
 
 
@@ -106,6 +109,8 @@ _MIGRATIONS = [
     "ALTER TABLE opening_book ADD COLUMN current_player INTEGER",
     "ALTER TABLE opening_book ADD COLUMN pos_last_move_row INTEGER",
     "ALTER TABLE opening_book ADD COLUMN pos_last_move_col INTEGER",
+    # Index composite pour la pagination par couche du vérificateur/sweeper Rust.
+    "CREATE INDEX IF NOT EXISTS idx_positions_layer_hash ON positions(empty_cells, hash)",
 ]
 
 

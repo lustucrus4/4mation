@@ -90,6 +90,14 @@ struct Args {
 
     sweep_to: usize,
 
+    /// Réparation : réécrit les valeurs stockées incohérentes avec les enfants, au lieu
+    /// de sauter les positions déjà connues (`--sweep-from` requis ; lancer du bas vers le
+    /// haut pour propager les corrections)
+
+    #[arg(long)]
+
+    repair: bool,
+
     /// Chemin vers tablebase.db
 
     #[arg(long, default_value = DEFAULT_DB)]
@@ -674,7 +682,17 @@ fn main() -> Result<()> {
     // Vérification : la valeur stockée de chaque position est-elle cohérente ?
     if args.verify {
 
-        return layer_sweep::verify(&db, 1..=12, 3000);
+        // `--sweep-from M --sweep-to N` restreint la vérification à ces couches, ce qui
+        // permet de re-contrôler une couche réparée sans repayer les 30 M de lignes.
+        let layers = match args.sweep_from {
+
+            Some(from) => from..=args.sweep_to,
+
+            None => 1..=12,
+
+        };
+
+        return layer_sweep::verify(&db, layers, 3000);
 
     }
 
@@ -694,11 +712,11 @@ fn main() -> Result<()> {
 
         for layer in from..args.sweep_to {
 
-            let stats = layer_sweep::sweep_layer(&db, layer, &table)?;
+            let stats = layer_sweep::sweep_layer(&db, layer, &table, args.repair)?;
 
             info!(
 
-                "Couche {} complétée : {} positions en {:.0}s ({:.0}/s), {} connues, {} inconnues",
+                "Couche {} complétée : {} positions en {:.0}s ({:.0}/s), {} connues, {} réparées, {} inconnues",
 
                 layer + 1,
 
@@ -709,6 +727,8 @@ fn main() -> Result<()> {
                 stats.rate(),
 
                 stats.known,
+
+                stats.repaired,
 
                 stats.incomplete
 

@@ -59,6 +59,7 @@ Ou directement :
 | `--min-pending` | `5000` | Tampon file avant pause exploration |
 | `--sweep-from N` | — | Balayage exhaustif : complète la couche N+1 à partir de N, puis s'arrête |
 | `--sweep-to M` | `8` | Dernière couche à compléter (incluse) pour `--sweep-from` |
+| `--repair` | — | Avec `--sweep-from` : recalcule et **réécrit** les valeurs incohérentes au lieu de sauter les positions déjà connues (lancer du bas vers le haut) |
 | `--diag-layer N` | — | Diagnostic : classe les parents irrésolubles (alias fantômes / vrais trous) |
 | `--audit-ghosts` | — | DRY-RUN : parcourt `positions` en lecture seule et rapporte les lignes fantômes par catégorie (voir « Nettoyage des lignes fantômes ») |
 | `--purge-ghosts` | — | Supprime réellement les lignes fantômes par lots transactionnels (faire une sauvegarde du fichier avant) |
@@ -367,9 +368,85 @@ décompte absolu.
 
 Recalcule la valeur de chaque position depuis ses enfants et la compare à la valeur
 stockée : `ok` (cohérente), `faux` (contredite), `indécidable` (au moins un enfant
-manque). Les valeurs stockées ne contredisent jamais leurs enfants — aucune valeur
-fausse n'a été trouvée — mais une large part des positions n'est pas revérifiable,
-faute d'enfants présents en base.
+manque). Une large part des positions n'est pas revérifiable, faute d'enfants présents
+en base ; les `faux` sont, eux, des contradictions franches — donnée à corriger.
+
+`--sweep-from N --sweep-to M` restreint la vérification à ces couches : on re-contrôle
+une couche réparée sans repayer les 30 M de lignes.
+
+**Coût des entrées/sorties.** La vérification parcourt chaque couche par pages
+(`WHERE empty_cells = ? AND hash > ? ORDER BY hash LIMIT ?`). Sans index composite,
+SQLite trie la couche entière **à chaque page** : la couche 7 (7,3 M de lignes) mettait
+plus de vingt minutes. L'index composite `idx_positions_layer_hash ON
+positions(empty_cells, hash)` — créé par `init_db` (Rust et Python) et présent sur
+`tablebase.db` — en fait un parcours de plage.
+Ajouté au parallélisme par page (`rayon`), la même vérification tombe à **37 s**.
+
+### Réparation (`--sweep-from N --repair`)
+
+Le balayage normal **saute les positions déjà connues** : une valeur devenue périmée
+après la correction d'un de ses enfants n'est donc jamais réécrite, et `--verify` la
+signale indéfiniment. `--repair` lève ce court-circuit : la valeur de chaque position
+est recalculée depuis ses enfants et réécrite **seulement si elle diffère**, ce qui
+limite les écritures aux seules lignes incohérentes. À lancer **du bas vers le haut**,
+pour que la correction d'une couche serve de base à la suivante :
+
+```powershell
+.\target\release\4mation-local.exe --db ..\solver\data\tablebase.db --sweep-from 6 --sweep-to 12 --repair
+```
+
+Puis re-vérifier : `--verify` doit retomber à **0 faux** sur les couches réparées.
+
+Mesures du 26/09/2026, du bas vers le haut :
+
+| Couche | Réparation | Re-vérification |
+|--------|-----------|-----------------|
+| 7 | 289 valeurs périmées (`L`/`D` stockés, `W` recalculé) réécrites en 29 s (`--sweep-from 6 --sweep-to 7 --repair`) | **0 faux** sur 7 285 187 lignes en 37 s |
+| 8 | **616 valeurs périmées** réécrites en 32 s (`--sweep-from 7 --sweep-to 8 --repair`) — propagation des corrections de la couche 7 | **0 faux** sur 17 445 805 lignes en 82 s (441 894 indécidables : 4,4 % de la couche, dont 97,6 % d'alias fantômes sur l'échantillon) |
+
+Les couches 1 à 6 étaient saines au premier passage (`0 faux`).
+
+### Réparation ciblée (`script/solver/repair_stale_positions.py`)
+
+Le répareteur de masse réécrit une couche entière : c'est le bon outil pour une dérive
+systématique, mais disproportionné pour quelques lignes isolées — et, sur les couches
+hautes, il a un coût caché : en mode `--repair` il **insère aussi les positions
+manquantes** de la couche suivante (le court-circuit ne porte que sur les positions déjà
+connues), ce qui ferait grossir la base de plusieurs gigaoctets pour corriger une ligne.
+`repair_stale_positions.py` corrige donc **uniquement** les hashes demandés, en
+recalculant valeur, taux et meilleur coup depuis les enfants présents dans la base :
+
+```powershell
+python script\solver\repair_stale_positions.py 099f04b0a8c243bc --dry-run
+python script\solver\repair_stale_positions.py 099f04b0a8c243bc
+```
+
+Une position dont un enfant manque est laissée intacte : la corriger reviendrait à
+inventer une valeur.
+
+### Audit complet du 26/09/2026
+
+`--verify` sur **toute** la table (couches 1 à 12, 30 018 767 lignes) en **106 s** :
+
+| Couche | Lignes | `ok` | `faux` | Indécidables |
+|--------|-------:|-----:|-------:|-------------:|
+| 1–6 | 1 245 852 | 467 288 | **0** | 778 564 |
+| 7 | 7 285 187 | 4 034 176 | **0** | 3 251 011 |
+| 8 | 17 445 805 | 17 003 911 | **0** | 441 894 |
+| 9 | 891 968 | 448 047 → **448 048** | **1 → 0** | 443 920 |
+| 10–12 | 3 153 955 | 1 305 760 | **0** | 1 848 195 |
+| **Total** | **30 018 767** | **23 259 182 → 23 259 183** | **1 → 0** | 6 759 584 |
+
+Le seul écart — **une** ligne en couche 9 (`099f04b0a8c243bc` : valeur `L` stockée, `W`
+recalculée, meilleur coup déjà correct) — a été corrigé par le script ciblé, puis la
+couche 9 re-vérifiée à **0 faux**. Sur les 27 495 indécidables échantillonnés (sur
+6 759 584), **26 497 sont des alias fantômes** (96 %) et 998 de vrais trous : les
+couches hautes restent **incomplètes**, mais aucune valeur qu'elles affirment n'est
+contredite.
+
+Conséquence pour les bots : toute valeur présente en base est cohérente avec ses
+enfants. Le `level_6` ne peut donc se tromper que là où la base est **muette**
+(couches 9-12 trouées, ouverture non résolue), jamais sur une valeur qu'elle affirme.
 
 ### Ce que la tablebase peut et ne peut pas être
 
@@ -458,9 +535,19 @@ script\solver_rust\target\release\4mation-local.exe --purge-ghosts
   (209 158 / 500 000) retrouvés sur la sauvegarde témoin d'avant purge — le détecteur
   fonctionne, la production est propre. Détail et commandes dans « Nettoyage des lignes
   fantômes »
-- **Réparer la couche 8** : les lignes fantômes étant purgées, la compléter par
-  balayage (`--sweep-from 7`) puis vérifier (`--verify`). C'est la dernière couche
-  raisonnable en taille sur un disque de PC
+- **Réparer les valeurs périmées** : ✅ **terminé**. Outil de masse `--repair` (recalcule
+  et réécrit les valeurs incohérentes au lieu de sauter les positions connues), employé
+  **du bas vers le haut** : couche 7 (289 corrections en 29 s), couche 8 (616 corrections
+  en 32 s, propagation des corrections de la couche 7), puis **1 ligne isolée en couche 9**
+  via `script/solver/repair_stale_positions.py`. Audit final du 26/09/2026 :
+  **0 faux sur les 30 018 767 lignes** en 106 s
+- **Compléter la couche 8** : ⚠️ **partiel**. La couche 8 compte 17,4 M de lignes
+  cohérentes (17,0 M `ok`, **0 `faux`**) mais reste trouée : le balayage 7→8 a laissé
+  44,0 M de candidats parents (doublons compris) irrésolubles, faute d'un enfant
+  présent en couche 7 — elle-même incomplète à ~0,3 %. La compléter exige donc de
+  reboucher d'abord la couche 7 en mode normal (`--sweep-from 6 --sweep-to 7`), c'est-à-dire
+  de remonter la chaîne depuis les couches basses. C'est la dernière couche raisonnable
+  en taille sur un disque de PC
 - **Checkpoint du solveur de preuve** : ✅ `--checkpoint` / `--resume` (voir « Persistance et
   reprise »). La table de transposition en mémoire reste non sérialisée (documenté)
 - **Livre d'ouverture** : ✅ reconstruit par le moteur en mode analyse, avec l'échelle

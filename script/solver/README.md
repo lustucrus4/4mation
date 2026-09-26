@@ -55,7 +55,35 @@ le centre est **démontré gagnant**. C'est aussi l'explication de ce que les pa
 montraient déjà : contre une défense exacte, le second joueur perd systématiquement après
 une ouverture centrale — ce n'est pas un défaut du bot `level_6`, c'est le jeu.
 
-## État de la tablebase (audit complet du 24/09/2026)
+## État de la tablebase
+
+### Audit complet du 26/09/2026 (référence)
+
+`4mation-local.exe --verify` (couches 1 à 12) sur les **30 018 767** positions, en
+**106 s** (index composite `(empty_cells, hash)` + parallélisme par page) :
+
+| Couche | Lignes | `ok` | `faux` | Indécidables |
+|--------|-------:|-----:|-------:|-------------:|
+| 1–6 | 1 245 852 | 467 288 | 0 | 778 564 |
+| 7 | 7 285 187 | 4 034 176 | 0 | 3 251 011 |
+| 8 | 17 445 805 | 17 003 911 | 0 | 441 894 |
+| 9 | 891 968 | 448 048 | 0 | 443 920 |
+| 10–12 | 3 153 955 | 1 305 760 | 0 | 1 848 195 |
+| **Total** | **30 018 767** | **23 259 183** | **0** | 6 759 584 |
+
+- **0 valeur fausse** : toute valeur présente en base est vérifiée par ses enfants.
+- Les 6,76 M « indécidables » sont à **96 %** des **alias fantômes** (même plateau,
+  `last_move` différent : redondance, pas une erreur) et à ~4 % de **vrais trous**
+  (~1 000 sur l'échantillon de 27 495, soit ~0,25 M extrapolés).
+- Les valeurs périmées laissées par la correction d'enfants après coup ont été réparées
+  du bas vers le haut : 289 en couche 7, 616 en couche 8 (`--sweep-from N --repair`),
+  puis 1 ligne isolée en couche 9 (`repair_stale_positions.py`). Détail et commandes :
+  `solver_rust/README.md`, « Vérification / Réparation ».
+- Les couches 8-12 restent **incomplètes** (le balayage 7→8 a laissé 44 M de candidats
+  parents irrésolubles) : le comblement se fait par
+  `4mation-local --sweep-from N --sweep-to M`.
+
+### Audit historique du 24/09/2026
 
 `4mation-local.exe --verify` (couches 1 à 12), sur les 24 426 473 positions d'alors
 (rapport détaillé : `AUDIT_TABLEBASE_2026-09-24.md`) :
@@ -65,15 +93,8 @@ BILAN : 11 076 663 ok | 0 faux | 13 349 810 indécidables
 Échantillon de 3000 indécidables : 2841 alias fantômes, 159 vrais trous
 ```
 
-- **0 valeur fausse** sur les 11,1 M de positions vérifiables : la base est saine.
-- Les 13,3 M « indécidables » sont à ~95 % des **alias fantômes** (même plateau, `last_move`
-  différent : redondance, pas une erreur) et à ~5 % de **vrais trous** (~0,7 M estimés).
-- Conséquence : les couches 1-7 sont solides, les couches 8-12 sont **partielles**. Le
-  comblement se fait par `4mation-local --sweep-from / --sweep-to`.
-- **Depuis**, la base a grossi (30 018 767 positions) et les lignes fantômes ont été purgées :
-  l'audit complet du 26/09/2026 n'en trouve plus aucune (mesures et commandes dans
-  `solver_rust/README.md`, « Nettoyage des lignes fantômes »). Ce tableau reste la référence
-  pour les verdicts `ok` / `faux` / `indécidable`, pas pour le décompte de lignes actuel.
+Conservé pour mémoire : ce passage a servi à établir la sémantique des verdicts
+`ok` / `faux` / `indécidable`, mais ses décomptes de lignes sont périmés.
 
 ## Structure
 
@@ -88,6 +109,7 @@ script/solver/
 ├── exhaustive_explorer.py           # BFS avant + rétrograde parents
 ├── retrograde_solver.py             # Moteur rétrograde par position
 ├── db_schema.py                     # Schéma SQLite partagé
+├── repair_stale_positions.py        # Réparation ciblée des valeurs périmées (--verify)
 ├── solver_status.py                 # Fichier JSON live (API + dashboard)
 ├── position_hasher.py               # Hash Zobrist des positions
 └── data/
@@ -377,10 +399,12 @@ de ses enfants et la compare à ce qui est écrit. Il distingue les « alias fan
 (le même plateau enregistré sous un autre dernier coup : valeur juste, clé inatteignable)
 des vrais trous, par échantillonnage des positions indécidables.
 
-Bilan du 24/09/2026 sur 24 426 473 positions : **0 valeur fausse**, 11 076 663 vérifiées,
-13 349 810 indécidables dont 94,7 % d'alias fantômes — soit ≈ 0,7 M de vrais trous
-(2,9 % de la base). La base ne se contredit jamais ; son défaut est la couverture.
-Rapport détaillé, couche par couche : **[AUDIT_TABLEBASE_2026-09-24.md](./AUDIT_TABLEBASE_2026-09-24.md)**.
+Dernier bilan (**26/09/2026**, 30 018 767 positions, 106 s) : **0 valeur fausse**, 
+23 259 183 vérifiées, 6 759 584 indécidables dont 96 % d'alias fantômes. La base ne se
+contredit jamais ; son défaut est la couverture. Détail couche par couche, réparation des
+valeurs périmées et commandes : **`solver_rust/README.md`**, « Vérification / Réparation ».
+Le rapport [AUDIT_TABLEBASE_2026-09-24.md](./AUDIT_TABLEBASE_2026-09-24.md) reste la
+référence méthodologique (définition des verdicts), pas la référence de décompte.
 
 ### Composition de la base (26/09/2026)
 
@@ -401,6 +425,11 @@ résolu **12 575 685** positions de couche 8 en 2 091 s (6 015 positions/s). **4
 candidates ont été écartées parce qu'au moins un de leurs enfants de couche 7 manque : les
 trous d'une couche se propagent mécaniquement à la suivante. C'est la mesure brute du
 déficit de **couverture**, pas un défaut de verdict.
+
+Le passage de **réparation** du 26/09 (`--sweep-from 7 --sweep-to 8 --repair`, 32 s) est
+distinct : il ne complète rien, il recalcule les positions déjà connues et réécrit
+seulement les valeurs périmées — **616 lignes** de couche 8, propagées depuis les 289
+corrections de la couche 7.
 
 ### Diagnostic des trous (`4mation-local --diag-layer 7`)
 

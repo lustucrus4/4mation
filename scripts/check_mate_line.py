@@ -9,7 +9,14 @@ mat annoncé dans le nombre de demi-coups annoncé.
 C'est aussi le moyen le plus simple de chercher un **schéma gagnant** : la suite de
 coups produite est une ligne forcée, reproductible, qui se termine par un gain.
 
-    python scripts/check_mate_line.py --json _tmp_partie_diag.json --ply 5 --depth 26
+    python scripts/check_mate_line.py --json <journal.json> --ply 5 --depth 26
+
+Le journal n'est pas livre avec le depot : il vient d'un export de partie au format
+`{"game": {"moves": [{"ply": int, "board": 7x7, "player": int,
+"last_move": [r,c] | null, "move": [r,c]}, …]}}`. Ce script a besoin de l'historique
+complet jusqu'au ply de depart pour reconstruire l'etat du moteur de jeu en le rejouant
+(injecter le plateau a la main est volontairement evite : c'est le genre de raccourci qui
+a deja produit des bots jouant depuis un plateau vide).
 """
 
 from __future__ import annotations
@@ -48,14 +55,29 @@ def render(board: np.ndarray) -> List[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Joue une ligne annoncée mat forcé")
-    parser.add_argument("--json", default="_tmp_partie_diag.json")
+    parser.add_argument(
+        "--json",
+        default=None,
+        help="journal de partie ; sans lui, le contrôle ne peut pas partir d'une position",
+    )
     parser.add_argument("--ply", type=int, default=5, help="Demi-coup de départ")
     parser.add_argument("--depth", type=int, default=26)
     parser.add_argument("--time-ms", type=int, default=8000)
     parser.add_argument("--max-plies", type=int, default=60)
     args = parser.parse_args()
 
-    data = json.loads(Path(args.json).read_text(encoding="utf-8"))
+    if not args.json:
+        # Ce contrôle rejoue l'historique pour reconstruire l'état : partir du plateau vide
+        # ne dirait rien d'une annonce de mat, donc on refuse plutôt que de faire semblant.
+        raise SystemExit(
+            "Journal requis : passez --json <journal.json> (voir l'en-tête du script pour "
+            "le format). Il n'est pas livré avec le dépôt."
+        )
+    journal = Path(args.json)
+    if not journal.exists():
+        raise SystemExit(f"Journal introuvable : {journal} (voir l'en-tête du script)")
+
+    data = json.loads(journal.read_text(encoding="utf-8"))
     start: Optional[Dict[str, Any]] = None
     for entry in data["game"]["moves"]:
         if entry["ply"] == args.ply:

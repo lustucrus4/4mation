@@ -332,6 +332,60 @@ def test_probe_profiles() -> None:
         check(False, "profil inconnu rejeté")
 
 
+def test_ladder_contract() -> None:
+    """Contrat d'échelle : *que* des niveaux de difficulté, strictement ordonnés.
+
+    Exigence produit : le joueur ne choisit pas un « type » de bot, mais un cran de
+    difficulté, du plus facile (niveau 1) à l'impossible (niveau 6), et chaque cran doit
+    être franchement distinct du voisin. Ce test verrouille l'invariant pour qu'une
+    édition future ne puisse pas, par mégarde, publier deux niveaux indiscernables,
+    inverser l'ordre, ou ajouter un bot hors échelle.
+    """
+    print("Contrat d'échelle (difficultés seules, strictement ordonnées) :")
+    registry = BotRegistry()
+    bots = registry.list_bots()
+    ids = [b["id"] for b in bots]
+
+    check(ids == [f"level_{i}" for i in range(1, 7)],
+          "l'API n'expose que les 6 niveaux, dans l'ordre croissant")
+    check([b["level"] for b in bots] == list(range(1, 7)),
+          "le champ `level` suit l'ordre de l'échelle")
+
+    from api.services.elo import BOT_ELO  # noqa: E402
+
+    elos = [BOT_ELO[i] for i in ids]
+    check(all(b > a for a, b in zip(elos, elos[1:])),
+          "l'Elo publié est strictement croissant")
+
+    meta = BotRegistry._LEVELS
+    depths = [meta[i]["depth"] for i in ids]
+    times = [meta[i]["time_budget_ms"] for i in ids]
+    check(all(b > a for a, b in zip(depths, depths[1:])),
+          "la profondeur de recherche est strictement croissante")
+    check(all(b > a for a, b in zip(times, times[1:])),
+          "le budget temps est strictement croissant")
+
+    # Levier de faiblesse volontaire : `blunder_rate` (coup au hasard) pour le bas de
+    # l'échelle, `inaccuracy_rate` (2ᵉ choix du moteur) pour le haut. Leur somme doit
+    # décroître strictement, sinon deux niveaux deviennent indiscernables en duel.
+    fallibility = [
+        meta[i]["blunder_rate"] + meta[i].get("inaccuracy_rate", 0.0) for i in ids
+    ]
+    check(all(b < a for a, b in zip(fallibility, fallibility[1:])),
+          "le taux d'erreur volontaire décroît strictement")
+
+    check(fallibility[-1] == 0.0 and meta["level_6"]["proven_line"],
+          "le niveau 6 est infaillible (preuve jouée, zéro erreur)")
+    check(all(meta[i]["proven_line"] for i in ("level_4", "level_5", "level_6")),
+          "les niveaux 4 à 6 jouent la preuve (tablebase / livre)")
+    check(not any(meta[i]["proven_line"] for i in ("level_1", "level_2", "level_3")),
+          "les niveaux 1 à 3 jouent sans raccourci de preuve")
+
+    names = [b["name"] for b in bots]
+    check(names[0].startswith("Niveau 1") and names[-1].endswith("Impossible"),
+          "les libellés vont du « Très facile » à l'« Impossible »")
+
+
 def test_measured_ladder() -> None:
     """Contrôle l'échelle réellement mesurée si le rapport d'arène est présent."""
     print("Échelle mesurée (arena_bots.json) :")
@@ -397,6 +451,7 @@ def main() -> int:
     test_micro_arena()
     test_probe_monotonicity()
     test_probe_profiles()
+    test_ladder_contract()
     test_measured_ladder()
     print(f"\n{CHECKS - FAILURES}/{CHECKS} vérifications OK")
     if FAILURES:

@@ -162,7 +162,7 @@ Les fichiers sont générés dans `4mation_dashboard_deploy/`.
 
 | POST | `/api/move` | Coup joueur humain (joueur 1) |
 
-| POST | `/api/ai_move` | Coup IA (`bot_id`, défaut `minimax_d4`) |
+| POST | `/api/ai_move` | Coup IA (`bot_id`, défaut `level_3`) |
 
 | POST | `/api/analyze` | Analyse MCTS on-demand (budget 500–5000 ms) |
 
@@ -206,6 +206,12 @@ exact + tablebase) : leur seule différence est le **taux d'erreur graduée** (p
 de jouer le 2ᵉ choix du moteur au lieu du meilleur). Le niveau 6 a un taux nul : c'est
 le seul infaillible **dans la zone résolue**, d'où son nom. Chaque niveau retombe
 automatiquement sur le chemin du niveau inférieur si le binaire du moteur est absent.
+
+Il n'existe **que** ces six niveaux : le joueur choisit un *cran de difficulté*, pas un
+type de bot. `scripts/check_bot_arena.py` verrouille cet invariant par un test de contrat
+(`test_ladder_contract`) — identifiants `level_1`…`level_6` exactement, libellés du
+« Très facile » à l'« Impossible », profondeur, budget temps et Elo strictement croissants,
+taux d'erreur volontaire strictement décroissant.
 
 #### Limite honnête du niveau 6
 

@@ -363,6 +363,13 @@ class BotRegistry:
         self._bots: Dict[str, DifficultyBot] = {}
 
     def list_bots(self) -> List[Dict[str, Any]]:
+        """Les six niveaux, triés du plus facile au plus dur.
+
+        Le tri est explicite (et non l'ordre d'insertion du dictionnaire) : l'API ne doit
+        jamais présenter l'échelle dans un autre ordre, sinon le joueur choisirait un
+        « adversaire » sans repère de difficulté. `scripts/check_bot_arena.py` verrouille
+        cette propriété.
+        """
         return [
             {
                 "id": bot_id,
@@ -370,7 +377,9 @@ class BotRegistry:
                 "description": meta["description"],
                 "level": meta["level"],
             }
-            for bot_id, meta in self._LEVELS.items()
+            for bot_id, meta in sorted(
+                self._LEVELS.items(), key=lambda item: item[1]["level"]
+            )
         ]
 
     def is_valid_bot(self, bot_id: str) -> bool:

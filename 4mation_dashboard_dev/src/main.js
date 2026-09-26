@@ -12,7 +12,7 @@ const MCTS_BUDGET_MS = 600;
 /** @type {string | null} */
 let sessionId = localStorage.getItem(SESSION_KEY);
 /** @type {string} */
-let selectedBotId = localStorage.getItem("4mation_bot_id") || "minimax_d4";
+let selectedBotId = localStorage.getItem("4mation_bot_id") || "level_3";
 /** @type {"standard"|"learning"} */
 let gameMode = localStorage.getItem(MODE_KEY) || "standard";
 /** @type {boolean} */
@@ -125,6 +125,14 @@ async function ensureSession() {
 async function loadBots() {
   const data = await apiFetch("/api/bots");
   botSelectEl.innerHTML = "";
+  // Le bot mémorisé peut dater d'une version où les identifiants étaient différents
+  // (ex. `minimax_d4`) : l'API n'expose QUE les six niveaux de difficulté, donc un id
+  // inconnu doit être remplacé, sinon chaque coup d'IA part en erreur serveur.
+  if (!data.bots.some((bot) => bot.id === selectedBotId)) {
+    const fallback = data.bots.find((bot) => bot.id === "level_3") || data.bots[0];
+    selectedBotId = fallback ? fallback.id : selectedBotId;
+    localStorage.setItem("4mation_bot_id", selectedBotId);
+  }
   for (const bot of data.bots) {
     const option = document.createElement("option");
     option.value = bot.id;

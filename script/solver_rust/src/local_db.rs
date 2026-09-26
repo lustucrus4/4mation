@@ -1,7 +1,7 @@
 //! Persistance SQLite locale — schéma partagé, exploration et résolution sans réseau.
 
 use anyhow::{Context, Result};
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OpenFlags};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
@@ -166,9 +166,23 @@ fn decode_board(blob: Option<&[u8]>, json: Option<&str>) -> Board {
     [[0i8; crate::game::BOARD_SIZE]; crate::game::BOARD_SIZE]
 }
 
+/// Ligne brute de `positions` pour l'audit : aucune contrainte de complétude,
+/// afin de voir aussi les lignes incohérentes (joueur ou plateau absent).
+pub struct RawPositionRow {
+    pub hash: String,
+    pub board_blob: Option<Vec<u8>>,
+    pub board_json: Option<String>,
+    pub current_player: Option<i32>,
+    pub last_move_row: Option<i32>,
+    pub last_move_col: Option<i32>,
+}
+
 #[derive(Clone)]
 pub struct LocalDb {
     path: String,
+    /// Connexion en lecture seule : utilisée par l'audit (dry-run) pour ne pas
+    /// écrire dans une tablebase de production via `init_schema`.
+    readonly: bool,
 }
 
 impl LocalDb {
@@ -180,22 +194,54 @@ impl LocalDb {
             .to_str()
             .context("chemin DB invalide")?
             .to_string();
-        let db = Self { path: path_str };
+        let db = Self {
+            path: path_str,
+            readonly: false,
+        };
         db.init_schema()?;
         info!("Base locale ouverte : {}", db.path);
         Ok(db)
     }
 
+    /// Ouvre la base sans exécuter le schéma ni les migrations : aucune écriture.
+    /// Indispensable pour auditer une tablebase de production sans la modifier.
+    pub fn open_readonly(path: &Path) -> Result<Self> {
+        let path_str = path
+            .to_str()
+            .context("chemin DB invalide")?
+            .to_string();
+        let db = Self {
+            path: path_str,
+            readonly: true,
+        };
+        info!("Base locale ouverte en lecture seule : {}", db.path);
+        Ok(db)
+    }
+
     fn conn(&self) -> Result<Connection> {
-        let conn = Connection::open(&self.path)?;
+        let conn = if self.readonly {
+            Connection::open_with_flags(
+                &self.path,
+                OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
+            )?
+        } else {
+            Connection::open(&self.path)?
+        };
         // `journal_mode=WAL` est persistant dans le fichier de base : le rejouer à
         // chaque ouverture de connexion exigeait un verrou d'écriture et faisait
         // échouer les opérations concurrentes du solveur (`database is locked`).
         // Il n'est donc posé qu'une seule fois, dans `init_schema`.
-        conn.execute_batch(
-            "PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL;
-             PRAGMA cache_size=-65536; PRAGMA temp_store=MEMORY; PRAGMA mmap_size=268435456;",
-        )?;
+        if self.readonly {
+            conn.execute_batch(
+                "PRAGMA busy_timeout=30000; PRAGMA cache_size=-65536;
+                 PRAGMA temp_store=MEMORY;",
+            )?;
+        } else {
+            conn.execute_batch(
+                "PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL;
+                 PRAGMA cache_size=-65536; PRAGMA temp_store=MEMORY; PRAGMA mmap_size=268435456;",
+            )?;
+        }
         Ok(conn)
     }
 
@@ -844,6 +890,58 @@ impl LocalDb {
             out.push((hash, board, player as i8, last_move, result));
         }
         Ok(out)
+    }
+
+    /// Page brute de `positions`, pagination par clé (`hash > after`), sans filtre.
+    pub fn page_positions_raw(&self, after_hash: &str, limit: usize) -> Result<Vec<RawPositionRow>> {
+        let conn = self.conn()?;
+        let mut stmt = conn.prepare(
+            "SELECT hash, board_blob, board_json, current_player,
+                    pos_last_move_row, pos_last_move_col
+             FROM positions
+             WHERE hash > ?1
+             ORDER BY hash LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![after_hash, limit as i64], |row| {
+            Ok(RawPositionRow {
+                hash: row.get(0)?,
+                board_blob: row.get(1)?,
+                board_json: row.get(2)?,
+                current_player: row.get(3)?,
+                last_move_row: row.get(4)?,
+                last_move_col: row.get(5)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
+    /// Supprime un lot de hashes de `positions` dans une transaction unique.
+    /// Le `IN (...)` est borné par l'appelant (limite SQLite du nombre de variables).
+    pub fn delete_positions_batch(&self, hashes: &[String]) -> Result<usize> {
+        if hashes.is_empty() {
+            return Ok(0);
+        }
+        let conn = self.conn()?;
+        conn.execute("BEGIN IMMEDIATE", [])?;
+        let deleted = {
+            let placeholders = std::iter::repeat("?")
+                .take(hashes.len())
+                .collect::<Vec<_>>()
+                .join(",");
+            let sql = format!("DELETE FROM positions WHERE hash IN ({placeholders})");
+            let mut stmt = conn.prepare(&sql)?;
+            let params: Vec<&dyn rusqlite::ToSql> = hashes
+                .iter()
+                .map(|h| h as &dyn rusqlite::ToSql)
+                .collect();
+            stmt.execute(params.as_slice())?
+        };
+        conn.execute("COMMIT", [])?;
+        Ok(deleted)
     }
 
     /// Insère un lot de positions résolues par balayage de couche.

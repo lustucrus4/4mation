@@ -377,6 +377,49 @@ Bilan du 24/09/2026 sur 24 426 473 positions : **0 valeur fausse**, 11 076 663 v
 (2,9 % de la base). La base ne se contredit jamais ; son défaut est la couverture.
 Rapport détaillé, couche par couche : **[AUDIT_TABLEBASE_2026-09-24.md](./AUDIT_TABLEBASE_2026-09-24.md)**.
 
+### Composition de la base (26/09/2026)
+
+`SELECT empty_cells, COUNT(*) FROM positions` — 30 018 767 lignes :
+
+| Cases vides | Positions | État |
+|---:|---:|------|
+| 1 à 6 | 1 241 852 | complètes (BFS initial) |
+| 7 | 7 285 187 | complète |
+| 8 | 17 445 805 | balayée le 26/09 |
+| 9 | 891 968 | partielle |
+| 10 | 1 167 468 | partielle |
+| 11 | 1 222 621 | partielle |
+| 12 | 763 866 | partielle |
+
+Le balayage `--sweep-from 7 --sweep-to 8` a lu les 7 285 187 positions de la couche 7 et
+résolu **12 575 685** positions de couche 8 en 2 091 s (6 015 positions/s). **43 244 973**
+candidates ont été écartées parce qu'au moins un de leurs enfants de couche 7 manque : les
+trous d'une couche se propagent mécaniquement à la suivante. C'est la mesure brute du
+déficit de **couverture**, pas un défaut de verdict.
+
+### Diagnostic des trous (`4mation-local --diag-layer 7`)
+
+Le diagnostic génère les parents de la couche N+1 depuis chaque position de la couche N et
+classe chaque parent irrésoluble :
+
+- **alias fantôme** : le plateau est résoluble sous un *autre* dernier coup — la position
+  est saine, seule la clé `(plateau, joueur, dernier coup)` stockée est inatteignable ;
+- **vrai trou** : le plateau reste irrésoluble sous les 64 derniers coups possibles, un
+  enfant réellement jouable manque à la base.
+
+Mesure du 26/09/2026, **échantillon** de 34 pages de 20 000 positions (680 000 des
+7 285 187 positions de couche 7, soit 9 %) :
+
+| Parents générés | Alias fantômes | Vrais trous |
+|---:|---:|---:|
+| 6 231 884 | 4 330 606 (69,5 %) | 121 220 (1,9 %) |
+
+Les proportions sont stables d'une page à l'autre (moins de 0,05 point d'écart) : la
+quasi-totalité des parents « manquants » sont des alias, et les vrais trous représentent
+moins de 2 % des parents générés. L'échantillonnage est assumé — un passage exhaustif de
+la couche 7 prend plusieurs heures — et suffit à trancher la seule question qui compte ici
+(« alias ou trous ? »), sans prétendre à un décompte absolu.
+
 ## API de suivi (dashboard)
 
 | Route | Description |

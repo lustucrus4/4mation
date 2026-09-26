@@ -60,6 +60,11 @@ Ou directement :
 | `--sweep-from N` | — | Balayage exhaustif : complète la couche N+1 à partir de N, puis s'arrête |
 | `--sweep-to M` | `8` | Dernière couche à compléter (incluse) pour `--sweep-from` |
 | `--diag-layer N` | — | Diagnostic : classe les parents irrésolubles (alias fantômes / vrais trous) |
+| `--audit-ghosts` | — | DRY-RUN : parcourt `positions` en lecture seule et rapporte les lignes fantômes par catégorie (voir « Nettoyage des lignes fantômes ») |
+| `--purge-ghosts` | — | Supprime réellement les lignes fantômes par lots transactionnels (à réserver à une copie) |
+| `--ghost-limit N` | `0` | Limite de lignes parcourues par l'audit (`0` = toute la table) |
+| `--ghost-sample N` | `5` | Nombre de lignes fantômes affichées en échantillon |
+| `--ghost-batch N` | `500` | Hashes par transaction de suppression (max 900) |
 | `--verify` | — | Recalcule chaque valeur depuis ses enfants et la compare au stockage |
 | `--max-iterations` | — | Arrêt après N résolutions (tests) |
 | `--once` | — | Un cycle puis sortie |
@@ -154,6 +159,36 @@ Ou, avec un essai de 2 minutes :
 ```bat
 script\solver_rust\target\release\4mation-proof.exe --tt-mb 1024 --seconds 120
 ```
+
+### Persistance et reprise (`--checkpoint` / `--resume`)
+
+`4mation-proof` n'a pas de tablebase : son état utile vit dans une table de transposition
+en mémoire, perdue à l'arrêt. Le drapeau `--checkpoint <fichier.json>` persiste ce qui est
+**réellement reprenable**, après chaque profondeur et à la fin :
+
+- la **profondeur déjà tentée** pour chaque ouverture (orbite D₄) — l'approfondissement
+  itératif étant monotone, une reprise saute les profondeurs déjà jouées ;
+- les **ouvertures déjà tranchées** avec leur valeur exacte (victoire/nulle/défaite pour le
+  joueur 1). Une reprise les rejoue telles quelles sans recherche.
+
+`--resume` exige `--checkpoint` et recharge le fichier s'il existe (version compatible) :
+
+```bat
+REM 1re session (interrompable à tout moment)
+script\solver_rust\target\release\4mation-proof.exe --checkpoint %TEMP%\proof.json
+REM Reprise : saute les profondeurs et ouvertures déjà faites
+script\solver_rust\target\release\4mation-proof.exe --checkpoint %TEMP%\proof.json --resume
+```
+
+Écriture **atomique** (fichier `.tmp` puis renommage) : un arrêt brutal ne laisse jamais un
+checkpoint tronqué. Un écart de configuration (`--threads`/`--tt-mb`) est signalé mais
+n'empêche pas la reprise.
+
+**Ce qui reste non reprenable (honnêtement) :** le contenu de la table de transposition
+(millions d'entrées) n'est pas sérialisé. Une reprise recalcule donc les sous-arbres non
+couverts par les orbites déjà prouvées ; elle évite seulement de rejouer les ouvertures
+tranchées et les profondeurs insuffisantes. La **valeur d'une ouverture non encore prouvée**
+n'est pas mémorisée entre deux sessions : elle est recalculée.
 
 ## Moteur de jeu (`4mation-engine`)
 
@@ -319,6 +354,15 @@ n'ont pas la même gravité :
 Mesure sur la couche 6 → 7 : sur 12 171 733 parents générés, **7 040 322 alias
 fantômes (58 %)** et **95 275 vrais trous**.
 
+Mesure du 26/09/2026 sur la couche 7 → 8 : **échantillon** de 34 pages de 20 000
+positions (680 000 des 7 285 187 positions de la couche 7, soit 9 %). Sur 6 231 884
+parents générés : **4 330 606 alias fantômes (69,5 %)** et **121 220 vrais trous
+(1,9 %)**. Les proportions sont stables d'une page à l'autre (moins de 0,05 point
+d'écart), au point de les considérer comme représentatives. L'échantillonnage est
+volontaire : la couche 7 compte 7,3 M de positions, un passage exhaustif dure plusieurs
+heures, et la question posée (« alias ou trous ? ») se tranche sur un échantillon — pas le
+décompte absolu.
+
 ### Vérification (`--verify`)
 
 Recalcule la valeur de chaque position depuis ses enfants et la compare à la valeur
@@ -341,20 +385,65 @@ jusqu'à l'ouverture est **hors de portée** : la position de départ a 49 cases
 tablebase sert aux **finales exactes** (derniers coups) ; le milieu de partie est couvert
 par la recherche de `4mation-engine` puis par le livre d'ouverture.
 
+## Nettoyage des lignes fantômes (`--audit-ghosts` / `--purge-ghosts`)
+
+La tablebase contient des positions **fantômes** : des états impossibles hérités d'anciens
+bugs de génération (voir « Reste à faire »). Le binaire `4mation-local` expose un mode dédié
+qui court-circuite le moteur et travaille directement sur la table `positions`.
+
+Définitions testées, dans l'ordre (la première anomalie rencontrée classe la ligne, et une
+ligne n'est comptée que dans **une seule** catégorie — le jeu supprimé est donc un
+partitionnement exact) :
+
+| Catégorie | Test |
+|-----------|------|
+| `plateau absent` | ni `board_blob` ni `board_json` exploitable |
+| `cellule invalide` | une case du plateau vaut autre chose que 0, 1 ou 2 |
+| `joueur au trait absent` | `current_player` NULL |
+| `joueur au trait invalide` | `current_player` différent de 1 et de 2 |
+| `dernier coup partiel` | seulement une des deux coordonnées (`pos_last_move_row`/`pos_last_move_col`) |
+| `dernier coup hors limites` | coordonnées présentes mais hors `0..6` |
+| `plateau vide avec dernier coup` | plateau vide mais `pos_last_move_row`/`pos_last_move_col` renseigné |
+| `plateau vide joueur ≠ 1` | plateau vide et `current_player` ≠ 1 (le plateau vide n'a qu'un état initial) |
+| `plateau non vide sans dernier coup` | au moins un pion et aucune case de dernier coup |
+| `case du dernier coup vide` | la case désignée par le dernier coup ne porte aucun pion |
+| `dernier coup de mauvaise couleur` | la case du dernier coup n'appartient pas à l'adversaire du joueur au trait |
+| `parité de pions incohérente` | nombre de pions incompatible avec le trait (`current_player`) |
+| `plateau non connexe` | pions non reliés par adjacence (8-voisinage) |
+
+- **Par défaut : DRY-RUN.** `--audit-ghosts` ouvre la base en **lecture seule**
+  (`SQLITE_OPEN_READ_ONLY`, aucun `init_schema`, aucun verrou d'écriture) et ne supprime rien.
+- **Purge réelle :** `--purge-ghosts` supprime par lots (`DELETE … WHERE hash IN (…)`)
+  dans une transaction par lot (`--ghost-batch`, max 900 hashes pour rester sous la limite
+  de variables SQLite). À n'exécuter que sur une **copie**, jamais sur la base de production.
+- `--ghost-limit N` borne le parcours (utile pour un contrôle rapide sur la vraie base).
+
+```powershell
+# Contrôle borné, sans risque, sur la base de production (lecture seule)
+script\solver_rust\target\release\4mation-local.exe --audit-ghosts --ghost-limit 500000 --ghost-sample 0
+
+# Purge réelle : UNIQUEMENT sur une copie de travail
+copy script\solver\data\tablebase.db %TEMP%\tb_copy.db
+script\solver_rust\target\release\4mation-local.exe --purge-ghosts --db %TEMP%\tb_copy.db
+```
+
 ## Reste à faire (évolutions)
 
 - **Brancher `4mation-engine` sur l'API** : ✅ bot de niveau 6 et ✅ analyse de tout le
   site (`TablebaseLookup.analyze_position` → `api/services/engine_analysis.py`, échelle
   score → taux de victoire calibrée sur la tablebase). Voir `api/README.md`
-- **Purger les lignes fantômes** : la base contient des états impossibles hérités des
-  bugs de génération (58 % des parents de la couche 7, ~404 651 lignes sans dernier
-  coup). Inoffensifs pour les coups joués — un vrai coup a toujours un dernier coup
-  cohérent — mais ils doublent le volume et faussent les statistiques
+- **Purger les lignes fantômes** : ✅ outil d'audit/purge (`--audit-ghosts` / `--purge-ghosts`,
+  voir « Nettoyage des lignes fantômes »). La base contient des états impossibles hérités des
+  bugs de génération (mesures : **58 %** des parents générés lors du balayage 6→7, **69,5 %**
+  sur l'échantillon du balayage 7→8, plus ~404 651 lignes sans dernier coup).
+  Inoffensifs pour les coups joués — un vrai coup a toujours un dernier coup cohérent — mais
+  ils gonflent le volume et faussent les statistiques. **La purge réelle reste à lancer sur
+  la base de production** (opération volontairement non effectuée ici)
 - **Réparer la couche 8** : une fois les lignes fantômes purgées, la compléter par
   balayage (`--sweep-from 7`) puis vérifier (`--verify`). C'est la dernière couche
   raisonnable en taille sur un disque de PC
-- **Checkpoint du solveur de preuve** : `4mation-proof` ne sauvegarde pas son
-  avancement, une interruption fait perdre tout le calcul
+- **Checkpoint du solveur de preuve** : ✅ `--checkpoint` / `--resume` (voir « Persistance et
+  reprise »). La table de transposition en mémoire reste non sérialisée (documenté)
 - **Livre d'ouverture** : ✅ reconstruit par le moteur en mode analyse, avec l'échelle
   calibrée et le flag `exact` réservé aux positions réellement prouvées
   (`script/solver/build_opening_book_engine.py`). Reste à étendre au-delà de la couche 6

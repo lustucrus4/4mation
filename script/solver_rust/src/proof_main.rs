@@ -1,5 +1,6 @@
 //! Solveur exact depuis l'ouverture, avec dashboard local.
 
+use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Duration;
@@ -36,6 +37,14 @@ struct Args {
     /// Ne pas ouvrir le dashboard
     #[arg(long)]
     no_dashboard: bool,
+
+    /// Fichier de checkpoint JSON (permet de reprendre après interruption)
+    #[arg(long)]
+    checkpoint: Option<PathBuf>,
+
+    /// Reprend l'avancement enregistré dans --checkpoint (exige --checkpoint)
+    #[arg(long)]
+    resume: bool,
 }
 
 fn label(v: i8) -> &'static str {
@@ -93,6 +102,10 @@ fn main() -> ExitCode {
         .init();
 
     let args = Args::parse();
+    if args.resume && args.checkpoint.is_none() {
+        eprintln!("--resume exige --checkpoint <fichier>");
+        return ExitCode::from(64);
+    }
     let threads = args.threads.unwrap_or_else(|| {
         std::thread::available_parallelism()
             .map(|n| n.get())
@@ -111,6 +124,8 @@ fn main() -> ExitCode {
         tt_mb: args.tt_mb,
         seconds: args.seconds,
         live: Some(live),
+        checkpoint: args.checkpoint.clone(),
+        resume: args.resume,
     });
 
     let secs = report.elapsed.as_secs_f64().max(0.001);
@@ -142,6 +157,11 @@ fn main() -> ExitCode {
             Some(v) => println!("  ({}, {})  {}", mv.row, mv.col, label(v)),
             None => println!("  ({}, {})  non terminé", mv.row, mv.col),
         }
+    }
+
+    if let Some(path) = &args.checkpoint {
+        println!();
+        println!("Checkpoint : {}", path.display());
     }
 
     if !args.no_dashboard {

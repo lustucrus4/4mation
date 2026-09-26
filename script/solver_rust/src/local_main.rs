@@ -12,6 +12,8 @@ mod explorer;
 
 mod game;
 
+mod ghost_audit;
+
 mod hasher;
 
 mod local_db;
@@ -105,6 +107,36 @@ struct Args {
     #[arg(long)]
 
     verify: bool,
+
+    /// Audit des lignes fantômes en lecture seule (DRY-RUN : aucune suppression)
+
+    #[arg(long)]
+
+    audit_ghosts: bool,
+
+    /// Supprime réellement les lignes fantômes (transaction par lot). À réserver à une copie.
+
+    #[arg(long)]
+
+    purge_ghosts: bool,
+
+    /// Limite de lignes parcourues par l'audit (0 = toute la table)
+
+    #[arg(long, default_value = "0")]
+
+    ghost_limit: u64,
+
+    /// Nombre de lignes fantômes affichées en échantillon
+
+    #[arg(long, default_value = "5")]
+
+    ghost_sample: usize,
+
+    /// Hashes par transaction de suppression (max 900)
+
+    #[arg(long, default_value = "500")]
+
+    ghost_batch: usize,
 
 
 
@@ -274,11 +306,11 @@ struct Args {
 
 fn run_self_check(db: &LocalDb, sample: usize) -> Result<()> {
 
-    use game::{parse_board, Move};
+    use game::{apply_move, is_winning_move, parse_board, Move};
 
     use result_table::ResultTable;
 
-    use solver::{resolve_via_children, RetrogradeSolver};
+    use solver::{resolve_via_children, ChildOracle, RetrogradeSolver, RESULT_DRAW, RESULT_LOSS, RESULT_WIN};
 
 
 
@@ -303,6 +335,8 @@ fn run_self_check(db: &LocalDb, sample: usize) -> Result<()> {
     let mut result_mismatch = 0usize;
 
     let mut best_mismatch = 0usize;
+
+    let mut best_alt = 0usize;
 
     let mut unresolved = 0usize;
 
@@ -400,21 +434,73 @@ fn run_self_check(db: &LocalDb, sample: usize) -> Result<()> {
 
         if solved.best_move != exp_best {
 
-            best_mismatch += 1;
+            // Un « meilleur coup » différent n'est un vrai écart que si le coup
+            // renvoyé n'atteint pas le résultat optimal de la position.
+            let returned_is_optimal = match solved.best_move {
 
-            if best_mismatch <= 10 {
+                None => solved.result == RESULT_LOSS,
 
-                tracing::warn!(
+                Some(mv) => {
 
-                    "best_move diff : attendu {:?} obtenu {:?} (result {})",
+                    if is_winning_move(&board, mv, p) {
 
-                    exp_best,
+                        solved.result == RESULT_WIN
 
-                    solved.best_move,
+                    } else {
 
-                    solved.result
+                        let nb = apply_move(&board, mv, p);
 
-                );
+                        match table.lookup(&nb, 3 - p, Some(mv)) {
+
+                            Some(cv) => {
+
+                                let my_result = match cv.result {
+
+                                    RESULT_WIN => RESULT_LOSS,
+
+                                    RESULT_LOSS => RESULT_WIN,
+
+                                    _ => RESULT_DRAW,
+
+                                };
+
+                                my_result == solved.result
+
+                            }
+
+                            None => true,
+
+                        }
+
+                    }
+
+                }
+
+            };
+
+            if returned_is_optimal {
+
+                best_alt += 1;
+
+            } else {
+
+                best_mismatch += 1;
+
+                if best_mismatch <= 10 {
+
+                    tracing::warn!(
+
+                        "best_move NON optimal : attendu {:?} obtenu {:?} (result {})",
+
+                        exp_best,
+
+                        solved.best_move,
+
+                        solved.result
+
+                    );
+
+                }
 
             }
 
@@ -446,7 +532,7 @@ fn run_self_check(db: &LocalDb, sample: usize) -> Result<()> {
 
     info!(
 
-        "Écarts meilleur coup : {best_mismatch} ({:.4}%)",
+        "Écarts meilleur coup : {best_mismatch} ({:.4}%)  [dont {best_alt} coups alternatifs optimaux]",
 
         100.0 * best_mismatch as f64 / denom as f64
 
@@ -554,6 +640,30 @@ fn main() -> Result<()> {
 
 
     info!("Démarrage 4mation-local — worker_id={}", worker_id);
+
+
+
+    // Audit/purge des lignes fantômes — avant toute ouverture en écriture, pour que
+    // le dry-run se contente d'une connexion en lecture seule.
+    if args.audit_ghosts || args.purge_ghosts {
+
+        let cfg = ghost_audit::GhostAuditConfig {
+
+            purge: args.purge_ghosts,
+
+            limit: args.ghost_limit,
+
+            sample: args.ghost_sample,
+
+            batch_delete: args.ghost_batch,
+
+        };
+
+        ghost_audit::run_and_report(&args.db, &cfg)?;
+
+        return Ok(());
+
+    }
 
 
 

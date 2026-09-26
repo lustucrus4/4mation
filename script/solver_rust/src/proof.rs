@@ -15,9 +15,14 @@
 //! alignements. Les fusionner donnerait un résultat faux.
 
 use std::collections::VecDeque;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+
+use checkpoint::{OrbitProgress, ProgressCheckpoint};
+
+pub mod checkpoint;
 
 use crate::game::BOARD_SIZE;
 #[cfg(test)]
@@ -660,6 +665,10 @@ pub struct ProofConfig {
     /// 0 = jusqu'à la preuve complète.
     pub seconds: u64,
     pub live: Option<Arc<ProofLive>>,
+    /// Fichier de checkpoint JSON. `None` = pas de persistance.
+    pub checkpoint: Option<PathBuf>,
+    /// Reprend l'avancement depuis `checkpoint` s'il existe.
+    pub resume: bool,
 }
 
 /// État lu par le dashboard. Mis à jour entre les profondeurs, pas dans la boucle chaude.
@@ -992,7 +1001,36 @@ impl Default for ProofConfig {
             tt_mb: 1024,
             seconds: 0,
             live: None,
+            checkpoint: None,
+            resume: false,
         }
+    }
+}
+
+/// Écrit le checkpoint de façon atomique (fichier temporaire + renommage).
+/// Aucun effet si `path` est `None`.
+fn write_checkpoint(
+    path: &Option<PathBuf>,
+    progress: &[OrbitProgress],
+    result: Option<i8>,
+    best: Option<(u8, u8)>,
+    threads: usize,
+    tt_mb: usize,
+) {
+    let Some(path) = path else {
+        return;
+    };
+    let cp = ProgressCheckpoint {
+        version: checkpoint::CHECKPOINT_VERSION,
+        threads,
+        tt_mb,
+        updated_at_epoch: checkpoint::now_epoch(),
+        result,
+        best: best.map(|(r, c)| [r, c]),
+        orbits: progress.to_vec(),
+    };
+    if let Err(e) = cp.save(path) {
+        eprintln!("Checkpoint non écrit ({}) : {e}", path.display());
     }
 }
 
@@ -1089,45 +1127,156 @@ pub fn solve_opening(cfg: &ProofConfig) -> ProofReport {
     // Centre d'abord, jusqu'à preuve, puis l'ouverture suivante.
     // Les cœurs se partagent l'arbre de l'ouverture en cours.
     let mut values = vec![UNKNOWN; root.n];
-    pool.install(|| {
-        'openings: for i in 0..root.n {
-            if ctrl.stopped() {
-                break;
-            }
+
+    // État persistant par ouverture : permet de reprendre après une interruption.
+    let mut orbit_progress: Vec<OrbitProgress> = (0..root.n)
+        .map(|i| {
             let mv = root.m[i];
-            let row = mv / N as u8;
-            let col = mv % N as u8;
-            eprintln!("Ouverture ({row}, {col})");
-            if let Some(live) = &cfg.live {
-                live.begin_opening(row, col);
-            }
-            for depth in 1i16..=CELLS as i16 {
-                if ctrl.stopped() {
-                    break 'openings;
+            OrbitProgress::pending(mv / N as u8, mv % N as u8)
+        })
+        .collect();
+
+    if cfg.resume {
+        match &cfg.checkpoint {
+            Some(path) => match ProgressCheckpoint::load(path) {
+                Ok(cp) if cp.version == checkpoint::CHECKPOINT_VERSION => {
+                    if !cp.matches_config(cfg.threads, cfg.tt_mb) {
+                        eprintln!(
+                            "Attention : checkpoint produit avec {} threads / {} Mo (courant {} / {}) — reprise quand même",
+                            cp.threads, cp.tt_mb, cfg.threads, cfg.tt_mb
+                        );
+                    }
+                    let mut restored = 0usize;
+                    for p in &mut orbit_progress {
+                        if let Some(o) = cp.find(p.row, p.col) {
+                            p.status = o.status.clone();
+                            p.value_for_first = o.value_for_first;
+                            p.next_depth = o.next_depth.max(1);
+                            p.elapsed_sec = o.elapsed_sec;
+                            restored += 1;
+                        }
+                    }
+                    let proven = orbit_progress.iter().filter(|p| p.is_proven()).count();
+                    eprintln!(
+                        "Reprise depuis {} : {restored}/{} ouvertures restaurées, {proven} déjà prouvées",
+                        path.display(),
+                        orbit_progress.len()
+                    );
                 }
-                let nodes = ctrl.nodes.load(Ordering::Relaxed);
-                if let Some(live) = &cfg.live {
-                    live.begin_depth(depth as i32, nodes);
-                }
-                eprintln!("  profondeur {depth} — {nodes} nœuds");
-                let v = wdl(&ctrl, &tt, 1u64 << mv, 0, 2, mv, depth - 1, 4);
-                if v == UNKNOWN {
-                    continue;
-                }
-                values[i] = v;
-                if let Some(live) = &cfg.live {
-                    live.finish_orbit(row, col, -v);
-                }
-                if -v == 1 {
-                    eprintln!("Victoire du joueur 1 prouvée à la profondeur {depth}");
-                    ctrl.stop.store(true, Ordering::Relaxed);
-                } else {
-                    eprintln!("Ouverture ({row}, {col}) prouvée : {}", label_score(-v));
-                }
-                break;
+                Ok(cp) => eprintln!(
+                    "Checkpoint version {} ignorée (attendu {}) — démarrage à neuf",
+                    cp.version,
+                    checkpoint::CHECKPOINT_VERSION
+                ),
+                Err(e) => eprintln!("Checkpoint illisible ({e}) — démarrage à neuf"),
+            },
+            None => eprintln!("--resume demandé sans --checkpoint : ignoré"),
+        }
+    }
+
+    for (i, p) in orbit_progress.iter().enumerate() {
+        if let Some(v) = p.value_for_first {
+            values[i] = -v;
+        }
+    }
+    // Reprise terminée : une victoire prouvée sur une ouverture suffit, et une
+    // nulle/perte n'est prouvée que si toutes les ouvertures le sont.
+    let already_complete = orbit_progress.iter().any(|p| p.value_for_first == Some(1))
+        || orbit_progress.iter().all(|p| p.is_proven());
+    if already_complete {
+        eprintln!("Preuve déjà complète d'après le checkpoint — aucune recherche relancée");
+    }
+    if let Some(live) = &cfg.live {
+        for p in &orbit_progress {
+            if let Some(v) = p.value_for_first {
+                live.finish_orbit(p.row, p.col, v);
             }
         }
-    });
+    }
+
+    if !already_complete {
+        pool.install(|| {
+            'openings: for i in 0..root.n {
+                if ctrl.stopped() {
+                    break;
+                }
+                // Ouverture déjà tranchée lors d'une session précédente : rejouée telle quelle.
+                if orbit_progress[i].is_proven() {
+                    let (row, col) = (orbit_progress[i].row, orbit_progress[i].col);
+                    if let Some(live) = &cfg.live {
+                        live.finish_orbit(row, col, orbit_progress[i].value_for_first.unwrap());
+                    }
+                    if orbit_progress[i].value_for_first == Some(1) {
+                        ctrl.stop.store(true, Ordering::Relaxed);
+                    }
+                    continue;
+                }
+                let mv = root.m[i];
+                let row = mv / N as u8;
+                let col = mv % N as u8;
+                eprintln!("Ouverture ({row}, {col})");
+                if let Some(live) = &cfg.live {
+                    live.begin_opening(row, col);
+                }
+                // Reprise à la profondeur enregistrée : l'approfondissement itératif est
+                // monotone, une profondeur insuffisante n'a pas besoin d'être rejouée.
+                for depth in orbit_progress[i].next_depth.max(1)..=CELLS as i16 {
+                    if ctrl.stopped() {
+                        break 'openings;
+                    }
+                    let nodes = ctrl.nodes.load(Ordering::Relaxed);
+                    if let Some(live) = &cfg.live {
+                        live.begin_depth(depth as i32, nodes);
+                    }
+                    eprintln!("  profondeur {depth} — {nodes} nœuds");
+                    let v = wdl(&ctrl, &tt, 1u64 << mv, 0, 2, mv, depth - 1, 4);
+                    orbit_progress[i].elapsed_sec = ctrl.start.elapsed().as_secs_f64();
+                    if v == UNKNOWN {
+                        // Coupée par le budget de temps : on retente la même profondeur ;
+                        // inconclusive mais terminée : on avance d'un cran.
+                        orbit_progress[i].next_depth = if ctrl.stopped() { depth } else { depth + 1 };
+                        write_checkpoint(
+                            &cfg.checkpoint,
+                            &orbit_progress,
+                            None,
+                            None,
+                            cfg.threads,
+                            cfg.tt_mb,
+                        );
+                        continue;
+                    }
+                    values[i] = v;
+                    let ours = -v;
+                    orbit_progress[i].value_for_first = Some(ours);
+                    orbit_progress[i].status = match ours {
+                        1 => "win",
+                        0 => "draw",
+                        _ => "loss",
+                    }
+                    .into();
+                    orbit_progress[i].next_depth = depth + 1;
+                    if let Some(live) = &cfg.live {
+                        live.finish_orbit(row, col, ours);
+                    }
+                    write_checkpoint(
+                        &cfg.checkpoint,
+                        &orbit_progress,
+                        None,
+                        None,
+                        cfg.threads,
+                        cfg.tt_mb,
+                    );
+                    if ours == 1 {
+                        eprintln!("Victoire du joueur 1 prouvée à la profondeur {depth}");
+                        ctrl.stop.store(true, Ordering::Relaxed);
+                    } else {
+                        eprintln!("Ouverture ({row}, {col}) prouvée : {}", label_score(ours));
+                    }
+                    break;
+                }
+            }
+        });
+    }
 
     progress.store(false, Ordering::Relaxed);
     let _ = printer.join();
@@ -1172,6 +1321,14 @@ pub fn solve_opening(cfg: &ProofConfig) -> ProofReport {
     if result.is_none() {
         best = None;
     }
+    write_checkpoint(
+        &cfg.checkpoint,
+        &orbit_progress,
+        result,
+        best,
+        cfg.threads,
+        cfg.tt_mb,
+    );
     if let Some(live) = &cfg.live {
         live.finish(result, best, ctrl.nodes.load(Ordering::Relaxed));
     }

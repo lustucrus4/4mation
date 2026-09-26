@@ -61,7 +61,7 @@ Ou directement :
 | `--sweep-to M` | `8` | Dernière couche à compléter (incluse) pour `--sweep-from` |
 | `--diag-layer N` | — | Diagnostic : classe les parents irrésolubles (alias fantômes / vrais trous) |
 | `--audit-ghosts` | — | DRY-RUN : parcourt `positions` en lecture seule et rapporte les lignes fantômes par catégorie (voir « Nettoyage des lignes fantômes ») |
-| `--purge-ghosts` | — | Supprime réellement les lignes fantômes par lots transactionnels (à réserver à une copie) |
+| `--purge-ghosts` | — | Supprime réellement les lignes fantômes par lots transactionnels (faire une sauvegarde du fichier avant) |
 | `--ghost-limit N` | `0` | Limite de lignes parcourues par l'audit (`0` = toute la table) |
 | `--ghost-sample N` | `5` | Nombre de lignes fantômes affichées en échantillon |
 | `--ghost-batch N` | `500` | Hashes par transaction de suppression (max 900) |
@@ -387,9 +387,10 @@ par la recherche de `4mation-engine` puis par le livre d'ouverture.
 
 ## Nettoyage des lignes fantômes (`--audit-ghosts` / `--purge-ghosts`)
 
-La tablebase contient des positions **fantômes** : des états impossibles hérités d'anciens
-bugs de génération (voir « Reste à faire »). Le binaire `4mation-local` expose un mode dédié
-qui court-circuite le moteur et travaille directement sur la table `positions`.
+La tablebase a contenu des positions **fantômes** : des états impossibles hérités d'anciens
+bugs de génération. La production a depuis été purgée (résultat mesuré plus bas) ; l'outil
+reste utile pour vérifier une base fraîchement balayée. Le binaire `4mation-local` expose un
+mode dédié qui court-circuite le moteur et travaille directement sur la table `positions`.
 
 Définitions testées, dans l'ordre (la première anomalie rencontrée classe la ligne, et une
 ligne n'est comptée que dans **une seule** catégorie — le jeu supprimé est donc un
@@ -415,16 +416,35 @@ partitionnement exact) :
   (`SQLITE_OPEN_READ_ONLY`, aucun `init_schema`, aucun verrou d'écriture) et ne supprime rien.
 - **Purge réelle :** `--purge-ghosts` supprime par lots (`DELETE … WHERE hash IN (…)`)
   dans une transaction par lot (`--ghost-batch`, max 900 hashes pour rester sous la limite
-  de variables SQLite). À n'exécuter que sur une **copie**, jamais sur la base de production.
-- `--ghost-limit N` borne le parcours (utile pour un contrôle rapide sur la vraie base).
+  de variables SQLite). Cette passe **écrit** : prendre une sauvegarde du fichier avant.
+- `--ghost-limit N` borne le parcours (utile pour un premier contrôle rapide).
+- `--ghost-sample N` affiche N lignes fantômes (plateau + raison), pour vérifier à l'œil
+  que la classification correspond bien à ce qu'on croit compter.
+
+### Résultat mesuré sur la base de production (26/09/2026)
+
+| Base | Parcours | Lignes fantômes |
+|------|----------|-----------------|
+| `tablebase.db` (production) | **toute la table** (30 018 767 lignes, 213 s) | **0 (0,00 %)** |
+| `tablebase.backup_20260926_prepurge.db` (témoin d'avant purge) | 500 000 lignes | **209 158 (41,8 %)** : 201 422 « dernier coup de mauvaise couleur », 7 736 « plateau non vide sans dernier coup » |
+
+Le témoin d'avant purge sert de contrôle du détecteur : l'audit y retrouve bien la
+signature des alias fantômes (même plateau répété avec des derniers coups de mauvaise
+couleur), ce qui interdit de lire le « 0 » de la production comme un audit qui ne trouve
+jamais rien. **La production est donc déjà purgée** ; la sauvegarde n'est conservée que
+comme témoin.
 
 ```powershell
-# Contrôle borné, sans risque, sur la base de production (lecture seule)
-script\solver_rust\target\release\4mation-local.exe --audit-ghosts --ghost-limit 500000 --ghost-sample 0
+# Audit complet, sans risque (lecture seule), sur la base de production
+script\solver_rust\target\release\4mation-local.exe --audit-ghosts --ghost-sample 0
 
-# Purge réelle : UNIQUEMENT sur une copie de travail
-copy script\solver\data\tablebase.db %TEMP%\tb_copy.db
-script\solver_rust\target\release\4mation-local.exe --purge-ghosts --db %TEMP%\tb_copy.db
+# Contrôle de l'échantillon témoin : montre à quoi ressemblent de vraies lignes fantômes
+script\solver_rust\target\release\4mation-local.exe --audit-ghosts --ghost-limit 500000 --ghost-sample 3 `
+  --db script\solver\data\tablebase.backup_20260926_prepurge.db
+
+# Purge réelle : prendre une sauvegarde d'abord, puis cibler la copie ou la base voulue
+copy script\solver\data\tablebase.db script\solver\data\tablebase.backup_<date>.db
+script\solver_rust\target\release\4mation-local.exe --purge-ghosts
 ```
 
 ## Reste à faire (évolutions)
@@ -432,14 +452,13 @@ script\solver_rust\target\release\4mation-local.exe --purge-ghosts --db %TEMP%\t
 - **Brancher `4mation-engine` sur l'API** : ✅ bot de niveau 6 et ✅ analyse de tout le
   site (`TablebaseLookup.analyze_position` → `api/services/engine_analysis.py`, échelle
   score → taux de victoire calibrée sur la tablebase). Voir `api/README.md`
-- **Purger les lignes fantômes** : ✅ outil d'audit/purge (`--audit-ghosts` / `--purge-ghosts`,
-  voir « Nettoyage des lignes fantômes »). La base contient des états impossibles hérités des
-  bugs de génération (mesures : **58 %** des parents générés lors du balayage 6→7, **69,5 %**
-  sur l'échantillon du balayage 7→8, plus ~404 651 lignes sans dernier coup).
-  Inoffensifs pour les coups joués — un vrai coup a toujours un dernier coup cohérent — mais
-  ils gonflent le volume et faussent les statistiques. **La purge réelle reste à lancer sur
-  la base de production** (opération volontairement non effectuée ici)
-- **Réparer la couche 8** : une fois les lignes fantômes purgées, la compléter par
+- **Purger les lignes fantômes** : ✅ **terminé**. Outil (`--audit-ghosts` /
+  `--purge-ghosts`) *et* purge exécutée : audit complet du 26/09/2026 sur
+  `tablebase.db` = **0 fantôme sur 30 018 767 lignes**, contre **41,8 %** de fantômes
+  (209 158 / 500 000) retrouvés sur la sauvegarde témoin d'avant purge — le détecteur
+  fonctionne, la production est propre. Détail et commandes dans « Nettoyage des lignes
+  fantômes »
+- **Réparer la couche 8** : les lignes fantômes étant purgées, la compléter par
   balayage (`--sweep-from 7`) puis vérifier (`--verify`). C'est la dernière couche
   raisonnable en taille sur un disque de PC
 - **Checkpoint du solveur de preuve** : ✅ `--checkpoint` / `--resume` (voir « Persistance et

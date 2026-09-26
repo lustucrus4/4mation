@@ -55,9 +55,10 @@ le centre est **démontré gagnant**. C'est aussi l'explication de ce que les pa
 montraient déjà : contre une défense exacte, le second joueur perd systématiquement après
 une ouverture centrale — ce n'est pas un défaut du bot `level_6`, c'est le jeu.
 
-## État de la tablebase (audit complet)
+## État de la tablebase (audit complet du 24/09/2026)
 
-`4mation-local.exe --verify` (couches 1 à 12) :
+`4mation-local.exe --verify` (couches 1 à 12), sur les 24 426 473 positions d'alors
+(rapport détaillé : `AUDIT_TABLEBASE_2026-09-24.md`) :
 
 ```
 BILAN : 11 076 663 ok | 0 faux | 13 349 810 indécidables
@@ -69,6 +70,10 @@ BILAN : 11 076 663 ok | 0 faux | 13 349 810 indécidables
   différent : redondance, pas une erreur) et à ~5 % de **vrais trous** (~0,7 M estimés).
 - Conséquence : les couches 1-7 sont solides, les couches 8-12 sont **partielles**. Le
   comblement se fait par `4mation-local --sweep-from / --sweep-to`.
+- **Depuis**, la base a grossi (30 018 767 positions) et les lignes fantômes ont été purgées :
+  l'audit complet du 26/09/2026 n'en trouve plus aucune (mesures et commandes dans
+  `solver_rust/README.md`, « Nettoyage des lignes fantômes »). Ce tableau reste la référence
+  pour les verdicts `ok` / `faux` / `indécidable`, pas pour le décompte de lignes actuel.
 
 ## Structure
 

@@ -72,6 +72,9 @@ export type MoveClassification =
   | "blunder"
   | "unknown";
 
+export type ReviewPhase = "opening" | "middlegame" | "endgame";
+export type ReviewNature = "proven" | "estimated" | "unknown";
+
 export interface ReviewMove {
   index: number;
   player: number;
@@ -85,7 +88,71 @@ export interface ReviewMove {
   accuracy: number | null;
   source: string;
   exact: boolean;
+  value_exact?: boolean;
   is_human: boolean;
+  nature?: ReviewNature;
+  nature_label?: string;
+  verdict?: string;
+  phase?: ReviewPhase;
+  win_rate_loss?: number | null;
+  position_status_before?: string;
+  played_outcome?: string;
+  missed_forced_win?: boolean;
+  proven_error?: boolean;
+  mate_in?: number | null;
+  played_mate_in?: number | null;
+}
+
+export interface ReviewKeyMoment {
+  index: number;
+  player: number;
+  is_human: boolean;
+  row: number;
+  col: number;
+  phase: ReviewPhase;
+  classification: MoveClassification;
+  nature: ReviewNature;
+  win_rate_loss: number;
+  delta_p1: number;
+  best_move: [number, number] | null;
+  description: string;
+}
+
+export interface ReviewSummaryPlayer {
+  accuracy: number | null;
+  counts: Record<string, number>;
+  strengths: number;
+  errors: { total: number; proven: number; estimated: number };
+  decisive_move: {
+    index: number;
+    classification: MoveClassification;
+    nature: ReviewNature;
+    verdict: string;
+    win_rate_loss: number;
+    phase: ReviewPhase;
+  } | null;
+  decisive_phase: ReviewPhase | null;
+  text: string;
+}
+
+export interface ReviewAccuracyByPhase {
+  human: Record<ReviewPhase, number | null>;
+  bot: Record<ReviewPhase, number | null>;
+  counts: {
+    human: Record<ReviewPhase, number>;
+    bot: Record<ReviewPhase, number>;
+  };
+}
+
+export interface ReviewProvenStats {
+  proven_moves: number;
+  estimated_moves: number;
+  unknown_moves: number;
+  proven_errors: number;
+  estimated_errors: number;
+  missed_forced_wins: number;
+  by_phase: Record<string, Record<string, number>>;
+  mixed: boolean;
 }
 
 export interface GameReview {
@@ -95,6 +162,10 @@ export interface GameReview {
   moves: ReviewMove[];
   graph: { move_index: number; win_rate_p1: number; player?: number }[];
   move_count: number;
+  accuracy_by_phase?: ReviewAccuracyByPhase;
+  key_moments?: ReviewKeyMoment[];
+  summary?: { human: ReviewSummaryPlayer; bot: ReviewSummaryPlayer };
+  proven_stats?: ReviewProvenStats;
 }
 
 export function fetchGameReview(gameId: string): Promise<{

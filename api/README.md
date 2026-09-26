@@ -48,8 +48,43 @@ qu'aux utilisateurs connectés en **mode classique**.
 
 ## Elo (vs bots)
 
-6 niveaux (`level_1` … `level_6`). Elo de référence bot : 800 → 2000.
+6 niveaux (`level_1` … `level_6`). Elo de référence bot : 1109 → 1234 → 1413 → 1640 →
+1750 → 1855.
 K-factor 32. Mise à jour automatique à la fin de chaque partie classique enregistrée.
+
+La force **réelle** des niveaux est mesurée séparément en round-robin par
+`scripts/bot_arena.py` (rapport `scripts/ARENA_BOTS.md`) : les Elo ci-dessus sont ceux de
+cette mesure, et `scripts/check_bot_arena.py` échoue s'ils divergent de
+`api/services/elo.py`. L'échelle est validée sur deux propriétés distinctes : les 5 paires
+adjacentes sont séparées (confrontation directe et/ou quatre profils de sonde), et la
+**difficulté ressentie** est strictement décroissante sur les quatre profils. Attention :
+l'Elo head-to-head sature vers le haut, car jouer le centre gagne de force (avantage
+structurel du premier joueur) ; le rapport fournit donc en plus la courbe de difficulté
+mesurée contre un adversaire de référence en siège 1.
+
+## Revue de partie profonde (`/api/me/games/<uuid>/review`)
+
+`api/services/game_review.py` enrichit chaque coup et la partie, sans jamais mélanger une
+valeur **prouvée** et une valeur **estimée** :
+
+| Champ | Sens |
+|-------|------|
+| `nature` | `proven` (analyse `exact`) / `estimated` / `unknown` — séparation stricte |
+| `value_exact` | la valeur du **coup joué** est prouvée (distinct de `exact`, la position) |
+| `verdict` | libellé clair (« Gaffe prouvée », « Imprécision (estimation) », « Mat forcé manqué — nulle prouvée ») |
+| `phase` | `opening` / `middlegame` / `endgame` (d'après les cases vides) |
+| `proven_error`, `missed_forced_win`, `mate_in` | qualification prouvée de la faute |
+
+Champs de partie : `bot_accuracy` (désormais calculé), `accuracy_by_phase`
+(`{human, bot, counts}`), `key_moments[]`, `summary` (`{human, bot}`) et `proven_stats`
+(`proven/estimated/unknown`, erreurs prouvées vs estimées, `mixed: false`).
+
+Invariant vérifié par `scripts/check_deep_review.py` : `nature == "proven"` **si et
+seulement si** la position **et** la valeur du coup joué sont prouvées. Un enfant estimé
+dans une analyse exacte (cas du livre d'ouverture) ne peut donc pas produire une « faute
+prouvée ». La référence de comparaison est la valeur de la position (`position_win_rate`),
+pas le premier élément de `moves` — sinon une position prouvée perdante s'afficherait
+« nulle à 46 % ».
 
 ## Moteur Rust (`4mation-engine`)
 
@@ -110,6 +145,19 @@ Conséquence mesurable : le `level_6` joue `(3,3)` en 11 ms au lieu de 2,5 s de 
 rejoue la ligne prouvée du centre (29 demi-coups) sans un seul écart, à ~4 ms le coup. Une
 preuve ne se discute pas : aucune recherche ne fera mieux, et cela garantit que le bot ne
 joue jamais un coup gagnant plus lent qu'un autre.
+
+### Erreur graduée : ce qui sépare « Difficile » de « Impossible »
+
+Les niveaux 4 à 6 jouent la **même** ligne prouvée. Leur unique différence est
+`inaccuracy_rate` : avec cette probabilité, le bot **renonce volontairement** à la preuve
+sur le coup et joue le 2ᵉ meilleur coup du moteur (strictement moins bien noté — les coups
+à égalité de score ne comptent pas comme erreurs). C'est le levier qui rend « Difficile »
+(0,16) et « Très difficile » (0,04) battables, alors que « Impossible » (0,00) ne l'est pas.
+
+Le taux d'erreur n'est **pas** linéaire en difficulté : la mesure montre qu'un seul échec
+sur ~30 coups suffit à perdre l'avantage contre un joueur correct. C'est pourquoi l'échelle
+se lit surtout en trois paliers nets (faible / fort-faillible / infaillible) plutôt qu'en
+une progression continue.
 
 ### Score → taux de victoire
 

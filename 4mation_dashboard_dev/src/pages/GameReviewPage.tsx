@@ -13,13 +13,25 @@ import {
   type SavedGameDetail,
 } from "../lib/accountApi";
 import { boardAt } from "../lib/boardReplay";
-import { classificationColor, classificationLabel } from "../lib/reviewLabels";
+import {
+  classificationColor,
+  classificationLabel,
+  natureColor,
+  natureLabel,
+  phaseLabel,
+} from "../lib/reviewLabels";
 
 function resultLabel(result: string): string {
   if (result === "win") return "Victoire";
   if (result === "loss") return "Défaite";
   return "Nul";
 }
+
+function fmtPct(value: number | null | undefined): string {
+  return value == null ? "—" : `${value}%`;
+}
+
+const REVIEW_PHASES = ["opening", "middlegame", "endgame"] as const;
 
 export default function GameReviewPage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -127,6 +139,10 @@ export default function GameReviewPage() {
   }
 
   const maxMove = moves.length;
+  const abp = review.accuracy_by_phase;
+  const summary = review.summary;
+  const keyMoments = review.key_moments ?? [];
+  const provenStats = review.proven_stats;
 
   return (
     <div className="space-y-6">
@@ -144,12 +160,20 @@ export default function GameReviewPage() {
               ` · ${new Date(game.finished_at).toLocaleDateString("fr-FR")}`}
           </p>
         </div>
-        {review.human_accuracy != null && (
-          <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-2 text-center">
-            <p className="text-xs uppercase tracking-wide text-white/50">Précision</p>
-            <p className="text-2xl font-black text-accent">{review.human_accuracy}%</p>
-          </div>
-        )}
+        <div className="flex gap-3">
+          {review.human_accuracy != null && (
+            <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-2 text-center">
+              <p className="text-xs uppercase tracking-wide text-white/50">Précision (Vous)</p>
+              <p className="text-2xl font-black text-accent">{review.human_accuracy}%</p>
+            </div>
+          )}
+          {review.bot_accuracy != null && (
+            <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-center">
+              <p className="text-xs uppercase tracking-wide text-white/50">Précision (Coach)</p>
+              <p className="text-2xl font-black text-white/80">{review.bot_accuracy}%</p>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -169,16 +193,35 @@ export default function GameReviewPage() {
           />
           {currentMove && (
             <Card className="!py-3">
-              <p className="text-sm">
-                Coup #{currentMove.index} —{" "}
-                <span style={{ color: classificationColor(currentMove.classification) }}>
-                  {classificationLabel(currentMove.classification)}
+              <p className="flex flex-wrap items-center gap-2 text-sm">
+                <span>
+                  Coup #{currentMove.index} —{" "}
+                  <span style={{ color: classificationColor(currentMove.classification) }}>
+                    {classificationLabel(currentMove.classification)}
+                  </span>
                 </span>
+                {currentMove.nature && (
+                  <span
+                    className="rounded border px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
+                    style={{
+                      color: natureColor(currentMove.nature),
+                      borderColor: `${natureColor(currentMove.nature)}66`,
+                    }}
+                  >
+                    {currentMove.nature_label ?? natureLabel(currentMove.nature)}
+                  </span>
+                )}
                 {currentMove.is_human && currentMove.accuracy != null && (
-                  <span className="text-white/50"> · {currentMove.accuracy}% précision</span>
+                  <span className="text-white/50">· {currentMove.accuracy}% précision</span>
                 )}
               </p>
+              {currentMove.verdict && (
+                <p className="mt-1 text-sm" style={{ color: natureColor(currentMove.nature ?? "unknown") }}>
+                  {currentMove.verdict}
+                </p>
+              )}
               <p className="mt-1 text-xs text-white/45">
+                {currentMove.phase ? `${phaseLabel(currentMove.phase)} · ` : ""}
                 Joué : {Math.round(currentMove.win_rate_played * 100)} % · Meilleur :{" "}
                 {Math.round(currentMove.win_rate_best * 100)} %
                 {currentMove.exact ? " · exact" : ""}
@@ -213,6 +256,89 @@ export default function GameReviewPage() {
           />
         </Card>
       </div>
+
+      {(abp || summary) && (
+        <section className="grid gap-4 md:grid-cols-2">
+          {abp && (
+            <Card>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/50">
+                Précision par phase
+              </h2>
+              <div className="space-y-1 text-sm">
+                <div className="grid grid-cols-[1fr_4rem_4rem] gap-3 text-xs text-white/40">
+                  <span>Phase</span>
+                  <span className="text-right">Vous</span>
+                  <span className="text-right">Coach</span>
+                </div>
+                {REVIEW_PHASES.map((p) => (
+                  <div key={p} className="grid grid-cols-[1fr_4rem_4rem] gap-3">
+                    <span className="text-white/60">{phaseLabel(p)}</span>
+                    <span className="text-right text-accent">{fmtPct(abp.human[p])}</span>
+                    <span className="text-right text-white/70">{fmtPct(abp.bot[p])}</span>
+                  </div>
+                ))}
+              </div>
+              {provenStats && (
+                <p className="mt-3 border-t border-white/10 pt-3 text-xs text-white/45">
+                  {provenStats.proven_moves} coup(s) prouvé(s) ·{" "}
+                  {provenStats.estimated_moves} estimé(s)
+                  {provenStats.proven_errors > 0
+                    ? ` · ${provenStats.proven_errors} faute(s) prouvée(s)`
+                    : ""}
+                  {provenStats.missed_forced_wins > 0
+                    ? ` · ${provenStats.missed_forced_wins} mat(s) forcé(s) manqué(s)`
+                    : ""}
+                </p>
+              )}
+            </Card>
+          )}
+          {summary && (
+            <Card>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/50">
+                Résumé
+              </h2>
+              <p className="text-sm leading-relaxed text-accent">{summary.human.text}</p>
+              <p className="mt-2 text-sm leading-relaxed text-white/65">{summary.bot.text}</p>
+            </Card>
+          )}
+        </section>
+      )}
+
+      {keyMoments.length > 0 && (
+        <Card>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/50">
+            Moments clés
+          </h2>
+          <ol className="space-y-2">
+            {keyMoments.map((km) => (
+              <li key={km.index}>
+                <button
+                  type="button"
+                  onClick={() => setMoveIndex(km.index)}
+                  className={[
+                    "flex w-full items-start gap-2 rounded-lg border border-white/10 px-3 py-2 text-left transition-colors",
+                    moveIndex === km.index ? "bg-accent/15" : "hover:bg-white/5",
+                  ].join(" ")}
+                >
+                  <span
+                    className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: classificationColor(km.classification) }}
+                  />
+                  <span className="text-sm text-white/75">
+                    <span
+                      className="mr-2 text-[10px] uppercase tracking-wide"
+                      style={{ color: natureColor(km.nature) }}
+                    >
+                      {natureLabel(km.nature)}
+                    </span>
+                    {km.description}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
     </div>
   );
 }

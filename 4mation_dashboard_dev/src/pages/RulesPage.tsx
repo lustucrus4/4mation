@@ -1,71 +1,33 @@
 import { Link } from "react-router-dom";
 import Card from "../components/ui/Card";
-import RuleDiagram, {
-  emptyRuleBoard,
-  firstMoveHighlights,
-  neighborHighlights,
-  withPieces,
-} from "../components/learn/RuleDiagram";
+import RuleDiagram from "../components/learn/RuleDiagram";
+import {
+  centerHeatmapDiagram,
+  centerLinesDiagram,
+  cornerFrontierDiagram,
+  cornerLinesDiagram,
+  drawDiagram,
+  emptyBoardDiagram,
+  firstMoveDiagram,
+  frontierDiagram,
+  frontierMidGameDiagram,
+  ghostThreatDiagram,
+  immediateWinDiagram,
+  rescueRuleDiagram,
+  threatOnFrontierDiagram,
+  turnOrderDiagram,
+  winAntiDiagonalDiagram,
+  winDiagonalDiagram,
+  winHorizontalDiagram,
+  winLastMoveDiagram,
+  winVerticalDiagram,
+  type LearnDiagram,
+} from "../components/learn/diagrams";
 
-const empty = emptyRuleBoard();
-
-const winHorizontal = withPieces(empty, [
-  { row: 3, col: 1, player: 1 },
-  { row: 3, col: 2, player: 1 },
-  { row: 3, col: 3, player: 1 },
-  { row: 3, col: 4, player: 1 },
-]);
-
-const winVertical = withPieces(empty, [
-  { row: 1, col: 3, player: 2 },
-  { row: 2, col: 3, player: 2 },
-  { row: 3, col: 3, player: 2 },
-  { row: 4, col: 3, player: 2 },
-]);
-
-const winDiagonal = withPieces(empty, [
-  { row: 1, col: 1, player: 1 },
-  { row: 2, col: 2, player: 1 },
-  { row: 3, col: 3, player: 1 },
-  { row: 4, col: 4, player: 1 },
-]);
-
-const turnExample = withPieces(empty, [
-  { row: 3, col: 3, player: 1 },
-  { row: 3, col: 4, player: 2 },
-  { row: 2, col: 3, player: 1 },
-]);
-
-const frontierBase = withPieces(empty, [{ row: 3, col: 3, player: 1 }]);
-const frontierHighlights = {
-  ...neighborHighlights(3, 3),
-  "3,3": "last" as const,
-  "1,1": "invalid" as const,
-  "5,5": "invalid" as const,
-};
-
-const midGameExample = withPieces(empty, [
-  { row: 3, col: 3, player: 1 },
-  { row: 3, col: 4, player: 2 },
-]);
-const midGameHighlights = {
-  ...neighborHighlights(3, 4),
-  "3,4": "last" as const,
-  "3,2": "invalid" as const,
-  "0,0": "invalid" as const,
-};
-
-const threatExample = withPieces(empty, [
-  { row: 3, col: 1, player: 1 },
-  { row: 3, col: 2, player: 1 },
-  { row: 3, col: 3, player: 1 },
-  { row: 3, col: 4, player: 2 },
-]);
-const threatHighlights = {
-  "3,4": "last" as const,
-  "3,5": "valid" as const,
-  "3,0": "focus" as const,
-};
+/** Rend un schéma du catalogue `diagrams.ts`, plein format ou compact. */
+function Diagram({ diagram, compact }: { diagram: LearnDiagram; compact?: boolean }) {
+  return <RuleDiagram {...diagram} compact={compact} />;
+}
 
 export default function RulesPage() {
   return (
@@ -90,78 +52,41 @@ export default function RulesPage() {
           recevoir un pion.
         </p>
         <div className="mt-4 flex justify-center">
-          <RuleDiagram board={empty} caption="Plateau vide — 7 cases × 7 cases" />
+          <Diagram diagram={emptyBoardDiagram} />
         </div>
       </Card>
 
       <Card>
         <h2 className="text-lg font-bold text-accent">2. Objectif : aligner 4 pions</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
-          Vous gagnez dès que <strong>4 de vos pions</strong> forment une ligne continue,
-          horizontale, verticale ou diagonale. Dès qu'un alignement de 4 est formé, la partie
-          s'arrête immédiatement.
+          Vous gagnez dès que <strong>4 de vos pions</strong> forment une ligne continue. Il
+          existe <strong>quatre directions</strong> — les deux diagonales comptent, et beaucoup
+          de débutants les oublient.
         </p>
-        <div className="mt-5 grid gap-6 sm:grid-cols-3">
-          <RuleDiagram
-            compact
-            board={winHorizontal}
-            winLine={[
-              [3, 1],
-              [3, 4],
-            ]}
-            highlights={{
-              "3,1": "win",
-              "3,2": "win",
-              "3,3": "win",
-              "3,4": "win",
-            }}
-            caption="Horizontal"
-          />
-          <RuleDiagram
-            compact
-            board={winVertical}
-            winLine={[
-              [1, 3],
-              [4, 3],
-            ]}
-            highlights={{
-              "1,3": "win",
-              "2,3": "win",
-              "3,3": "win",
-              "4,3": "win",
-            }}
-            caption="Vertical"
-          />
-          <RuleDiagram
-            compact
-            board={winDiagonal}
-            winLine={[
-              [1, 1],
-              [4, 4],
-            ]}
-            highlights={{
-              "1,1": "win",
-              "2,2": "win",
-              "3,3": "win",
-              "4,4": "win",
-            }}
-            caption="Diagonal"
-          />
+        <div className="mt-5 grid gap-6 sm:grid-cols-2">
+          <Diagram compact diagram={winHorizontalDiagram} />
+          <Diagram compact diagram={winVerticalDiagram} />
+          <Diagram compact diagram={winDiagonalDiagram} />
+          <Diagram compact diagram={winAntiDiagonalDiagram} />
+        </div>
+        <p className="mt-5 text-sm leading-relaxed text-white/80">
+          La victoire est immédiate : dès que la ligne est formée, la partie s'arrête, même si
+          l'adversaire avait un alignement en préparation.
+        </p>
+        <div className="mt-4 flex justify-center">
+          <Diagram diagram={winLastMoveDiagram} />
         </div>
       </Card>
 
       <Card>
         <h2 className="text-lg font-bold text-accent">3. Alternance des tours</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
-          Les joueurs jouent à tour de rôle. Le rouge commence en général. Chaque tour, vous
-          posez exactement <strong>un pion</strong> sur une case libre.
+          Les joueurs jouent à tour de rôle. Le rouge commence. Chaque tour, vous posez
+          exactement <strong>un pion</strong> sur une case libre — les pions ne bougent plus
+          jamais ensuite.
         </p>
         <div className="mt-4 flex justify-center">
-          <RuleDiagram
-            board={turnExample}
-            highlights={{ "2,3": "last" }}
-            caption="Rouge centre → Bleu à droite → Rouge en haut (ordre des coups)"
-          />
+          <Diagram diagram={turnOrderDiagram} />
         </div>
         <ol className="mt-4 space-y-1 text-sm text-white/70">
           <li>
@@ -180,15 +105,15 @@ export default function RulesPage() {
         <h2 className="text-lg font-bold text-accent">4. Premier coup libre</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Au <strong>premier coup</strong> de la partie, le plateau est vide : vous pouvez
-          cliquer n'importe quelle case. Les cases en vert pointillé sont toutes légales.
+          cliquer n'importe quelle case. C'est la seule fois — ensuite, tout est contraint par
+          le coup précédent. Les cases en vert pointillé sont toutes légales.
         </p>
         <div className="mt-4 flex justify-center">
-          <RuleDiagram
-            board={empty}
-            highlights={firstMoveHighlights()}
-            caption="Toutes les cases sont valides au coup 1"
-          />
+          <Diagram diagram={firstMoveDiagram} />
         </div>
+        <p className="mt-3 text-xs text-white/50">
+          En pratique, on joue presque toujours au centre : la section 9 explique pourquoi.
+        </p>
       </Card>
 
       <Card>
@@ -200,71 +125,138 @@ export default function RulesPage() {
           coup précédent définit la frontière.
         </p>
         <div className="mt-4 flex justify-center">
-          <RuleDiagram
-            board={frontierBase}
-            highlights={frontierHighlights}
-            caption="Dernier coup rouge (3,3) — vert = cases valides pour le bleu"
-          />
+          <Diagram diagram={frontierDiagram} />
+        </div>
+        <p className="mt-3 text-sm leading-relaxed text-white/80">
+          Les cases marquées <span className="text-p1">✕</span> ne sont pas « mauvaises » :
+          elles sont <strong>interdites</strong>, simplement parce qu'elles sont trop loin du
+          dernier coup.
+        </p>
+        <div className="mt-5 flex justify-center">
+          <Diagram compact diagram={cornerFrontierDiagram} />
         </div>
         <p className="mt-3 text-xs text-white/50">
-          Si les 8 voisins du dernier coup sont tous occupés, vous pouvez alors jouer sur une
-          case vide adjacente à un pion adverse (règle de secours).
+          La largeur de la frontière dépend de l'endroit du plateau : 8 réponses possibles
+          après un coup au centre, 3 seulement après un coup en coin. C'est l'une des raisons
+          pour lesquelles un coup de bord vous coûte cher.
         </p>
       </Card>
 
       <Card>
         <h2 className="text-lg font-bold text-accent">6. Coup valide en milieu de partie</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
-          Ici le bleu vient de jouer en (3,4) : seules les cases qui touchent{" "}
+          Ici le bleu vient de jouer en (3,4). Seules les cases qui touchent{" "}
           <strong>ce dernier coup</strong> sont légales pour le rouge. La case (3,2) touche un
-          pion rouge plus ancien mais pas le dernier coup — elle est refusée.
+          pion rouge plus ancien, mais pas le dernier coup : elle est refusée.
         </p>
         <div className="mt-4 flex justify-center">
-          <RuleDiagram
-            board={midGameExample}
-            highlights={midGameHighlights}
-            caption="Dernier coup bleu (3,4) — vert = légal · ✕ = hors frontière"
-          />
+          <Diagram diagram={frontierMidGameDiagram} />
         </div>
       </Card>
 
       <Card>
-        <h2 className="text-lg font-bold text-accent">7. Menaces et blocages</h2>
+        <h2 className="text-lg font-bold text-accent">7. Règle de secours</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
-          Trois pions alignés avec une case libre pour compléter le 4 constituent une{" "}
-          <strong>menace</strong>. L'adversaire doit bloquer sur cette case s'il peut légalement y jouer.
-          Priorité tactique : gagner tout de suite, bloquer une victoire adverse, puis créer une menace.
+          Que faire quand les 8 voisins du dernier coup sont <strong>tous occupés</strong> ? La
+          partie ne se bloque pas : vous pouvez alors jouer sur n'importe quelle case vide
+          touchant un pion <strong>adverse</strong>. C'est la seule exception à la frontière —
+          et elle décide de nombreuses fins de partie, car elle permet de « sauter » vers une
+          ligne d'attaque restée à distance.
         </p>
         <div className="mt-4 flex justify-center">
-          <RuleDiagram
-            board={threatExample}
-            highlights={threatHighlights}
-            caption="Rouge menace (3,5) — bleu doit bloquer si la case est sur la frontière"
-          />
+          <Diagram diagram={rescueRuleDiagram} />
         </div>
+        <p className="mt-3 text-xs text-white/50">
+          Notez que la case (6,6) reste refusée : elle ne touche aucun pion bleu. La règle
+          ouvre des cases, elle n'ouvre pas tout le plateau.
+        </p>
       </Card>
 
       <Card>
-        <h2 className="text-lg font-bold text-accent">8. Fin de partie</h2>
+        <h2 className="text-lg font-bold text-accent">8. Menaces et blocages</h2>
+        <p className="mt-2 text-sm leading-relaxed text-white/80">
+          Trois pions alignés avec une 4<sup>e</sup> case libre constituent une{" "}
+          <strong>menace</strong>. Mais attention : compléter la ligne ne suffit pas, il faut
+          aussi que la case soit <strong>jouable</strong>. Une case qui termine un 4 mais qui
+          n'est pas sur la frontière ne sert à rien — elle est inatteignable.
+        </p>
+        <div className="mt-4 flex justify-center">
+          <Diagram diagram={threatOnFrontierDiagram} />
+        </div>
+        <p className="mt-3 text-sm leading-relaxed text-white/80">
+          Ici, (3,4) est à la fois sur la frontière et gagnante : le bleu <strong>doit</strong>{" "}
+          y répondre. (3,0) compléterait aussi la ligne, mais elle est hors frontière : le rouge
+          ne pourra pas y jouer. Retenez l'ordre de priorité :{" "}
+          <em>gagner tout de suite</em>, puis <em>empêcher l'adversaire de gagner</em>, puis{" "}
+          <em>créer une menace</em>.
+        </p>
+        <div className="mt-5 grid gap-6 sm:grid-cols-2">
+          <Diagram compact diagram={immediateWinDiagram} />
+          <Diagram compact diagram={ghostThreatDiagram} />
+        </div>
+        <p className="mt-3 text-xs text-white/50">
+          À gauche : un gain immédiat — la case ★ est jouable et termine l'alignement. À
+          droite : trois pions alignés qui ne menacent rien du tout, parce que les deux cases
+          de complétion sont hors frontière. C'est la <strong>menace fantôme</strong>, l'erreur
+          de lecture la plus fréquente.
+        </p>
+      </Card>
+
+      <Card>
+        <h2 className="text-lg font-bold text-accent">9. Pourquoi le centre domine</h2>
+        <p className="mt-2 text-sm leading-relaxed text-white/80">
+          Toutes les cases ne se valent pas. Comptons les alignements de 4 qui passent par
+          chaque case : un pion central participe à beaucoup plus de lignes possibles qu'un
+          pion de bord. C'est ce qui justifie le premier coup au centre.
+        </p>
+        <div className="mt-4 flex justify-center">
+          <Diagram diagram={centerHeatmapDiagram} />
+        </div>
+        <div className="mt-5 grid gap-6 sm:grid-cols-2">
+          <Diagram compact diagram={centerLinesDiagram} />
+          <Diagram compact diagram={cornerLinesDiagram} />
+        </div>
+        <p className="mt-3 text-xs text-white/50">
+          Un coup de coin ne peut jamais figurer dans plus de 3 alignements de 4 ; le centre,
+          dans 16. Sur 7×7, cela représente presque toute votre puissance d'attaque.
+        </p>
+      </Card>
+
+      <Card>
+        <h2 className="text-lg font-bold text-accent">10. Fin de partie</h2>
         <ul className="mt-2 space-y-2 text-sm text-white/80">
           <li>
-            <strong className="text-accent">Victoire</strong> — 4 pions alignés (voir section 2).
+            <strong className="text-accent">Victoire</strong> — 4 pions alignés (section 2).
           </li>
           <li>
-            <strong className="text-accent">Match nul</strong> — plateau rempli sans alignement de
-            4 (rare sur 7×7).
+            <strong className="text-accent">Match nul</strong> — le plateau se remplit sans
+            qu'aucun alignement de 4 n'apparaisse.
           </li>
           <li>
             <strong className="text-accent">Abandon</strong> — via le bouton dédié en partie en
             ligne ou contre l'IA.
           </li>
         </ul>
+        <div className="mt-4 flex justify-center">
+          <Diagram diagram={drawDiagram} />
+        </div>
+        <p className="mt-3 text-xs text-white/50">
+          Le match nul est rare mais réel : cette position est pleine, et pourtant aucune suite
+          de 4 n'existe dans aucune des quatre directions. Si vous ne voyez pas de gain, ne
+          forcez pas — cherchez d'abord à bloquer.
+        </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             to="/learn/trainer"
             className="rounded-lg bg-accent/15 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/25"
           >
             S'entraîner avec indices →
+          </Link>
+          <Link
+            to="/learn/puzzles"
+            className="rounded-lg bg-accent/15 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/25"
+          >
+            Résoudre un puzzle →
           </Link>
           <Link
             to="/play"

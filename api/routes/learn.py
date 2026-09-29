@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from flask import Blueprint, jsonify, request
 
+from api.services import learn_diagrams as diagrams
 from api.services.opening_explorer import explore_opening
 from api.services.puzzle_service import (
     check_pack_puzzle_move,
@@ -29,16 +30,19 @@ LESSONS = [
             {
                 "heading": "Objectif",
                 "body": "Aligner 4 pions adjacents (horizontal, vertical ou diagonal) sur un plateau 7×7.",
+                "diagram": diagrams.win_horizontal(),
             },
             {
                 "heading": "Frontière",
                 "body": "Après le premier coup, vous devez jouer sur une case adjacente au **dernier coup joué** "
                 "(8 directions). Si ces voisins sont tous occupés, les cases vides adjacentes à un pion "
                 "adverse deviennent jouables. Au premier coup, toute case est libre.",
+                "diagram": diagrams.frontier_center(),
             },
             {
                 "heading": "Stratégie",
                 "body": "Contrôler le centre, créer des menaces doubles et bloquer les alignements adverses.",
+                "diagram": diagrams.center_lines(),
             },
         ],
     },
@@ -54,6 +58,7 @@ LESSONS = [
                 "partie. À partir du deuxième coup, tout est contraint par la **frontière** du dernier coup "
                 "joué. Le premier coup fixe donc l'endroit du plateau où va se dérouler la partie — d'où son "
                 "importance.",
+                "diagram": diagrams.first_move(),
             },
             {
                 "heading": "Les 10 premiers coups, et pourquoi on ne les classe pas",
@@ -62,6 +67,7 @@ LESSONS = [
                 "(3,3), qui mate de force en 28 demi-coups. Les neuf autres ne sont que des estimations, et "
                 "nos mesures ne permettent pas de les départager : deux passes de la même analyse donnent des "
                 "scores qui changent de signe sur la même ouverture. Aucun classement n'est donc publié.",
+                "diagram": diagrams.distinct_first_moves(),
             },
             {
                 "heading": "Ce que valent ces chiffres",
@@ -69,12 +75,14 @@ LESSONS = [
                 "Tout le reste est **estimé** par une recherche arrêtée par un budget de temps, et ces "
                 "estimations ne sont pas reproductibles. Retenez la hiérarchie de confiance : un verdict se "
                 "joue les yeux fermés, une estimation ne se joue que comme une indication.",
+                "diagram": diagrams.center_heatmap(),
             },
             {
                 "heading": "Une case décalée n'est pas la même ouverture",
                 "body": "Attention à ne pas confondre **symétrie** et **translation**. (3,3) et (2,2) sont deux "
                 "ouvertures distinctes : le bord change toute la suite de la partie. Une ouverture décalée d'une "
                 "case vers le bord n'a ni les mêmes continuations ni la même valeur.",
+                "diagram": diagrams.shifted_opening(),
             },
             {
                 "heading": "Comment utiliser l'explorateur",
@@ -82,6 +90,7 @@ LESSONS = [
                 "continuation, ce que vaut la position selon le livre, avec l'étiquette *prouvé* ou *estimé*. "
                 "Servez-vous-en pour comprendre une position, pas pour départager deux coups à quelques points "
                 "près : à cette échelle, l'écart n'est pas fiable.",
+                "diagram": diagrams.frontier_center(),
             },
         ],
     },
@@ -95,27 +104,32 @@ LESSONS = [
                 "heading": "Principe",
                 "body": "Contrairement à un jeu où l'on doit toucher n'importe quel pion existant, au 4mation "
                 "seule compte la **dernière case jouée**. Vous devez poser sur l'un de ses 8 voisins immédiats.",
+                "diagram": diagrams.frontier_center(),
             },
             {
                 "heading": "Premier coup",
                 "body": "Plateau vide : le premier joueur choisit librement n'importe quelle case. "
                 "C'est le seul moment sans contrainte de voisinage.",
+                "diagram": diagrams.first_move(),
             },
             {
                 "heading": "Exemple",
                 "body": "Si le bleu vient de jouer en (3,4), le rouge ne peut jouer que sur les cases qui "
                 "touchent (3,4). Une case qui touche seulement un pion rouge plus ancien reste interdite.",
+                "diagram": diagrams.frontier_midgame(),
             },
             {
                 "heading": "Règle de secours",
                 "body": "Lorsque les 8 voisins du dernier coup sont tous occupés, les coups légaux sont "
                 "toutes les cases vides adjacentes à au moins un pion adverse. Ce cas est rare en milieu "
                 "de partie mais important en finale.",
+                "diagram": diagrams.rescue_rule(),
             },
             {
                 "heading": "Conséquence tactique",
                 "body": "La frontière se déplace à chaque coup : contrôler le centre au début, puis guider "
                 "l'adversaire vers des zones où ses réponses restent limitées.",
+                "diagram": diagrams.corner_frontier(),
             },
         ],
     },
@@ -132,6 +146,7 @@ LESSONS = [
                 "exacte utilisée par le moteur : il compte les cases de la frontière actuelle qui termineraient "
                 "la partie. Trois pions alignés dont la quatrième case n'est pas jouable ne sont **pas** une "
                 "menace — au coup suivant elle peut avoir disparu.",
+                "diagram": diagrams.threat_on_frontier(),
             },
             {
                 "heading": "Blocage obligatoire",
@@ -139,6 +154,7 @@ LESSONS = [
                 "alignement, et elle doit être jouable pour vous. Le moteur ne s'y trompe pas : une menace "
                 "immédiate vaut 60 points d'évaluation, tandis que trois pions alignés sans case de complétion "
                 "jouable n'en valent que 14. C'est le rapport qui commande tout le jeu tactique.",
+                "diagram": diagrams.block_required(),
             },
             {
                 "heading": "Exemple sur 7×7",
@@ -146,6 +162,7 @@ LESSONS = [
                 "réelle que si (3,5) figure dans vos coups légaux : elle doit toucher le dernier coup joué. "
                 "Si (3,5) est hors frontière, vous jouez ailleurs en toute sécurité — et si vous jouez un coup "
                 "qui éloigne la frontière de (3,5), la menace est définitivement éteinte.",
+                "diagram": diagrams.threat_345(),
             },
             {
                 "heading": "Deux menaces ne se bloquent pas",
@@ -153,6 +170,7 @@ LESSONS = [
                 "coup. L'adversaire ne peut en bloquer qu'une, et le moteur le voit immédiatement car il compte "
                 "les deux (2 × 60 points). La plupart des parties gagnées le sont par deux menaces simultanées, "
                 "pas par une seule.",
+                "diagram": diagrams.double_threat_playable(),
             },
             {
                 "heading": "Ordre des priorités",
@@ -160,6 +178,7 @@ LESSONS = [
                 "2) l'adversaire peut-il gagner au prochain coup (menace réelle à bloquer) ? 3) puis-je créer "
                 "une menace réelle, si possible double ? 4) sinon, améliorer mes lignes et ma centralité. "
                 "Cet ordre est exactement celui que suit le moteur.",
+                "diagram": diagrams.immediate_win(),
             },
         ],
     },
@@ -175,6 +194,7 @@ LESSONS = [
                 "de trois pions ne sert à rien si la case qui le complète n'est pas adjacente au dernier coup "
                 "joué**. Le plateau est vivant, la frontière se déplace à chaque coup, et une menace qui n'est "
                 "pas jouable maintenant s'éteint presque toujours d'elle-même.",
+                "diagram": diagrams.ghost_threat(),
             },
             {
                 "heading": "Pourquoi",
@@ -182,6 +202,7 @@ LESSONS = [
                 "Donc pour compléter votre ligne au coup suivant, la case de complétion doit être voisine du "
                 "pion que **l'adversaire** va poser — et vous ne choisissez pas son coup. S'il joue à l'opposé, "
                 "votre case de complétion sort de la frontière et vos trois pions deviennent inertes.",
+                "diagram": diagrams.frontier_midgame(),
             },
             {
                 "heading": "Conséquence pratique",
@@ -189,6 +210,7 @@ LESSONS = [
                 "**jouable maintenant** ? Si oui, l'adversaire est obligé de la bloquer. Sinon, elle ne force rien "
                 "et vous venez probablement de perdre un temps. L'adversaire, lui, peut « s'éloigner » : jouer "
                 "un coup calme à distance pour éteindre la menace sans dépenser un blocage.",
+                "diagram": diagrams.threat_on_frontier(),
             },
             {
                 "heading": "Le retournement",
@@ -197,12 +219,14 @@ LESSONS = [
                 "chaque tentative de menaces peut être neutralisée par un coup à distance. Elle donne le plan "
                 "de jeu défensif de référence : face à un alignement de trois, demandez-vous si la case de "
                 "complétion est jouable **pour l'adversaire au prochain tour** — si non, jouez ailleurs.",
+                "diagram": diagrams.ghost_threat_diagonal(),
             },
             {
                 "heading": "Comment s'entraîner",
                 "body": "Ouvrez l'entraîneur et regardez les pourcentages affichés par le moteur : les cases "
                 "qui font chuter le taux adverse sont presque toujours celles qui **créent** une menace réelle "
                 "ou qui **éteignent** celle de l'adversaire. Comparez avec votre coup : l'écart est la leçon.",
+                "diagram": diagrams.trainer_legend(),
             },
         ],
     },
@@ -215,8 +239,9 @@ LESSONS = [
             {
                 "heading": "Définition",
                 "body": "Sur un plateau 7×7, une **fenêtre de 4** est tout segment de **4 cases consécutives** "
-                "en ligne droite (horizontal, vertical ou diagonal). Il y en a 68 au total — le moteur les "
-                "pré-calcule pour évaluer chaque position.",
+                "en ligne droite (horizontal, vertical ou diagonal). Il y en a **88** au total — 28 horizontales, "
+                "28 verticales et 32 diagonales — et le moteur les pré-calcule pour évaluer chaque position.",
+                "diagram": diagrams.four_window(),
             },
             {
                 "heading": "Poids heuristiques du moteur",
@@ -225,18 +250,21 @@ LESSONS = [
                 "trois alignés et 2 points par paire, et la **centralité** compte 3 fois la valeur de la case "
                 "(6 au centre contre 0 dans un coin). Un simple trois alignés sans case jouable pèse donc "
                 "quatre fois moins qu'une menace réelle.",
+                "diagram": diagrams.immediate_win(),
             },
             {
                 "heading": "Fenêtres polluées",
                 "body": "Si une fenêtre contient des pions des **deux** joueurs, elle est ignorée : les lignes "
                 "se bloquent mutuellement. Évitez de poser au milieu d'une ligne adverse ; préférez prolonger "
                 "vos propres fenêtres ou couper celles de l'adversaire tôt.",
+                "diagram": diagrams.polluted_window(),
             },
             {
                 "heading": "Exemple concret",
                 "body": "Rouge occupe (2,2) et (2,3) : la paire vaut 2 points par fenêtre. Si Bleu joue en (2,4), "
                 "la fenêtre est polluée et ne compte plus pour personne — un bon blocage préventif, mais qui "
                 "coûte un tempo : le moteur ne le joue que si le gain de la pollution dépasse le coup perdu.",
+                "diagram": diagrams.polluted_window_vertical(),
             },
             {
                 "heading": "Centre et bords",
@@ -244,6 +272,7 @@ LESSONS = [
                 "milieu vaut 3, un coin vaut 0. Puisque la centralité est multipliée par 3, un pion central "
                 "rapporte 18 points — autant qu'un trois alignés complet. C'est mesurable, et cela explique "
                 "pourquoi le premier coup au centre est le meilleur du jeu.",
+                "diagram": diagrams.center_heatmap(),
             },
             {
                 "heading": "Lien avec les menaces",
@@ -251,6 +280,7 @@ LESSONS = [
                 "jouable ; dès qu'elle l'est, la même ligne vaut 60. Tout l'enjeu du milieu de partie est "
                 "de faire coïncider vos trois pions avec la frontière du dernier coup — pour vous comme pour "
                 "l'adversaire.",
+                "diagram": diagrams.threat_345(),
             },
         ],
     },
@@ -266,6 +296,7 @@ LESSONS = [
                 "(ou plus) au même tour : deux lignes de 3 dont les quatrièmes cases sont toutes deux sur la "
                 "frontière. L'adversaire ne peut en bloquer qu'une seule — la partie est gagnée. C'est le seul "
                 "motif qui produit des victoires forcées à court terme.",
+                "diagram": diagrams.double_threat_playable(),
             },
             {
                 "heading": "Exemple classique",
@@ -273,6 +304,7 @@ LESSONS = [
                 "verticale (1,3)-(2,3)-(3,3), extrémités libres en (3,0), (3,4), (0,3) et (4,3). Encore "
                 "faut-il que **deux** de ces extrémités soient jouables au même moment : c'est la frontière, "
                 "pas le dessin des pions, qui décide.",
+                "diagram": diagrams.double_threat(),
             },
             {
                 "heading": "Frontière et timing",
@@ -280,12 +312,14 @@ LESSONS = [
                 "après chaque réponse adverse : une menace « fantôme » sur une case non jouable ne force rien. "
                 "Guidez la partie pour que **vos deux lignes** deviennent jouables au même coup, et non l'une "
                 "après l'autre.",
+                "diagram": diagrams.ghost_threat(),
             },
             {
                 "heading": "Créer la fourchette",
                 "body": "Cherchez les coups qui **augmentent deux fenêtres à la fois** (pion au carrefour de "
                 "lignes). Le centre (3,3) et ses voisins sont des cases pivot : un pion en (3,3) peut "
                 "participer à quatre directions différentes.",
+                "diagram": diagrams.center_lines(),
             },
             {
                 "heading": "Comment le moteur la voit",
@@ -293,6 +327,7 @@ LESSONS = [
                 "menaces valent 120 points, soit plus du double de tout ce qu'une position peut rapporter par "
                 "ailleurs. C'est aussi pour cela que le moteur ordonne ses coups en essayant d'abord les "
                 "victoires immédiates, puis les blocages, puis la création de menaces.",
+                "diagram": diagrams.double_threat_scored(),
             },
         ],
     },
@@ -308,30 +343,35 @@ LESSONS = [
                 "choisit donc la direction de la partie. Répondez en restant proche du centre quand c'est "
                 "possible, et évitez de pousser la partie vers un coin : la frontière s'y referme et vous "
                 "perdez des options avant même la première menace.",
+                "diagram": diagrams.frontier_center(),
             },
             {
                 "heading": "Suivre la frontière dès le coup 2",
                 "body": "Dès la réponse adverse, vos coups sont contraints par le **dernier coup joué**. "
                 "Choisissez des cases qui gardent plusieurs voisins libres pour ne pas vous enfermer "
                 "dans un coin du plateau.",
+                "diagram": diagrams.frontier_midgame(),
             },
             {
                 "heading": "Développement harmonieux",
                 "body": "Évitez les coups isolés sur le bord (rangée 0 ou 6) en début de partie : moins de "
                 "fenêtres, moins de menaces potentielles. Reliez vos pions pour former des structures "
                 "qui peuvent évoluer vers 2 puis 3 alignés.",
+                "diagram": diagrams.corner_lines(),
             },
             {
                 "heading": "Ne pas offrir de tempo",
                 "body": "Un coup passif laisse l'adversaire imposer la frontière. Si vous devez répondre près "
                 "de son dernier pion, cherchez un coup qui **bloque** sa fenêtre en cours tout en "
                 "développant la vôtre — deux effets en un.",
+                "diagram": diagrams.block_required(),
             },
             {
                 "heading": "Préparer le milieu de partie",
                 "body": "L'ouverture se termine quand les menaces directes apparaissent. D'ici là, visez "
                 "3 objectifs : centre contrôlé, fenêtres propres non polluées, et mobilité supérieure "
                 "à l'adversaire sur la frontière actuelle.",
+                "diagram": diagrams.center_heatmap(),
             },
         ],
     },
@@ -347,6 +387,7 @@ LESSONS = [
                 "elle dépend entièrement de la **frontière** (voisins du dernier coup, ou règle de secours). "
                 "Plus la frontière est large, plus il y a de cases de complétion possibles — pour vous comme "
                 "pour l'adversaire.",
+                "diagram": diagrams.frontier_center(),
             },
             {
                 "heading": "Ce que le moteur évalue vraiment",
@@ -355,6 +396,7 @@ LESSONS = [
                 "menaces : une case de complétion n'est une menace que si elle est sur la frontière. Réduire "
                 "la mobilité adverse est donc un moyen, pas une fin — la fin, c'est de rendre vos lignes "
                 "jouables et les siennes inertes.",
+                "diagram": diagrams.immediate_win(),
             },
             {
                 "heading": "Enfermer la frontière",
@@ -362,6 +404,7 @@ LESSONS = [
                 "les cases vides **adjacentes à un pion adverse** sont jouables. Vous pouvez guider la "
                 "partie vers cette configuration pour limiter drastiquement les réponses adverses — et donc "
                 "le nombre de menaces qu'il peut créer.",
+                "diagram": diagrams.rescue_rule(),
             },
             {
                 "heading": "Exemple sur 7×7",
@@ -369,6 +412,7 @@ LESSONS = [
                 "le rouge ne pourra jouer que sur les cases vides touchant un pion bleu — souvent 1 ou 2 "
                 "choix au lieu de 8. Attention : cette configuration peut aussi **armer** l'adversaire, "
                 "puisque ses cases restantes touchent vos pions.",
+                "diagram": diagrams.corner_frontier(),
             },
             {
                 "heading": "Mobilité vs menaces",
@@ -376,6 +420,7 @@ LESSONS = [
                 "la mobilité n'est pas comptée. À score égal, préférez le coup qui laisse le moins de "
                 "**completions jouables** à l'adversaire au tour suivant — c'est cela que regarde le moteur "
                 "à la profondeur suivante, et c'est ce que les pourcentages du coach traduisent.",
+                "diagram": diagrams.double_threat_playable(),
             },
         ],
     },
@@ -392,24 +437,28 @@ LESSONS = [
                 "de finales du site couvre exactement toutes les positions jusqu'à **7 cases vides** ; au-delà, "
                 "la couverture est partielle. Quand la position est résolue, le coach affiche des pourcentages "
                 "**exacts** — 100 %, 50 % ou 0 % — et le meilleur coup n'est pas une opinion.",
+                "diagram": diagrams.draw_board(),
             },
             {
                 "heading": "Frontière en finale",
                 "body": "La contrainte du dernier coup est maximale en finale : chaque coup réduit le plateau "
                 "et resserre la frontière. La règle de secours (jouer près d'un pion adverse) devient "
                 "fréquente — maîtrisez-la pour ne pas perdre sur une case illégale.",
+                "diagram": diagrams.rescue_rule(),
             },
             {
                 "heading": "Technique du zugzwang",
                 "body": "Forcer l'adversaire à jouer sur la frontière où **tous** ses coups aggravent sa position "
                 "est l'équivalent du zugzwang. Réduisez sa mobilité tout en maintenant une menace latente "
                 "sur une fenêtre de 4 encore jouable.",
+                "diagram": diagrams.corner_frontier(),
             },
             {
                 "heading": "Alignement forcé",
                 "body": "Si vous avez une menace double ou une menace que l'adversaire ne peut bloquer qu'en "
                 "s'éloignant de sa meilleure défense, la tablebase confirme le gain forcé. Entraînez-vous "
                 "sur les puzzles du pack (3 à 8 coups) pour reconnaître ces motifs.",
+                "diagram": diagrams.puzzle_unique_win(),
             },
             {
                 "heading": "Estimation ou preuve : lire l'étiquette",
@@ -418,6 +467,7 @@ LESSONS = [
                 "« **Estimation (moteur, profondeur N)** » signifie que le moteur a calculé N demi-coups et "
                 "propose un pourcentage : c'est solide, mais ce n'est pas une preuve. Un « **Mat forcé en N "
                 "coup(s)** » est une preuve trouvée par le moteur : c'est le cas le plus net.",
+                "diagram": diagrams.trainer_legend(),
             },
         ],
     },
@@ -432,6 +482,7 @@ LESSONS = [
                 "body": "Dans l'**entraîneur** (mode apprentissage), vous jouez les rouges contre le **coach** "
                 "bleu. Après chaque coup, le moteur analyse la position et affiche des indices sur le plateau "
                 "— pas de surprise : c'est un outil pédagogique, pas une partie classée.",
+                "diagram": diagrams.trainer_legend(),
             },
             {
                 "heading": "Pourcentages par case",
@@ -439,18 +490,21 @@ LESSONS = [
                 "de vue des rouges). Vert = favorable, rouge = défavorable. Ces chiffres viennent du moteur "
                 "d'analyse : c'est la lecture de son évaluation sur une échelle **calibrée sur les finales "
                 "exactes**, pas des simulations approximatives.",
+                "diagram": diagrams.percent_legend(),
             },
             {
                 "heading": "Meilleur coup suggéré",
                 "body": "Le coup recommandé apparaît en **pointillés dorés** sur le plateau. Il correspond au "
                 "`best_move` de l'analyse — victoire immédiate, blocage, ou meilleure continuation. "
                 "Comparez votre choix au sien après avoir réfléchi.",
+                "diagram": diagrams.immediate_win(),
             },
             {
                 "heading": "Barre de probabilité",
                 "body": "La barre en bas indique la probabilité de victoire globale des rouges dans la position "
                 "actuelle. Elle se met à jour après chaque coup. Un 50 % signifie position équilibrée ; "
                 "au-delà de 70 %, vous avez un avantage net. En dessous de 30 %, cherchez d'abord la défense.",
+                "diagram": diagrams.balanced_position(),
             },
             {
                 "heading": "Exact vs estimé",
@@ -460,6 +514,7 @@ LESSONS = [
                 "révisable. « **recherche interrompue** » : le budget temps a été atteint, la profondeur "
                 "atteinte est plus faible. En début de partie sur 7×7, l'estimation est la norme ; en finale, "
                 "l'exact prend le relais.",
+                "diagram": diagrams.puzzle_unique_win(),
             },
         ],
     },

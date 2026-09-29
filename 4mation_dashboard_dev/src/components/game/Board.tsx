@@ -13,6 +13,8 @@ interface BoardProps {
   playable?: Move[];
   lastMove?: Move | null;
   bestMove?: Move | null;
+  /** Dernier coup refusé (puzzles) : mis en évidence en rouge. */
+  invalidMove?: Move | null;
   thinking?: boolean;
   /** Assombrir les cases vides hors coup légal (règle de connexité). */
   dimInvalid?: boolean;
@@ -30,11 +32,17 @@ function isSame(a: Move | null | undefined, r: number, c: number): boolean {
   return !!a && a.row === r && a.col === c;
 }
 
+// `border` est volontairement éclaté en propriétés détaillées : les cases surchargent
+// ensuite `borderColor` de façon conditionnelle. Avec le raccourci, la clé `borderColor`
+// disparaît du style quand une case cesse d'être jouable, ce que React signale comme un
+// mélange raccourci/propriété détaillée.
 const cellBase: CSSProperties = {
   aspectRatio: "1",
   borderRadius: "22%",
   background: "var(--cell)",
-  border: "3px solid var(--cell-border)",
+  borderWidth: "3px",
+  borderStyle: "solid",
+  borderColor: "var(--cell-border)",
   position: "relative",
 };
 
@@ -47,6 +55,7 @@ export default function Board({
   playable = [],
   lastMove,
   bestMove,
+  invalidMove,
   thinking = false,
   dimInvalid = false,
   muteEmpty = false,
@@ -99,6 +108,11 @@ export default function Board({
             style.outline = "3px dashed var(--color-gold)";
             style.outlineOffset = "-2px";
             style.boxShadow = "0 0 16px rgba(255, 215, 0, 0.7)";
+          }
+          if (isSame(invalidMove, r, c)) {
+            style.outline = "3px solid var(--color-p1)";
+            style.outlineOffset = "-2px";
+            style.boxShadow = "0 0 16px rgba(255, 71, 87, 0.75)";
           }
 
           const key = `${r},${c}`;

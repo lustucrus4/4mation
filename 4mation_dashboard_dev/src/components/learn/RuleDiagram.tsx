@@ -1,14 +1,25 @@
 import type { CSSProperties } from "react";
+import {
+  cellCenterPercent,
+  type CellValue,
+  type HighlightKind,
+} from "./ruleBoard";
 
-export type CellValue = 0 | 1 | 2;
-
-export type HighlightKind = "valid" | "invalid" | "win" | "focus" | "last";
+export * from "./ruleBoard";
 
 export interface RuleDiagramProps {
   /** Matrice row-major : 0 vide, 1 rouge, 2 bleu. */
   board: CellValue[][];
   /** Surbrillance par case "row,col". */
   highlights?: Record<string, HighlightKind>;
+  /**
+   * Texte court affiché au centre d'une case, par case "row,col".
+   *
+   * Sert à montrer un **ordre de coups** (① ② ③) ou un repère de lecture (A, B…).
+   * Un libellé prend la place du ✕ : sur une case étiquetée, la surbrillance
+   * `invalid` se contente de griser la case.
+   */
+  labels?: Record<string, string>;
   /** Ligne gagnante à tracer (indices de cases). */
   winLine?: [number, number][];
   caption?: string;
@@ -40,24 +51,17 @@ const highlightStyles: Record<HighlightKind, CSSProperties> = {
     outline: "2px solid var(--color-accent)",
     outlineOffset: "-1px",
   },
+  best: {
+    outline: "2px dashed var(--color-gold)",
+    outlineOffset: "-1px",
+    boxShadow: "0 0 10px rgba(255, 215, 0, 0.6)",
+  },
 };
-
-function cellCenterPercent(row: number, col: number, rows: number, cols: number): { x: number; y: number } {
-  const pad = 8;
-  const gap = 4;
-  const innerW = 100 - pad * 2;
-  const innerH = 100 - pad * 2;
-  const cellW = (innerW - gap * (cols - 1)) / cols;
-  const cellH = (innerH - gap * (rows - 1)) / rows;
-  return {
-    x: pad + col * (cellW + gap) + cellW / 2,
-    y: pad + row * (cellH + gap) + cellH / 2,
-  };
-}
 
 export default function RuleDiagram({
   board,
   highlights = {},
+  labels = {},
   winLine,
   caption,
   compact = false,
@@ -91,11 +95,14 @@ export default function RuleDiagram({
             rowArr.map((value, c) => {
               const key = `${r},${c}`;
               const hl = highlights[key];
+              const label = labels[key];
               const style: CSSProperties = {
                 aspectRatio: "1",
                 borderRadius: "18%",
                 background: "var(--cell)",
-                border: "2px solid var(--cell-border)",
+                borderWidth: "2px",
+                borderStyle: "solid",
+                borderColor: "var(--cell-border)",
                 position: "relative",
                 ...(hl ? highlightStyles[hl] : {}),
               };
@@ -110,10 +117,33 @@ export default function RuleDiagram({
 
               return (
                 <div key={key} style={style} aria-hidden>
-                  {hl === "invalid" && (
-                    <span className="absolute inset-0 grid place-items-center text-lg font-bold text-p1">
-                      ✕
+                  {hl === "best" && (
+                    <span
+                      className={[
+                        "absolute right-0.5 top-0 leading-none text-gold",
+                        compact ? "text-[9px]" : "text-xs",
+                      ].join(" ")}
+                      style={{ textShadow: "0 0 4px rgba(0,0,0,0.9)" }}
+                    >
+                      ★
                     </span>
+                  )}
+                  {label ? (
+                    <span
+                      className={[
+                        "absolute inset-0 grid place-items-center font-bold text-white",
+                        compact ? "text-[10px] leading-none" : "text-sm",
+                      ].join(" ")}
+                      style={{ textShadow: "0 1px 2px rgba(0,0,0,0.85)" }}
+                    >
+                      {label}
+                    </span>
+                  ) : (
+                    hl === "invalid" && (
+                      <span className="absolute inset-0 grid place-items-center text-lg font-bold text-p1">
+                        ✕
+                      </span>
+                    )
                   )}
                 </div>
               );
@@ -147,46 +177,4 @@ export default function RuleDiagram({
       )}
     </figure>
   );
-}
-
-/** Plateau 7×7 vide. */
-export function emptyRuleBoard(size = 7): CellValue[][] {
-  return Array.from({ length: size }, () => Array.from({ length: size }, () => 0 as CellValue));
-}
-
-/** Pose des pions sur une copie du plateau. */
-export function withPieces(
-  base: CellValue[][],
-  pieces: { row: number; col: number; player: 1 | 2 }[]
-): CellValue[][] {
-  const next = base.map((row) => [...row]) as CellValue[][];
-  for (const p of pieces) {
-    next[p.row][p.col] = p.player;
-  }
-  return next;
-}
-
-/** Toutes les cases valides au premier coup. */
-export function firstMoveHighlights(size = 7): Record<string, HighlightKind> {
-  const h: Record<string, HighlightKind> = {};
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) h[`${r},${c}`] = "valid";
-  }
-  return h;
-}
-
-/** Voisins 8-directions d'une case (pour schéma connexité). */
-export function neighborHighlights(row: number, col: number, size = 7): Record<string, HighlightKind> {
-  const h: Record<string, HighlightKind> = {};
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = row + dr;
-      const nc = col + dc;
-      if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
-        h[`${nr},${nc}`] = "valid";
-      }
-    }
-  }
-  return h;
 }

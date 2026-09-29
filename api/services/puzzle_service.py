@@ -51,6 +51,7 @@ def list_pack_puzzles() -> List[Dict[str, Any]]:
             "id": p["id"],
             "difficulty": p["difficulty"],
             "human_moves": p["human_moves"],
+            "min_moves": p.get("min_moves", p["human_moves"]),
             "title": p["title"],
             "theme": p.get("theme", "Victoire forcée"),
         }
@@ -58,7 +59,7 @@ def list_pack_puzzles() -> List[Dict[str, Any]]:
     ]
 
 
-def get_pack_puzzle(puzzle_id: str, *, include_line: bool = False) -> Optional[Dict[str, Any]]:
+def get_pack_puzzle(puzzle_id: str, *, include_solution: bool = False) -> Optional[Dict[str, Any]]:
     for p in _load_pack_raw():
         if p["id"] != puzzle_id:
             continue
@@ -66,13 +67,15 @@ def get_pack_puzzle(puzzle_id: str, *, include_line: bool = False) -> Optional[D
             "id": p["id"],
             "difficulty": p["difficulty"],
             "human_moves": p["human_moves"],
+            "min_moves": p.get("min_moves", p["human_moves"]),
             "title": p["title"],
             "theme": p.get("theme", "Victoire forcée"),
             "history": p["history"],
             "player_to_move": int(p.get("player_to_move", HUMAN)),
         }
-        if include_line:
-            out["line"] = p["line"]
+        if include_solution:
+            out["line"] = p.get("line", [])
+            out["nodes"] = p.get("nodes")
         return out
     return None
 
@@ -84,6 +87,58 @@ def _normalize_history(history: List[Dict[str, int]]) -> List[Dict[str, int]]:
     ]
 
 
+def _node_key(played: List[Dict[str, int]]) -> str:
+    return ";".join(f"{int(m['row'])},{int(m['col'])}" for m in played)
+
+
+def _wrong_move(puzzle: Dict[str, Any], played: List[Dict[str, int]]) -> Dict[str, Any]:
+    return {
+        "correct": False,
+        "reason": "Ce n'est pas le coup gagnant",
+        "expected_step": sum(1 for m in played if int(m["player"]) == HUMAN) + 1,
+        "human_moves": puzzle["human_moves"],
+    }
+
+
+def _check_from_tree(
+    puzzle: Dict[str, Any],
+    history: List[Dict[str, int]],
+    played: List[Dict[str, int]],
+    row: int,
+    col: int,
+) -> Dict[str, Any]:
+    """Valide le coup contre l'arbre precalcule (coups gagnants + defense la plus tenace)."""
+    setup_len = len(puzzle["history"])
+    node = (puzzle.get("nodes") or {}).get(_node_key(played))
+    if node is None:
+        return _wrong_move(puzzle, played)
+
+    move_key = f"{int(row)},{int(col)}"
+    if move_key not in {f"{int(r)},{int(c)}" for r, c in node.get("moves", [])}:
+        return _wrong_move(puzzle, played)
+
+    reply = (node.get("replies") or {}).get(move_key)
+    new_history = list(history) + [{"player": HUMAN, "row": int(row), "col": int(col)}]
+    opponent_move: Optional[Dict[str, int]] = None
+    if reply:
+        opponent_move = {"player": 2, "row": int(reply[0]), "col": int(reply[1])}
+        new_history.append(opponent_move)
+
+    engine = _engine_from_history(new_history)
+    solved = bool(engine.is_terminal() and engine.get_winner() == HUMAN)
+    human_done = sum(1 for m in new_history[setup_len:] if int(m["player"]) == HUMAN)
+
+    return {
+        "correct": True,
+        "history": new_history,
+        "opponent_move": opponent_move,
+        "solved": solved,
+        "step": human_done,
+        "human_moves": puzzle["human_moves"],
+        "player_to_move": int(engine.get_current_player()) if not solved else HUMAN,
+    }
+
+
 def check_pack_puzzle_move(
     puzzle_id: str,
     history: List[Dict[str, int]],
@@ -91,12 +146,11 @@ def check_pack_puzzle_move(
     col: int,
 ) -> Dict[str, Any]:
     """Valide un coup humain et renvoie la réponse adverse automatique si besoin."""
-    puzzle = get_pack_puzzle(puzzle_id, include_line=True)
+    puzzle = get_pack_puzzle(puzzle_id, include_solution=True)
     if puzzle is None:
         return {"correct": False, "reason": "Puzzle introuvable"}
 
     setup = _normalize_history(puzzle["history"])
-    line: List[Dict[str, int]] = _normalize_history(puzzle["line"])
     history = _normalize_history(history)
     setup_len = len(setup)
 
@@ -114,6 +168,11 @@ def check_pack_puzzle_move(
     if int(engine.get_current_player()) != HUMAN:
         return {"correct": False, "reason": "Ce n'est pas votre tour"}
 
+    if puzzle.get("nodes"):
+        return _check_from_tree(puzzle, history, played, row, col)
+
+    # Pack sans arbre precalcule : ancien controle sur la ligne stockee.
+    line: List[Dict[str, int]] = _normalize_history(puzzle.get("line", []))
     step = len(played)
     if step >= len(line):
         return {"correct": False, "reason": "Puzzle déjà résolu"}
@@ -124,12 +183,7 @@ def check_pack_puzzle_move(
 
     played_move = {"player": HUMAN, "row": int(row), "col": int(col)}
     if _move_key(played_move) != _move_key(expected):
-        return {
-            "correct": False,
-            "reason": "Ce n'est pas le bon coup",
-            "expected_step": sum(1 for m in played if int(m["player"]) == HUMAN) + 1,
-            "human_moves": puzzle["human_moves"],
-        }
+        return _wrong_move(puzzle, played)
 
     new_history = list(history) + [played_move]
     engine = _engine_from_history(new_history)
@@ -138,7 +192,7 @@ def check_pack_puzzle_move(
     solved = False
 
     if engine.is_terminal():
-        solved = engine.get_winner() == HUMAN
+        solved = bool(engine.get_winner() == HUMAN)
     elif step + 1 < len(line):
         opp = line[step + 1]
         if int(opp["player"]) != 2:
@@ -151,9 +205,9 @@ def check_pack_puzzle_move(
         new_history.append(opponent_move)
         engine = _engine_from_history(new_history)
         if engine.is_terminal():
-            solved = engine.get_winner() == HUMAN
+            solved = bool(engine.get_winner() == HUMAN)
     elif step + 1 == len(line):
-        solved = engine.is_terminal() and engine.get_winner() == HUMAN
+        solved = bool(engine.is_terminal() and engine.get_winner() == HUMAN)
 
     human_done = sum(1 for m in new_history[setup_len:] if int(m["player"]) == HUMAN)
 

@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import Board, { emptyBoard } from "../components/game/Board";
 import WinBar from "../components/game/WinBar";
 import GameOverOverlay from "../components/game/GameOverOverlay";
+import RuleDiagram from "../components/learn/RuleDiagram";
+import { trainerLegendDiagram } from "../components/learn/diagrams";
 import EvalGraph from "../components/review/EvalGraph";
 import MoveHistoryList from "../components/review/MoveHistoryList";
 import MoveNavigator from "../components/review/MoveNavigator";
@@ -212,6 +214,9 @@ export default function TrainerPage() {
               </li>
               <li>★ — meilleur coup suggéré</li>
             </ul>
+            <div className="mt-3 flex justify-center">
+              <RuleDiagram {...trainerLegendDiagram} compact />
+            </div>
           </Card>
 
           <Card className="max-h-[40vh] overflow-y-auto lg:max-h-[50vh]">

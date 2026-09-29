@@ -15,14 +15,42 @@ déclarées dans `api/routes/learn.py`, qui garde la main sur les leçons non r�
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import sys
+import types
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 SOLVER = ROOT / "script" / "solver"
 OUT_DEFAULT = ROOT / "api" / "content" / "lessons_engine.json"
+
+
+def _load_diagram_catalogue():
+    """Charge `api/services/learn_diagrams.py` sans importer le package `api.services`.
+
+    Importer `api.services` tire `bot_registry`, la tablebase et tout le moteur — alors
+    que ce script ne fait que rédiger des leçons, et que les schémas ne dépendent que de
+    `lesson_diagrams` (stdlib). On monte donc un package factice ne contenant que ces
+    deux fichiers, pour garder les schémas identiques à ceux des pages React.
+    """
+    services_dir = ROOT / "api" / "services"
+    package = types.ModuleType("_learn_diagrams_pkg")
+    package.__path__ = [str(services_dir)]
+    sys.modules[package.__name__] = package
+    for name in ("lesson_diagrams", "learn_diagrams"):
+        spec = importlib.util.spec_from_file_location(
+            f"{package.__name__}.{name}", services_dir / f"{name}.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+    return sys.modules[f"{package.__name__}.learn_diagrams"]
+
+
+diagrams = _load_diagram_catalogue()
 
 # Les 10 premiers coups distincts (orbites sous les symétries du plateau).
 ORBITS = [(0, 0), (0, 1), (0, 2), (0, 3), (1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
@@ -507,10 +535,12 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                         "du dernier coup joué. Le premier coup décide donc de la région où va "
                         "se dérouler la partie."
                     ),
+                    "diagram": diagrams.first_move(),
                 },
                 {
                     "heading": "Les 10 premiers coups, et pourquoi on ne les classe pas",
                     "body": opening_section(probe, theory, stability),
+                    "diagram": diagrams.distinct_first_moves(),
                 },
                 {
                     "heading": "Pourquoi le centre domine",
@@ -522,6 +552,7 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                         "à menacer immédiatement, mais à s'installer là où le plus de menaces "
                         "seront possibles."
                     ),
+                    "diagram": diagrams.center_heatmap(),
                 },
                 {
                     "heading": "Ce que ça change pour vous",
@@ -532,6 +563,7 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                         "jouez la défense la plus tenace (voir la leçon « Preuve ») et attendez "
                         "l'erreur, c'est votre seule ressource."
                     ),
+                    "diagram": diagrams.frontier_center(),
                 },
                 {
                     "heading": "D'où viennent ces chiffres",
@@ -544,6 +576,7 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                         "budgets différents, donnent des scores qui changent de signe. C'est "
                         "pourquoi cette leçon ne publie pas de classement des neuf autres coups."
                     ),
+                    "diagram": diagrams.center_lines(),
                 },
             ],
         },
@@ -575,6 +608,7 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                             "la seconde conclut. C'est le même ressort dans toutes les finales gagnantes.",
                         ]
                     ),
+                    "diagram": diagrams.double_threat_playable(),
                 },
             ],
         }
@@ -603,6 +637,7 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                             "puis vise une case qui crée deux alignements à la fois. La défense "
                             "ne peut bloquer qu'un côté, et le gain suit."
                         ),
+                        "diagram": diagrams.double_threat_playable(),
                     },
                 ],
             }
@@ -628,6 +663,7 @@ def build(probe: Optional[Dict[str, Any]], theory: Optional[Dict[str, Any]],
                         "case d'alignement est jouable tout de suite ; sinon, cherchez le coup "
                         "qui en crée deux à la fois — l'adversaire n'en bloquera qu'une."
                     ),
+                    "diagram": diagrams.puzzle_unique_win(),
                 },
             ],
         }

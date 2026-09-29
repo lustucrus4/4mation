@@ -37,6 +37,8 @@ export interface PackPuzzleSummary {
   id: string;
   difficulty: "easy" | "medium" | "hard";
   human_moves: number;
+  /** Coups humains reellement necessaires pour forcer la victoire (<= human_moves). */
+  min_moves: number;
   title: string;
   theme: string;
 }
@@ -75,6 +77,10 @@ export interface LessonDiagram {
   board: number[][];
   /** Surbrillance par case "row,col". */
   highlights?: Record<string, "valid" | "invalid" | "win" | "focus" | "last">;
+  /** Texte court par case "row,col" (ordre des coups, repère de lecture). */
+  labels?: Record<string, string>;
+  /** Ligne gagnante à tracer, de la première à la dernière case de l'alignement. */
+  win_line?: [number, number][];
   caption?: string;
 }
 

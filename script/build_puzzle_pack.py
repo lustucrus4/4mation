@@ -312,6 +312,20 @@ def main() -> None:
 
     pack = generate_pack(only=args.only, existing=existing)
     _save_pack(pack)
+
+    # Sans arbre de solution, le controle des coups retombe sur la ligne brute (fausse).
+    from build_puzzle_solutions import add_solutions
+
+    cibles = [p for p in pack if not p.get("nodes")]
+    if args.only:
+        cibles = [p for p in cibles if p["difficulty"] == args.only]
+    echecs = add_solutions(cibles)
+    if echecs:
+        print("Puzzles sans arbre de solution :")
+        for ligne in echecs:
+            print(f"  - {ligne}")
+    _save_pack(pack)
+
     print(f"OK — {len(pack)} puzzles → {OUTPUT}", flush=True)
 
 

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Board, { emptyBoard } from "../components/game/Board";
 import WinBar from "../components/game/WinBar";
+import RuleDiagram from "../components/learn/RuleDiagram";
+import { distinctFirstMovesDiagram } from "../components/learn/diagrams";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { exploreOpening, type OpeningExplore } from "../lib/learnApi";
@@ -112,6 +114,15 @@ export default function OpeningExplorerPage() {
           </Link>
         </div>
         <h1 className="text-2xl font-black text-accent">Ouvertures</h1>
+
+        <Card>
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
+            Par où commencer
+          </h2>
+          <div className="flex justify-center">
+            <RuleDiagram {...distinctFirstMovesDiagram} compact />
+          </div>
+        </Card>
 
         <div className="flex flex-wrap gap-2">
           <Button variant="ghost" onClick={undo} disabled={busy || moves.length === 0}>

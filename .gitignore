@@ -56,6 +56,13 @@ script/solver/data/solver_status.json
 script/solver_rust/*.log
 data/
 
+# Le pack de puzzles est un artefact de jeu, pas une donnee lourde : le conteneur de
+# production copie `api/` depuis le depot, donc sans ce fichier versionne l'endpoint
+# /api/learn/puzzles repond 503 en production.
+!api/data/
+api/data/*
+!api/data/puzzles.json
+
 # TensorBoard
 events.out.tfevents.*
 

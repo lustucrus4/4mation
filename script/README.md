@@ -84,3 +84,27 @@ python test_model.py --games 10
 - **Sinon** → `PPO` standard + `ActionMaskWrapper` (remap des actions invalides)
 
 Les modèles sont sauvegardés dans `script/models/` (best, checkpoints, final).
+
+## Pack de puzzles (victoires forcées)
+
+`build_puzzle_pack.py` génère `api/data/puzzles.json`, puis `build_puzzle_solutions.py`
+précalcule pour chaque puzzle l'**arbre de solution** (`nodes`) : à chaque position, la
+liste des coups humains qui forcent encore la victoire et, pour chacun, la défense
+adverse la plus tenace. C'est cet arbre que `api/services/puzzle_service.py` consulte :
+un déroulé linéaire (`line`) refusait à tort les autres coups gagnants.
+
+- `build_puzzle_pack.py` appelle désormais `add_solutions` en fin de génération : un pack
+  régénéré ne peut plus perdre ses arbres.
+- `line` est dérivé de l'arbre (premier coup gagnant, puis la meilleure défense) et sert
+  uniquement de repli.
+- `min_moves` (exposé par l'API) est le nombre minimal de coups humains réellement
+  nécessaires ; il peut être inférieur à `human_moves`.
+
+```bash
+cd 4mation
+set PYTHONPATH=.;script
+python script/build_puzzle_pack.py            # régénère le pack (arbres inclus)
+python script/build_puzzle_solutions.py       # recalcule seulement les arbres
+python scripts/check_puzzle_pack.py           # intégrité arbre <-> moteur
+python scripts/_puzzle_diag.py                # cohérence `line` <-> arbre
+```

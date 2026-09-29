@@ -2,19 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Board, { emptyBoard } from "../components/game/Board";
 import GameOverOverlay from "../components/game/GameOverOverlay";
+import RuleDiagram from "../components/learn/RuleDiagram";
+import { puzzleUniqueWinDiagram } from "../components/learn/diagrams";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { useGameOverOverlay } from "../hooks/useGameOverOverlay";
 import {
   checkPackPuzzle,
   DIFFICULTY_LABELS,
-  exploreOpening,
   fetchPackPuzzle,
   fetchPackPuzzles,
   type PackPuzzle,
   type PackPuzzleSummary,
   type PuzzleMove,
 } from "../lib/learnApi";
+import { computeValidActions } from "../lib/validActions";
 
 function boardFromHistory(history: PuzzleMove[]) {
   const board = emptyBoard();
@@ -37,14 +39,17 @@ export default function PuzzlePage() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [solved, setSolved] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [mistakes, setMistakes] = useState(0);
+  const [wrongMove, setWrongMove] = useState<{ row: number; col: number; message: string } | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const {
     intro: gameOverOverlay,
     show: showGameOverOverlay,
     dismiss: dismissGameOverOverlay,
   } = useGameOverOverlay();
-  const wasOutcomeRef = useRef<"idle" | "solved" | "failed">("idle");
+  const wasOutcomeRef = useRef<"idle" | "solved">("idle");
 
   const filtered = useMemo(
     () => catalog.filter((p) => p.difficulty === difficulty),
@@ -53,12 +58,16 @@ export default function PuzzlePage() {
 
   const setupLen = puzzle?.history.length ?? 0;
   const currentStep = puzzle ? humanStepCount(sessionHistory, setupLen) : 0;
-  const totalSteps = puzzle?.human_moves ?? 0;
+  const totalSteps = puzzle?.min_moves ?? puzzle?.human_moves ?? 0;
 
-  const refreshPlayable = useCallback(async (history: PuzzleMove[]) => {
-    const moves = history.map((h) => ({ row: h.row, col: h.col }));
-    const explore = await exploreOpening(moves);
-    setPlayable(explore.continuations.map((c) => c.move));
+  // Le plateau doit laisser jouer *tous* les coups légaux : s'appuyer sur le livre
+  // d'ouvertures masquait des positions absentes et pouvait désactiver le coup gagnant.
+  const refreshPlayable = useCallback((history: PuzzleMove[]) => {
+    const board = boardFromHistory(history);
+    const last = history.length ? history[history.length - 1] : null;
+    setPlayable(
+      computeValidActions(board, 1, last ? { row: last.row, col: last.col } : null)
+    );
   }, []);
 
   const loadCatalog = useCallback(async () => {
@@ -79,7 +88,8 @@ export default function PuzzlePage() {
       setBusy(true);
       setFeedback(null);
       setSolved(false);
-      setFailed(false);
+      setMistakes(0);
+      setWrongMove(null);
       setError(null);
       try {
         const p = await fetchPackPuzzle(id);
@@ -115,20 +125,26 @@ export default function PuzzlePage() {
     wasOutcomeRef.current = "idle";
     setSessionHistory(puzzle.history);
     setSolved(false);
-    setFailed(false);
+    setMistakes(0);
+    setWrongMove(null);
     setFeedback(null);
     void refreshPlayable(puzzle.history);
   };
 
   const onCellClick = async (row: number, col: number) => {
-    if (!puzzle || busy || solved || failed) return;
+    if (!puzzle || busy || solved) return;
     setBusy(true);
     setFeedback(null);
+    setWrongMove(null);
     try {
       const res = await checkPackPuzzle(puzzle.id, sessionHistory, { row, col });
       if (!res.correct) {
-        setFailed(true);
-        setFeedback(res.reason ?? "Mauvais coup — réessayez ou recommencez.");
+        if (res.expected_step != null) {
+          setMistakes((n) => n + 1);
+          setWrongMove({ row, col, message: "Ce n'est pas le coup gagnant." });
+        } else {
+          setWrongMove({ row, col, message: res.reason ?? "Coup refusé." });
+        }
         return;
       }
 
@@ -172,27 +188,11 @@ export default function PuzzlePage() {
       });
       return;
     }
-    if (failed && wasOutcomeRef.current !== "failed") {
-      wasOutcomeRef.current = "failed";
-      showGameOverOverlay({
-        result: "loss",
-        subtitle: feedback ?? "Mauvais coup — réessayez.",
-        opponentName: puzzle?.title ?? "Puzzle",
-      });
-      return;
-    }
-    if (!solved && !failed && wasOutcomeRef.current !== "idle") {
+    if (!solved && wasOutcomeRef.current === "solved") {
       wasOutcomeRef.current = "idle";
       dismissGameOverOverlay();
     }
-  }, [
-    dismissGameOverOverlay,
-    failed,
-    feedback,
-    puzzle?.title,
-    showGameOverOverlay,
-    solved,
-  ]);
+  }, [dismissGameOverOverlay, feedback, puzzle?.title, showGameOverOverlay, solved]);
 
   const board = boardFromHistory(sessionHistory);
   const lastMove =
@@ -208,10 +208,11 @@ export default function PuzzlePage() {
       <div className="relative">
         <Board
           board={board}
-          playable={solved || failed || busy ? [] : playable}
-          dimInvalid={!busy && !solved && !failed && sessionHistory.length > 0}
-          muteEmpty={busy || solved || failed}
+          playable={solved || busy ? [] : playable}
+          dimInvalid={!busy && !solved && sessionHistory.length > 0}
+          muteEmpty={busy || solved}
           lastMove={lastMove}
+          invalidMove={wrongMove ? { row: wrongMove.row, col: wrongMove.col } : null}
           thinking={busy}
           onCellClick={({ row, col }) => void onCellClick(row, col)}
         />
@@ -238,11 +239,17 @@ export default function PuzzlePage() {
             : puzzle
               ? solved
                 ? feedback
-                : failed
-                  ? feedback
-                  : `Joueur 1 — trouvez la séquence gagnante (${currentStep + 1}/${totalSteps})`
+                : `Joueur 1 — trouvez la séquence gagnante (${currentStep + 1}/${totalSteps})`
               : "Chargement…"}
         </p>
+        {wrongMove && !solved && (
+          <p className="mt-2 text-center text-sm font-semibold text-p1">
+            {wrongMove.message} Rien n&apos;a été joué
+            {mistakes > 1
+              ? ` — ${mistakes} essais manqués, cherchez un autre coup.`
+              : " — cherchez un autre coup."}
+          </p>
+        )}
         {error && <p className="mt-2 text-center text-sm text-p1">{error}</p>}
       </div>
 
@@ -255,6 +262,15 @@ export default function PuzzlePage() {
           Trouvez la suite de coups qui force la victoire. L&apos;adversaire répond automatiquement
           entre chaque coup.
         </p>
+
+        <Card>
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
+            Le but
+          </h2>
+          <div className="flex justify-center">
+            <RuleDiagram {...puzzleUniqueWinDiagram} compact />
+          </div>
+        </Card>
 
         <Card>
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
@@ -313,8 +329,9 @@ export default function PuzzlePage() {
             </h2>
             <ul className="space-y-1 text-sm text-white/70">
               <li>Thème : {puzzle.theme}</li>
-              <li>Coups à trouver : {puzzle.human_moves}</li>
+              <li>Coups à trouver : {puzzle.min_moves ?? puzzle.human_moves}</li>
               <li>Progression : {Math.min(currentStep, totalSteps)}/{totalSteps}</li>
+              <li>Essais manqués : {mistakes}</li>
             </ul>
           </Card>
         )}

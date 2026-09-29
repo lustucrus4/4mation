@@ -1,7 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "../components/ui/Card";
-import { fetchLessons, type Lesson } from "../lib/learnApi";
+import RuleDiagram, { type CellValue } from "../components/learn/RuleDiagram";
+import { fetchLessons, type Lesson, type LessonDiagram } from "../lib/learnApi";
+
+/**
+ * Premier schéma d'une leçon, s'il existe.
+ *
+ * Le catalogue ne duplique pas les positions : il affiche le schéma réel de la leçon,
+ * celui qu'on retrouvera dans le corps du texte. Ajouter un schéma à une leçon suffit
+ * donc à enrichir sa vignette.
+ */
+function firstDiagram(lesson: Lesson): LessonDiagram | null {
+  for (const section of lesson.sections) {
+    if (section.diagram) return section.diagram;
+  }
+  return null;
+}
 
 export default function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -28,15 +43,29 @@ export default function LessonsPage() {
       {error && <p className="text-sm text-p1">{error}</p>}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {lessons.map((l) => (
-          <Link key={l.id} to={`/learn/lessons/${l.id}`} className="group">
-            <Card className="h-full transition group-hover:border-accent/50">
-              <span className="text-xs font-bold uppercase text-white/40">{l.level}</span>
-              <h2 className="mt-1 text-lg font-bold text-accent">{l.title}</h2>
-              <p className="mt-2 text-sm text-white/60">~{l.duration_min} min</p>
-            </Card>
-          </Link>
-        ))}
+        {lessons.map((l) => {
+          const diagram = firstDiagram(l);
+          return (
+            <Link key={l.id} to={`/learn/lessons/${l.id}`} className="group">
+              <Card className="flex h-full flex-col transition group-hover:border-accent/50">
+                <span className="text-xs font-bold uppercase text-white/40">{l.level}</span>
+                <h2 className="mt-1 text-lg font-bold text-accent">{l.title}</h2>
+                <p className="mt-2 text-sm text-white/60">~{l.duration_min} min</p>
+                {diagram && (
+                  <div className="mt-auto flex justify-center pt-4">
+                    <RuleDiagram
+                      compact
+                      board={diagram.board as CellValue[][]}
+                      highlights={diagram.highlights}
+                      labels={diagram.labels}
+                      winLine={diagram.win_line}
+                    />
+                  </div>
+                )}
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

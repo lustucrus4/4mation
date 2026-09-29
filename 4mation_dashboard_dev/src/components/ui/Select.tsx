@@ -2,11 +2,11 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 
 export interface SelectOption {
   value: string;
@@ -33,8 +33,25 @@ const triggerBase =
   "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-night";
 
 const listBase =
-  "absolute z-50 max-h-60 w-full overflow-y-auto rounded-lg border border-accent/40 " +
+  "fixed z-[100] overflow-y-auto rounded-lg border border-accent/40 " +
   "bg-midnight py-1 shadow-lg shadow-black/40";
+
+/** Écart entre le déclencheur et la liste. */
+const GAP = 4;
+/** Hauteur d'une option, pour estimer la place nécessaire (padding inclus). */
+const OPTION_HEIGHT = 40;
+const MAX_LIST_HEIGHT = 240;
+
+interface ListLayout {
+  /** Bord supérieur du déclencheur, en coordonnées écran. */
+  anchorTop: number;
+  /** Bord inférieur du déclencheur, en coordonnées écran. */
+  anchorBottom: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+  openUp: boolean;
+}
 
 export default function Select({
   id: idProp,
@@ -53,7 +70,7 @@ export default function Select({
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
-  const [openUp, setOpenUp] = useState(false);
+  const [layout, setLayout] = useState<ListLayout | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const selected = options.find((o) => o.value === value);
@@ -64,23 +81,54 @@ export default function Select({
     setActiveIndex(-1);
   }, []);
 
-  const selectOption = useCallback(
-    (option: SelectOption) => {
-      if (option.disabled) return;
-      onChange(option.value);
-      close();
-    },
-    [onChange, close]
-  );
+  /**
+   * Position de la liste, mesurée sur le déclencheur. La liste est rendue dans un portail
+   * et donc positionnée en `fixed` : elle échappe ainsi à tout `overflow` ou contexte
+   * d'empilement d'un ancêtre (une carte avec `backdrop-blur` enferme le `z-index` de ses
+   * enfants, et le frère suivant la recouvre).
+   */
+  const measure = useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const desired = Math.min(MAX_LIST_HEIGHT, enabledOptions.length * OPTION_HEIGHT + 8);
+    const spaceBelow = window.innerHeight - rect.bottom - GAP;
+    const spaceAbove = rect.top - GAP;
+    // On n'ouvre vers le haut que si le bas manque vraiment de place et que le haut en a plus.
+    const openUp = spaceBelow < desired && spaceAbove > spaceBelow;
+    const available = openUp ? spaceAbove : spaceBelow;
+    setLayout({
+      anchorTop: rect.top,
+      anchorBottom: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+      maxHeight: Math.max(OPTION_HEIGHT, Math.min(desired, available)),
+      openUp,
+    });
+  }, [enabledOptions.length]);
 
-  useLayoutEffect(() => {
-    if (!open || !rootRef.current) return;
-    const rect = rootRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const menuHeight = Math.min(240, enabledOptions.length * 40 + 8);
-    setOpenUp(spaceBelow < menuHeight && spaceAbove > spaceBelow);
-  }, [open, enabledOptions.length]);
+  // Filet de sécurité : le déclencheur se désactive pendant que la liste est ouverte
+  // (partie « occupée »), on referme plutôt que de laisser une liste orpheline.
+  useEffect(() => {
+    if (disabled && open) close();
+  }, [disabled, open, close]);
+
+  useEffect(() => {
+    if (!open) {
+      setLayout(null);
+      return;
+    }
+    measure();
+    // `capture: true` : on suit aussi le défilement des conteneurs internes, pas seulement
+    // de la fenêtre. La liste étant en `fixed`, elle ne suivrait pas le déclencheur seule.
+    const onReflow = () => measure();
+    window.addEventListener("scroll", onReflow, true);
+    window.addEventListener("resize", onReflow);
+    return () => {
+      window.removeEventListener("scroll", onReflow, true);
+      window.removeEventListener("resize", onReflow);
+    };
+  }, [open, measure]);
 
   useEffect(() => {
     if (!open || !listRef.current) return;
@@ -90,9 +138,13 @@ export default function Select({
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        close();
-      }
+      const target = e.target as Node;
+      // La liste vit dans un portail : elle n'est PAS contenue dans `rootRef`, il faut
+      // donc la tester séparément, sinon un clic sur une option la refermerait avant
+      // que le clic n'atteigne l'option.
+      if (rootRef.current?.contains(target)) return;
+      if (listRef.current?.contains(target)) return;
+      close();
     };
     const onEscape = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") close();
@@ -112,10 +164,20 @@ export default function Select({
     item?.scrollIntoView({ block: "nearest" });
   }, [open, activeIndex]);
 
+  const selectOption = useCallback(
+    (option: SelectOption) => {
+      if (option.disabled) return;
+      onChange(option.value);
+      close();
+    },
+    [onChange, close]
+  );
+
   const openList = () => {
     if (disabled) return;
     const idx = enabledOptions.findIndex((o) => o.value === value);
     setActiveIndex(idx >= 0 ? idx : 0);
+    measure();
     setOpen(true);
   };
 
@@ -188,54 +250,60 @@ export default function Select({
         <Chevron open={open} />
       </button>
 
-      {open && (
-        <ul
-          ref={listRef}
-          id={listId}
-          role="listbox"
-          aria-labelledby={id}
-          tabIndex={-1}
-          className={`${listBase} ${openUp ? "bottom-full mb-1" : "top-full mt-1"}`}
-          style={{
-            maxHeight: openUp
-              ? `${Math.min(240, rootRef.current?.getBoundingClientRect().top ?? 240) - 8}px`
-              : `${Math.min(240, window.innerHeight - (rootRef.current?.getBoundingClientRect().bottom ?? 0) - 8)}px`,
-          }}
-          onKeyDown={onListKeyDown}
-        >
-          {options.map((option) => {
-            const enabledIdx = enabledOptions.indexOf(option);
-            const isSelected = option.value === value;
-            const isActive = enabledIdx === activeIndex;
-            return (
-              <li
-                key={option.value}
-                role="option"
-                aria-selected={isSelected}
-                aria-disabled={option.disabled || undefined}
-                data-active={isActive ? "true" : undefined}
-                title={option.title}
-                className={[
-                  "cursor-pointer px-3 py-2 text-sm transition-colors",
-                  option.disabled
-                    ? "cursor-not-allowed text-white/30"
-                    : isSelected
-                      ? "bg-accent/20 font-semibold text-accent"
-                      : isActive
-                        ? "bg-accent/10 text-white"
-                        : "text-white/85 hover:bg-white/10",
-                ].join(" ")}
-                onMouseEnter={() => {
-                  if (!option.disabled && enabledIdx >= 0) setActiveIndex(enabledIdx);
-                }}
-                onClick={() => selectOption(option)}
-              >
-                {option.label}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {open && layout
+        ? createPortal(
+            <ul
+              ref={listRef}
+              id={listId}
+              role="listbox"
+              aria-labelledby={id}
+              tabIndex={-1}
+              className={listBase}
+              style={{
+                left: layout.left,
+                width: layout.width,
+                maxHeight: layout.maxHeight,
+                ...(layout.openUp
+                  ? { bottom: window.innerHeight - layout.anchorTop + GAP }
+                  : { top: layout.anchorBottom + GAP }),
+              }}
+              onKeyDown={onListKeyDown}
+            >
+              {options.map((option) => {
+                const enabledIdx = enabledOptions.indexOf(option);
+                const isSelected = option.value === value;
+                const isActive = enabledIdx === activeIndex;
+                return (
+                  <li
+                    key={option.value}
+                    role="option"
+                    aria-selected={isSelected}
+                    aria-disabled={option.disabled || undefined}
+                    data-active={isActive ? "true" : undefined}
+                    title={option.title}
+                    className={[
+                      "cursor-pointer px-3 py-2 text-sm transition-colors",
+                      option.disabled
+                        ? "cursor-not-allowed text-white/30"
+                        : isSelected
+                          ? "bg-accent/20 font-semibold text-accent"
+                          : isActive
+                            ? "bg-accent/10 text-white"
+                            : "text-white/85 hover:bg-white/10",
+                    ].join(" ")}
+                    onMouseEnter={() => {
+                      if (!option.disabled && enabledIdx >= 0) setActiveIndex(enabledIdx);
+                    }}
+                    onClick={() => selectOption(option)}
+                  >
+                    {option.label}
+                  </li>
+                );
+              })}
+            </ul>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

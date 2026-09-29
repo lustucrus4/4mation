@@ -31,7 +31,7 @@ export default function HomePage() {
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-white/70">
           Alignez 4 pions adjacents sur un plateau 7×7. Jouez, progressez et analysez —
-          propulsé par un solveur exact de 24 millions de positions.
+          propulsé par un solveur exact de 30 millions de positions.
         </p>
         <div className="mt-6 flex justify-center gap-3">
           <Link

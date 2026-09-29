@@ -48,11 +48,15 @@ export default function LessonDetailPage() {
           <h2 className="text-lg font-bold text-accent">{s.heading}</h2>
           <LessonBody body={s.body} />
           {s.diagram && (
-            <RuleDiagram
-              board={s.diagram.board as CellValue[][]}
-              highlights={s.diagram.highlights}
-              caption={s.diagram.caption}
-            />
+            <div className="mt-4">
+              <RuleDiagram
+                board={s.diagram.board as CellValue[][]}
+                highlights={s.diagram.highlights}
+                labels={s.diagram.labels}
+                winLine={s.diagram.win_line}
+                caption={s.diagram.caption}
+              />
+            </div>
           )}
         </Card>
       ))}

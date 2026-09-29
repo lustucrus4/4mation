@@ -7,6 +7,7 @@ Priorité : opening_book → positions (endgame) → None (fallback Minimax/MCTS
 from __future__ import annotations
 
 import logging
+import math
 import os
 import sqlite3
 import threading
@@ -24,6 +25,26 @@ from solver.position_hasher import HASHER
 from solver.retrograde_solver import RetrogradeSolver, RESULT_DRAW, RESULT_LOSS, RESULT_WIN
 
 logger = logging.getLogger(__name__)
+
+
+def _as_rate(value: Any) -> Optional[float]:
+    """Taux de victoire exploitable, ou None si absent ou illisible.
+
+    Une lecture peut rendre NULL sur une colonne pourtant NOT NULL : la tablebase est
+    écrite par le solveur Rust pendant que l'API la lit. On préfère ignorer l'entrée
+    concernée plutôt que de faire échouer toute la requête (`/api/learn/openings/explore`
+    renvoyait un 500 sur un simple `float(None)`).
+    """
+    if value is None:
+        return None
+    try:
+        rate = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(rate):
+        return None
+    return max(0.0, min(1.0, rate))
+
 
 DEFAULT_DB = Path(__file__).resolve().parent.parent.parent / "script" / "solver" / "data" / "tablebase.db"
 
@@ -53,13 +74,16 @@ class TablebaseLookup:
         self.db_path = Path(db_path or env_path or DEFAULT_DB)
         self.max_endgame_empty = int(os.environ.get("TABLEBASE_MAX_EMPTY", max_endgame_empty))
         self.max_opening_ply = int(os.environ.get("TABLEBASE_MAX_OPENING_PLY", max_opening_ply))
-        self._lock = threading.Lock()
         self._advisor = OptimizedMinimaxAdvisor(depth=4, use_iterative_deepening=False)
         self._retrograde = RetrogradeSolver(max_empty=self.max_endgame_empty)
         self._mcts = None
         self._mcts_budget_ms = int(os.environ.get("TABLEBASE_MCTS_MS", "600"))
-        self._last_mtime: float = 0.0
-        self._conn: Optional[sqlite3.Connection] = None
+        # Connexion SQLite par thread. Le serveur Flask est multi-thread et `connect()`
+        # ouvre avec `check_same_thread=False` : partager une seule connexion entre les
+        # threads rendait des lectures incohérentes (une colonne NOT NULL revenait à NULL
+        # sur `/api/learn/openings/explore`). Une connexion par thread supprime la
+        # concurrence à la source.
+        self._local = threading.local()
         self._ensure_db()
 
     def _get_mcts(self):
@@ -136,30 +160,41 @@ class TablebaseLookup:
         if not self.db_path.exists():
             return None
         mtime = self.db_path.stat().st_mtime
-        with self._lock:
-            if self._conn is None or mtime > self._last_mtime:
-                if self._conn is not None:
-                    try:
-                        self._conn.close()
-                    except sqlite3.Error:
-                        pass
-                self._conn = connect(self.db_path)
-                self._last_mtime = mtime
-                logger.info("Tablebase rechargée : %s", self.db_path)
-            return self._conn
-
-    def reload(self) -> None:
-        with self._lock:
-            if self._conn is not None:
+        conn = getattr(self._local, "conn", None)
+        if conn is None or mtime > getattr(self._local, "mtime", 0.0):
+            if conn is not None:
                 try:
-                    self._conn.close()
+                    conn.close()
                 except sqlite3.Error:
                     pass
-                self._conn = None
-            self._last_mtime = 0.0
+            conn = connect(self.db_path)
+            self._local.conn = conn
+            self._local.mtime = mtime
+            logger.info("Tablebase rechargée : %s", self.db_path)
+        return conn
+
+    def reload(self) -> None:
+        conn = getattr(self._local, "conn", None)
+        if conn is not None:
+            try:
+                conn.close()
+            except sqlite3.Error:
+                pass
+        self._local.conn = None
+        self._local.mtime = 0.0
         self._get_conn()
 
-    def _row_to_hit(self, row: sqlite3.Row, source: str) -> TablebaseHit:
+    def _row_to_hit(self, row: sqlite3.Row, source: str) -> Optional[TablebaseHit]:
+        rate = _as_rate(row["win_rate"])
+        if rate is None:
+            # Entrée inexploitable : on l'ignore et on laisse le moteur prendre le relais
+            # plutôt que d'afficher un pourcentage inventé ou de lever une exception.
+            logger.warning(
+                "win_rate illisible (hash=%s, source=%s) — entrée ignorée",
+                row["hash"],
+                source,
+            )
+            return None
         best = None
         if row["best_move_row"] is not None and row["best_move_row"] >= 0:
             best = (int(row["best_move_row"]), int(row["best_move_col"]))
@@ -170,7 +205,7 @@ class TablebaseLookup:
         return TablebaseHit(
             hash_key=row["hash"],
             result=str(row["result"]),
-            win_rate=float(row["win_rate"]),
+            win_rate=rate,
             best_move=best,
             source=source,
             depth_remaining=int(row["depth_remaining"]) if "depth_remaining" in keys else 0,
@@ -197,7 +232,10 @@ class TablebaseLookup:
                 (h,),
             ).fetchone()
             if row is not None:
-                return self._row_to_hit(row, "opening_book")
+                hit = self._row_to_hit(row, "opening_book")
+                # Entrée inexploitable : on retente sur `positions` avant d'abandonner.
+                if hit is not None:
+                    return hit
 
         row = conn.execute(
             "SELECT hash, result, win_rate, best_move_row, best_move_col, depth_remaining FROM positions WHERE hash=?",
@@ -243,7 +281,13 @@ class TablebaseLookup:
             ).fetchone()
         if row is None:
             return None
-        res, wr = self._child_win_rate(str(row["result"]), float(row["win_rate"]))
+        rate = _as_rate(row["win_rate"])
+        if rate is None:
+            logger.warning(
+                "win_rate illisible pour l'enfant du coup %s — coup ignoré", move
+            )
+            return None
+        res, wr = self._child_win_rate(str(row["result"]), rate)
         return res, wr, exact
 
     def opening_book_coach_analysis(

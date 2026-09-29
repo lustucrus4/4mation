@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "script"))
 
 from api.routes.learn import LESSONS, all_lessons  # noqa: E402
+from api.services.lesson_diagrams import validate_diagram  # noqa: E402
 
 MIN_BODY = 80
 
@@ -135,6 +136,28 @@ def test_pas_de_reference_au_moteur_retire():
     print("[OK] Aucune référence obsolète au MCTS ou au Minimax")
 
 
+def test_schemas_valides():
+    """Chaque schéma embarqué (`section.diagram`) est exploitable par `RuleDiagram`.
+
+    Un schéma est une matrice de 49 cases écrite à la main : une coordonnée hors
+    plateau, une surbrillance inconnue ou un surlignage `win` sur une case vide
+    casse l'affichage ou, pire, enseigne une règle fausse. `validate_diagram` relit
+    chaque schéma embarqué dans *toutes* les versions d'une leçon (écrites à la main
+    comme regénérées), y compris celles qui ne sont pas servies aujourd'hui.
+    """
+    total = 0
+    for lesson in _toutes_les_versions():
+        for section in lesson["sections"]:
+            diagram = section.get("diagram")
+            if not diagram:
+                continue
+            total += 1
+            where = f"{lesson['id']} / {section.get('heading')}"
+            problemes = validate_diagram(diagram, where)
+            assert not problemes, " ; ".join(problemes)
+    print(f"[OK] {total} schéma(s) de leçon valides")
+
+
 if __name__ == "__main__":
     print("TESTS LEÇONS 4MATION")
     print("=" * 40)
@@ -144,4 +167,5 @@ if __name__ == "__main__":
     test_corps_servis_textuels()
     test_pas_de_classement_fragile()
     test_pas_de_reference_au_moteur_retire()
+    test_schemas_valides()
     print("[OK] Tous les tests de leçons passent")

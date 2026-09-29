@@ -1,0 +1,5612 @@
+[
+  {
+    "id": "easy-01",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #1",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 4
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 0,
+        "col": 4
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            0,
+            4
+          ]
+        ],
+        "replies": {
+          "0,4": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "easy-02",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #2",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 4
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 3,
+        "col": 3
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            3,
+            3
+          ]
+        ],
+        "replies": {
+          "3,3": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "easy-03",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #3",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 4,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 4
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 1
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "2,4": [
+            3,
+            4
+          ]
+        }
+      },
+      "2,4;3,4": {
+        "moves": [
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "2,3": [
+            3,
+            2
+          ]
+        }
+      },
+      "2,4;3,4;2,3;3,2": {
+        "moves": [
+          [
+            2,
+            1
+          ]
+        ],
+        "replies": {
+          "2,1": null
+        }
+      }
+    },
+    "min_moves": 3
+  },
+  {
+    "id": "easy-04",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #4",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 2
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 6
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "2,3": [
+            1,
+            3
+          ]
+        }
+      },
+      "2,3;1,3": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            5
+          ]
+        }
+      },
+      "2,3;1,3;1,4;0,5": {
+        "moves": [
+          [
+            0,
+            6
+          ]
+        ],
+        "replies": {
+          "0,6": null
+        }
+      }
+    },
+    "min_moves": 3
+  },
+  {
+    "id": "easy-05",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #5",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 4,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 2
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 1
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            1,
+            1
+          ]
+        ],
+        "replies": {
+          "1,1": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "easy-06",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #6",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 1
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 3,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 0
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            3,
+            0
+          ]
+        ],
+        "replies": {
+          "3,0": [
+            2,
+            1
+          ]
+        }
+      },
+      "3,0;2,1": {
+        "moves": [
+          [
+            1,
+            0
+          ]
+        ],
+        "replies": {
+          "1,0": null
+        }
+      }
+    },
+    "min_moves": 2
+  },
+  {
+    "id": "easy-07",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #7",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 0,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 3
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 4
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ]
+        }
+      },
+      "1,4;0,3": {
+        "moves": [
+          [
+            0,
+            4
+          ]
+        ],
+        "replies": {
+          "0,4": null
+        }
+      }
+    },
+    "min_moves": 2
+  },
+  {
+    "id": "easy-08",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #8",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 4
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 6
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            1,
+            6
+          ],
+          [
+            3,
+            3
+          ]
+        ],
+        "replies": {
+          "1,6": null,
+          "3,3": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "easy-09",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #9",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 6,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 2
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 3,
+        "col": 3
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            3,
+            3
+          ]
+        ],
+        "replies": {
+          "3,3": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "easy-10",
+    "difficulty": "easy",
+    "human_moves": 3,
+    "title": "Facile #10",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 6
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 3
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ]
+        ],
+        "replies": {
+          "1,2": [
+            0,
+            1
+          ],
+          "1,3": null
+        }
+      },
+      "1,2;0,1": {
+        "moves": [
+          [
+            0,
+            2
+          ]
+        ],
+        "replies": {
+          "0,2": [
+            0,
+            3
+          ]
+        }
+      },
+      "1,2;0,1;0,2;0,3": {
+        "moves": [
+          [
+            1,
+            3
+          ]
+        ],
+        "replies": {
+          "1,3": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "medium-01",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #1",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 2
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            3,
+            3
+          ]
+        ],
+        "replies": {
+          "3,3": [
+            3,
+            2
+          ]
+        }
+      },
+      "3,3;3,2": {
+        "moves": [
+          [
+            2,
+            2
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "2,2": [
+            1,
+            1
+          ],
+          "2,3": [
+            2,
+            2
+          ]
+        }
+      },
+      "3,3;3,2;2,2;1,1": {
+        "moves": [
+          [
+            2,
+            0
+          ]
+        ],
+        "replies": {
+          "2,0": [
+            1,
+            0
+          ]
+        }
+      },
+      "3,3;3,2;2,2;1,1;2,0;1,0": {
+        "moves": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "replies": {
+          "0,0": [
+            0,
+            1
+          ],
+          "0,1": [
+            0,
+            0
+          ]
+        }
+      },
+      "3,3;3,2;2,2;1,1;2,0;1,0;0,0;0,1": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": null
+        }
+      },
+      "3,3;3,2;2,2;1,1;2,0;1,0;0,1;0,0": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": null
+        }
+      },
+      "3,3;3,2;2,3;2,2": {
+        "moves": [
+          [
+            1,
+            1
+          ]
+        ],
+        "replies": {
+          "1,1": [
+            1,
+            0
+          ]
+        }
+      },
+      "3,3;3,2;2,3;2,2;1,1;1,0": {
+        "moves": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "replies": {
+          "0,0": [
+            0,
+            1
+          ],
+          "0,1": [
+            0,
+            0
+          ]
+        }
+      },
+      "3,3;3,2;2,3;2,2;1,1;1,0;0,0;0,1": {
+        "moves": [
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            4,
+            3
+          ]
+        ],
+        "replies": {
+          "0,3": null,
+          "1,4": null,
+          "4,3": null
+        }
+      },
+      "3,3;3,2;2,3;2,2;1,1;1,0;0,1;0,0": {
+        "moves": [
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            4,
+            3
+          ]
+        ],
+        "replies": {
+          "0,3": null,
+          "1,4": null,
+          "4,3": null
+        }
+      }
+    },
+    "min_moves": 5
+  },
+  {
+    "id": "medium-02",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #2",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 4,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 3
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 5
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            2,
+            2
+          ]
+        ],
+        "replies": {
+          "2,2": [
+            3,
+            1
+          ]
+        }
+      },
+      "2,2;3,1": {
+        "moves": [
+          [
+            3,
+            2
+          ]
+        ],
+        "replies": {
+          "3,2": [
+            4,
+            3
+          ]
+        }
+      },
+      "2,2;3,1;3,2;4,3": {
+        "moves": [
+          [
+            3,
+            3
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "replies": {
+          "3,3": [
+            2,
+            3
+          ],
+          "3,4": [
+            2,
+            3
+          ]
+        }
+      },
+      "2,2;3,1;3,2;4,3;3,3;2,3": {
+        "moves": [
+          [
+            3,
+            4
+          ]
+        ],
+        "replies": {
+          "3,4": [
+            2,
+            4
+          ]
+        }
+      },
+      "2,2;3,1;3,2;4,3;3,3;2,3;3,4;2,4": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": null
+        }
+      },
+      "2,2;3,1;3,2;4,3;3,4;2,3": {
+        "moves": [
+          [
+            3,
+            3
+          ]
+        ],
+        "replies": {
+          "3,3": [
+            2,
+            4
+          ]
+        }
+      },
+      "2,2;3,1;3,2;4,3;3,4;2,3;3,3;2,4": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": null
+        }
+      }
+    },
+    "min_moves": 5
+  },
+  {
+    "id": "medium-03",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #3",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 5,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 3
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 3,
+        "col": 4
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            3,
+            4
+          ]
+        ],
+        "replies": {
+          "3,4": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "medium-04",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #4",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 5,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 3
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 4,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 0
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            4,
+            4
+          ]
+        ],
+        "replies": {
+          "4,4": [
+            3,
+            4
+          ]
+        }
+      },
+      "4,4;3,4": {
+        "moves": [
+          [
+            4,
+            3
+          ]
+        ],
+        "replies": {
+          "4,3": [
+            4,
+            2
+          ]
+        }
+      },
+      "4,4;3,4;4,3;4,2": {
+        "moves": [
+          [
+            3,
+            2
+          ]
+        ],
+        "replies": {
+          "3,2": [
+            2,
+            2
+          ]
+        }
+      },
+      "4,4;3,4;4,3;4,2;3,2;2,2": {
+        "moves": [
+          [
+            3,
+            1
+          ]
+        ],
+        "replies": {
+          "3,1": [
+            2,
+            0
+          ]
+        }
+      },
+      "4,4;3,4;4,3;4,2;3,2;2,2;3,1;2,0": {
+        "moves": [
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "replies": {
+          "1,0": null,
+          "1,1": null
+        }
+      }
+    },
+    "min_moves": 5
+  },
+  {
+    "id": "medium-05",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #5",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 5,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 5
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 3
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "2,4": [
+            2,
+            3
+          ]
+        }
+      },
+      "2,4;2,3": {
+        "moves": [
+          [
+            3,
+            4
+          ]
+        ],
+        "replies": {
+          "3,4": [
+            3,
+            3
+          ]
+        }
+      },
+      "2,4;2,3;3,4;3,3": {
+        "moves": [
+          [
+            4,
+            3
+          ],
+          [
+            4,
+            4
+          ]
+        ],
+        "replies": {
+          "4,3": null,
+          "4,4": null
+        }
+      }
+    },
+    "min_moves": 3
+  },
+  {
+    "id": "medium-06",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #6",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 4
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 5
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            2,
+            5
+          ]
+        ],
+        "replies": {
+          "2,5": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "medium-07",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #7",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 5,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 6
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 5,
+        "col": 3
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            5,
+            3
+          ],
+          [
+            6,
+            5
+          ]
+        ],
+        "replies": {
+          "5,3": null,
+          "6,5": [
+            6,
+            6
+          ]
+        }
+      },
+      "6,5;6,6": {
+        "moves": [
+          [
+            5,
+            3
+          ]
+        ],
+        "replies": {
+          "5,3": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "medium-08",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #8",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 3
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 2,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 4
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "2,4": [
+            2,
+            3
+          ]
+        }
+      },
+      "2,4;2,3": {
+        "moves": [
+          [
+            3,
+            4
+          ]
+        ],
+        "replies": {
+          "3,4": null
+        }
+      }
+    },
+    "min_moves": 2
+  },
+  {
+    "id": "medium-09",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #9",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 6,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 0
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 5,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 1
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            5,
+            1
+          ],
+          [
+            5,
+            2
+          ]
+        ],
+        "replies": {
+          "5,1": [
+            6,
+            0
+          ],
+          "5,2": [
+            5,
+            1
+          ]
+        }
+      },
+      "5,1;6,0": {
+        "moves": [
+          [
+            5,
+            0
+          ],
+          [
+            6,
+            1
+          ]
+        ],
+        "replies": {
+          "5,0": [
+            4,
+            0
+          ],
+          "6,1": [
+            5,
+            0
+          ]
+        }
+      },
+      "5,1;6,0;5,0;4,0": {
+        "moves": [
+          [
+            4,
+            1
+          ]
+        ],
+        "replies": {
+          "4,1": null
+        }
+      },
+      "5,1;6,0;6,1;5,0": {
+        "moves": [
+          [
+            4,
+            0
+          ],
+          [
+            4,
+            1
+          ]
+        ],
+        "replies": {
+          "4,0": [
+            4,
+            1
+          ],
+          "4,1": null
+        }
+      },
+      "5,1;6,0;6,1;5,0;4,0;4,1": {
+        "moves": [
+          [
+            5,
+            2
+          ]
+        ],
+        "replies": {
+          "5,2": null
+        }
+      },
+      "5,2;5,1": {
+        "moves": [
+          [
+            6,
+            2
+          ]
+        ],
+        "replies": {
+          "6,2": [
+            6,
+            1
+          ]
+        }
+      },
+      "5,2;5,1;6,2;6,1": {
+        "moves": [
+          [
+            6,
+            0
+          ]
+        ],
+        "replies": {
+          "6,0": [
+            5,
+            0
+          ]
+        }
+      },
+      "5,2;5,1;6,2;6,1;6,0;5,0": {
+        "moves": [
+          [
+            4,
+            0
+          ]
+        ],
+        "replies": {
+          "4,0": [
+            4,
+            1
+          ]
+        }
+      },
+      "5,2;5,1;6,2;6,1;6,0;5,0;4,0;4,1": {
+        "moves": [
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "5,5": null
+        }
+      }
+    },
+    "min_moves": 3
+  },
+  {
+    "id": "medium-10",
+    "difficulty": "medium",
+    "human_moves": 5,
+    "title": "Intermédiaire #10",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 5,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 1
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 0
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 0
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 0,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 0,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 2
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "0,0": [
+            0,
+            1
+          ],
+          "0,1": [
+            0,
+            0
+          ],
+          "0,2": [
+            0,
+            1
+          ],
+          "1,2": [
+            0,
+            1
+          ],
+          "2,1": [
+            1,
+            2
+          ],
+          "4,2": null
+        }
+      },
+      "0,0;0,1": {
+        "moves": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "0,2": [
+            0,
+            3
+          ],
+          "1,2": [
+            0,
+            2
+          ]
+        }
+      },
+      "0,0;0,1;0,2;0,3": {
+        "moves": [
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ]
+        ],
+        "replies": {
+          "1,2": null,
+          "1,3": null
+        }
+      },
+      "0,0;0,1;1,2;0,2": {
+        "moves": [
+          [
+            1,
+            3
+          ]
+        ],
+        "replies": {
+          "1,3": null
+        }
+      },
+      "0,1;0,0": {
+        "moves": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "0,2": [
+            0,
+            3
+          ],
+          "1,2": [
+            0,
+            2
+          ],
+          "2,1": [
+            1,
+            2
+          ],
+          "4,2": null
+        }
+      },
+      "0,1;0,0;0,2;0,3": {
+        "moves": [
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ]
+        ],
+        "replies": {
+          "1,2": null,
+          "1,3": null
+        }
+      },
+      "0,1;0,0;1,2;0,2": {
+        "moves": [
+          [
+            1,
+            3
+          ]
+        ],
+        "replies": {
+          "1,3": null
+        }
+      },
+      "0,1;0,0;2,1;1,2": {
+        "moves": [
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,3": null,
+          "2,3": [
+            1,
+            3
+          ]
+        }
+      },
+      "0,1;0,0;2,1;1,2;2,3;1,3": {
+        "moves": [
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "2,4": null
+        }
+      },
+      "0,2;0,1": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,2;0,1": {
+        "moves": [
+          [
+            0,
+            2
+          ]
+        ],
+        "replies": {
+          "0,2": null
+        }
+      },
+      "2,1;1,2": {
+        "moves": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "0,1": [
+            0,
+            0
+          ],
+          "1,3": null,
+          "2,3": [
+            1,
+            3
+          ]
+        }
+      },
+      "2,1;1,2;0,1;0,0": {
+        "moves": [
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ],
+          [
+            4,
+            3
+          ]
+        ],
+        "replies": {
+          "1,3": null,
+          "2,3": [
+            1,
+            3
+          ],
+          "4,2": null,
+          "4,3": null
+        }
+      },
+      "2,1;1,2;0,1;0,0;2,3;1,3": {
+        "moves": [
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "2,4": null
+        }
+      },
+      "2,1;1,2;2,3;1,3": {
+        "moves": [
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "2,4": null
+        }
+      }
+    },
+    "min_moves": 1
+  },
+  {
+    "id": "hard-01",
+    "difficulty": "hard",
+    "human_moves": 8,
+    "title": "Difficile #1",
+    "theme": "Victoire forcée",
+    "history": [
+      {
+        "player": 1,
+        "row": 6,
+        "col": 0
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 1
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 2
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 3
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 3,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 2
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 3
+      },
+      {
+        "player": 2,
+        "row": 0,
+        "col": 4
+      }
+    ],
+    "player_to_move": 1,
+    "line": [
+      {
+        "player": 1,
+        "row": 0,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 1,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 1,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 2,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 3,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 4,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 4,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 5
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 6
+      },
+      {
+        "player": 1,
+        "row": 5,
+        "col": 6
+      },
+      {
+        "player": 2,
+        "row": 6,
+        "col": 5
+      },
+      {
+        "player": 1,
+        "row": 6,
+        "col": 4
+      },
+      {
+        "player": 2,
+        "row": 5,
+        "col": 4
+      },
+      {
+        "player": 1,
+        "row": 2,
+        "col": 3
+      }
+    ],
+    "nodes": {
+      "": {
+        "moves": [
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            5
+          ]
+        ],
+        "replies": {
+          "0,5": [
+            1,
+            5
+          ],
+          "1,5": [
+            0,
+            6
+          ]
+        }
+      },
+      "0,5;1,5": {
+        "moves": [
+          [
+            1,
+            6
+          ],
+          [
+            2,
+            5
+          ],
+          [
+            2,
+            6
+          ]
+        ],
+        "replies": {
+          "1,6": [
+            2,
+            5
+          ],
+          "2,5": [
+            1,
+            6
+          ],
+          "2,6": [
+            1,
+            6
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5": {
+        "moves": [
+          [
+            2,
+            6
+          ]
+        ],
+        "replies": {
+          "2,6": [
+            3,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5": {
+        "moves": [
+          [
+            4,
+            5
+          ]
+        ],
+        "replies": {
+          "4,5": [
+            4,
+            6
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6": {
+        "moves": [
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6;5,6;5,5": {
+        "moves": [
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "6,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            6,
+            4
+          ],
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5;5,4;6,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;1,6;2,5;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;2,5;1,6": {
+        "moves": [
+          [
+            2,
+            6
+          ]
+        ],
+        "replies": {
+          "2,6": [
+            3,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5": {
+        "moves": [
+          [
+            4,
+            5
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "replies": {
+          "4,5": [
+            4,
+            6
+          ],
+          "4,6": [
+            4,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6": {
+        "moves": [
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5": {
+        "moves": [
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "6,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            6,
+            4
+          ],
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5;5,4;6,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,6;4,5": {
+        "moves": [
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            6
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,6;4,5;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,6;4,5;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;2,5;1,6;2,6;3,5;4,6;4,5;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "3,6": null
+        }
+      },
+      "0,5;1,5;2,6;1,6": {
+        "moves": [
+          [
+            2,
+            5
+          ]
+        ],
+        "replies": {
+          "2,5": [
+            3,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5": {
+        "moves": [
+          [
+            4,
+            5
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "replies": {
+          "4,5": [
+            4,
+            6
+          ],
+          "4,6": [
+            4,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6": {
+        "moves": [
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6;5,6;5,5": {
+        "moves": [
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "6,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6;5,6;5,5;6,6;6,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            6,
+            4
+          ],
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6;5,6;5,5;6,6;6,5;5,4;6,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,5;4,6;5,6;5,5;6,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,6;4,5": {
+        "moves": [
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            6
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,6;4,5;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,6;4,5;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "0,5;1,5;2,6;1,6;2,5;3,5;4,6;4,5;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "3,6": null
+        }
+      },
+      "1,5;0,6": {
+        "moves": [
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            6
+          ]
+        ],
+        "replies": {
+          "0,5": [
+            1,
+            6
+          ],
+          "1,6": [
+            2,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6": {
+        "moves": [
+          [
+            2,
+            5
+          ],
+          [
+            2,
+            6
+          ]
+        ],
+        "replies": {
+          "2,5": [
+            3,
+            5
+          ],
+          "2,6": [
+            3,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5": {
+        "moves": [
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "replies": {
+          "2,4": [
+            2,
+            3
+          ],
+          "4,5": [
+            5,
+            4
+          ],
+          "4,6": [
+            4,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;2,4;2,3": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;2,4;2,3;1,4;0,3": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,5;5,4": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,5;5,4;6,4;6,5": {
+        "moves": [
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "6,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,5;5,4;6,4;6,5;6,6;5,5": {
+        "moves": [
+          [
+            4,
+            6
+          ]
+        ],
+        "replies": {
+          "4,6": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5": {
+        "moves": [
+          [
+            3,
+            6
+          ],
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            2,
+            6
+          ],
+          "5,5": [
+            6,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;3,6;2,6": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ],
+          "2,3": null,
+          "2,4": [
+            2,
+            3
+          ],
+          "4,2": [
+            3,
+            1
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;3,6;2,6;1,4;0,3": {
+        "moves": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "0,2": [
+            0,
+            1
+          ],
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;3,6;2,6;1,4;0,3;0,2;0,1": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;3,6;2,6;2,4;2,3": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;3,6;2,6;2,4;2,3;1,4;0,3": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;3,6;2,6;4,2;3,1": {
+        "moves": [
+          [
+            4,
+            0
+          ],
+          [
+            4,
+            1
+          ]
+        ],
+        "replies": {
+          "4,0": [
+            3,
+            0
+          ],
+          "4,1": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;3,6;2,6;4,2;3,1;4,0;3,0": {
+        "moves": [
+          [
+            4,
+            1
+          ]
+        ],
+        "replies": {
+          "4,1": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,5;3,5;4,6;4,5;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "2,3": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5": {
+        "moves": [
+          [
+            4,
+            5
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "replies": {
+          "4,5": [
+            4,
+            6
+          ],
+          "4,6": [
+            4,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6": {
+        "moves": [
+          [
+            3,
+            6
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            2,
+            5
+          ],
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;3,6;2,5": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ],
+          "2,4": [
+            2,
+            3
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;3,6;2,5;1,4;0,3": {
+        "moves": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "0,2": [
+            0,
+            1
+          ],
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;3,6;2,5;1,4;0,3;0,2;0,1": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;3,6;2,5;2,4;2,3": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;3,6;2,5;2,4;2,3;1,4;0,3": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5": {
+        "moves": [
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "6,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            6,
+            4
+          ],
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5;5,4;6,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,5;4,6;5,6;5,5;6,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "4,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5": {
+        "moves": [
+          [
+            3,
+            6
+          ],
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            2,
+            5
+          ],
+          "5,5": [
+            6,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;3,6;2,5": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ],
+          "2,4": [
+            2,
+            3
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;3,6;2,5;1,4;0,3": {
+        "moves": [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "0,2": [
+            0,
+            1
+          ],
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;3,6;2,5;1,4;0,3;0,2;0,1": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;3,6;2,5;2,4;2,3": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": [
+            0,
+            3
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;3,6;2,5;2,4;2,3;1,4;0,3": {
+        "moves": [
+          [
+            1,
+            2
+          ]
+        ],
+        "replies": {
+          "1,2": null
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;0,5;1,6;2,6;3,5;4,6;4,5;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "2,3": null,
+          "3,6": null
+        }
+      },
+      "1,5;0,6;1,6;2,6": {
+        "moves": [
+          [
+            2,
+            5
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "2,5": [
+            3,
+            6
+          ],
+          "3,5": [
+            4,
+            6
+          ],
+          "3,6": [
+            4,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6": {
+        "moves": [
+          [
+            4,
+            5
+          ],
+          [
+            4,
+            6
+          ]
+        ],
+        "replies": {
+          "4,5": [
+            5,
+            4
+          ],
+          "4,6": [
+            4,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4": {
+        "moves": [
+          [
+            5,
+            5
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            6,
+            5
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            4
+          ],
+          "6,4": [
+            6,
+            5
+          ],
+          "6,5": [
+            6,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;5,5;6,4": {
+        "moves": [
+          [
+            6,
+            5
+          ]
+        ],
+        "replies": {
+          "6,5": [
+            6,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;5,5;6,4;6,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            4,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;5,5;6,4;6,5;6,6;5,6;4,6": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,4;6,5": {
+        "moves": [
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            6,
+            6
+          ],
+          "6,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,4;6,5;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            4,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,4;6,5;5,5;6,6;5,6;4,6": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,4;6,5;5,6;6,6": {
+        "moves": [
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            4,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,4;6,5;5,6;6,6;5,5;4,6": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,4;6,5;6,6;5,5": {
+        "moves": [
+          [
+            4,
+            6
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "4,6": null,
+          "5,6": [
+            4,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,4;6,5;6,6;5,5;5,6;4,6": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,5;6,4": {
+        "moves": [
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,5;6,4;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            4,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,5;5,4;6,5;6,4;5,5;6,6;5,6;4,6": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,6;4,5": {
+        "moves": [
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            4
+          ]
+        ],
+        "replies": {
+          "3,5": [
+            2,
+            4
+          ],
+          "5,4": [
+            5,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,6;4,5;3,5;2,4": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,6;4,5;5,4;5,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,6;4,5;5,4;5,5;6,4;6,5": {
+        "moves": [
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            6
+          ],
+          "6,6": [
+            5,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,6;4,5;5,4;5,5;6,4;6,5;5,6;6,6": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;2,5;3,6;4,6;4,5;5,4;5,5;6,4;6,5;6,6;5,6": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6": {
+        "moves": [
+          [
+            3,
+            6
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            4,
+            5
+          ],
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            5,
+            5
+          ],
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,4;5,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,4;5,5;6,4;6,5": {
+        "moves": [
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            6
+          ],
+          "6,6": [
+            5,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,4;5,5;6,4;6,5;5,6;6,6": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,4;5,5;6,4;6,5;6,6;5,6": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,6;5,5": {
+        "moves": [
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "6,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,6;5,5;6,6;6,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            6,
+            4
+          ],
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,6;5,5;6,6;6,5;5,4;6,4": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;3,6;4,5;5,6;5,5;6,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            5
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ],
+          "6,5": [
+            6,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            4,
+            5
+          ]
+        ],
+        "replies": {
+          "4,5": [
+            3,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,5;6,6;5,6;6,5;6,4;5,4;4,5;3,6": {
+        "moves": [
+          [
+            2,
+            5
+          ]
+        ],
+        "replies": {
+          "2,5": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,5;6,6;6,5;6,4": {
+        "moves": [
+          [
+            5,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            4,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,5;6,6;6,5;6,4;5,4;4,5": {
+        "moves": [
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            2,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,5;6,6;6,5;6,4;5,4;4,5;3,6;2,5": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5": {
+        "moves": [
+          [
+            5,
+            5
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            6,
+            4
+          ],
+          "6,4": [
+            5,
+            4
+          ],
+          "6,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;5,5;6,4": {
+        "moves": [
+          [
+            5,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            4,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;5,5;6,4;5,4;4,5": {
+        "moves": [
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            2,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;5,5;6,4;5,4;4,5;3,6;2,5": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            5,
+            5
+          ]
+        ],
+        "replies": {
+          "5,5": [
+            4,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,4;5,4;5,5;4,5": {
+        "moves": [
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            2,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,4;5,4;5,5;4,5;3,6;2,5": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,6;5,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            4,
+            5
+          ],
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,6;5,5;5,4;4,5": {
+        "moves": [
+          [
+            3,
+            6
+          ]
+        ],
+        "replies": {
+          "3,6": [
+            2,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,6;5,5;5,4;4,5;3,6;2,5": {
+        "moves": [
+          [
+            1,
+            4
+          ]
+        ],
+        "replies": {
+          "1,4": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,6;5,5;6,4;5,4": {
+        "moves": [
+          [
+            4,
+            5
+          ]
+        ],
+        "replies": {
+          "4,5": [
+            3,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,5;4,6;5,6;6,5;6,6;5,5;6,4;5,4;4,5;3,6": {
+        "moves": [
+          [
+            2,
+            5
+          ]
+        ],
+        "replies": {
+          "2,5": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6": {
+        "moves": [
+          [
+            3,
+            5
+          ]
+        ],
+        "replies": {
+          "3,5": [
+            4,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            5,
+            5
+          ],
+          "5,5": [
+            6,
+            6
+          ],
+          "5,6": [
+            5,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,4;5,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,4;5,5;6,4;6,5": {
+        "moves": [
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            6
+          ],
+          "6,6": [
+            5,
+            6
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,4;5,5;6,4;6,5;5,6;6,6": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,4;5,5;6,4;6,5;6,6;5,6": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,5;6,6": {
+        "moves": [
+          [
+            5,
+            6
+          ]
+        ],
+        "replies": {
+          "5,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,5;6,6;5,6;6,5": {
+        "moves": [
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,5;6,6;5,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,6;5,5": {
+        "moves": [
+          [
+            6,
+            6
+          ]
+        ],
+        "replies": {
+          "6,6": [
+            6,
+            5
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,6;5,5;6,6;6,5": {
+        "moves": [
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            4
+          ]
+        ],
+        "replies": {
+          "5,4": [
+            6,
+            4
+          ],
+          "6,4": [
+            5,
+            4
+          ]
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,6;5,5;6,6;6,5;5,4;6,4": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      },
+      "1,5;0,6;1,6;2,6;3,6;4,6;3,5;4,5;5,6;5,5;6,6;6,5;6,4;5,4": {
+        "moves": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "replies": {
+          "1,4": null,
+          "2,3": null
+        }
+      }
+    },
+    "min_moves": 6
+  }
+]

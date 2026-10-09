@@ -37,7 +37,12 @@ $patterns = @(
     "4mation_dashboard_dev\src\main.js"
 )
 
+# Scripts prefixes « _ » encore utilises (solver_feedback_loop.ps1, script\README.md).
+$keep = @("scripts\_db_snapshot.py", "scripts\_wq_reset_in_progress.py", "scripts\_puzzle_diag.py") |
+    ForEach-Object { Join-Path $root $_ }
+
 $files = foreach ($p in $patterns) { Get-ChildItem -Path $p -File -ErrorAction SilentlyContinue }
+$files = $files | Where-Object { $keep -notcontains $_.FullName }
 $files = $files | Sort-Object FullName -Unique
 
 $dest = Join-Path $root ("_archive\" + (Get-Date -Format "yyyy-MM-dd"))

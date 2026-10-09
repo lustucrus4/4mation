@@ -91,3 +91,4 @@ script/rl_rust/target/
 
 # Fichiers de travail (logs et scripts jetables)
 _tmp_*
+_archive/

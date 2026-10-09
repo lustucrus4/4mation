@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
-use crate::policy::LinearPolicy;
+use crate::policy::PolicyNet;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TrainingStatus {
@@ -22,12 +22,19 @@ pub struct TrainingStatus {
     pub self_play_batch: usize,
     pub last_self_play_win_rate: f64,
     pub last_eval_vs_level5: Option<f64>,
+    #[serde(default)]
+    pub last_eval_vs_level3: Option<f64>,
     pub games_per_sec: f64,
     pub eta_seconds: Option<f64>,
     pub started_at: String,
     pub updated_at: String,
     pub checkpoint: String,
     pub message: String,
+    /// Phase courante : `vs_level5` | `self_play`
+    #[serde(default)]
+    pub training_phase: Option<String>,
+    #[serde(default)]
+    pub phase2_win_threshold: Option<f64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -38,6 +45,8 @@ pub struct MetricRow {
     pub games: u64,
     pub self_play_win_rate_p1: Option<f64>,
     pub eval_vs_level5: Option<f64>,
+    #[serde(default)]
+    pub eval_vs_level3: Option<f64>,
     pub eval_games: Option<u32>,
     pub policy_version: u64,
     pub games_per_sec: Option<f64>,
@@ -133,19 +142,28 @@ impl DataStore {
         Ok(())
     }
 
-    pub fn save_policy(&self, policy: &LinearPolicy, step: u64) -> Result<PathBuf> {
-        let path = self.checkpoint_for_step(step);
-        policy.save(&path)?;
+    /// Sauvegarde `latest.json` à chaque appel ; checkpoint numéroté tous les `checkpoint_every` steps.
+    pub fn save_policy(&self, policy: &PolicyNet, step: u64, checkpoint_every: u64) -> Result<PathBuf> {
         policy.save(&self.latest_checkpoint())?;
-        Ok(path)
+        let save_numbered = checkpoint_every == 0
+            || step == 0
+            || checkpoint_every == 1
+            || step % checkpoint_every == 0;
+        if save_numbered {
+            let path = self.checkpoint_for_step(step);
+            policy.save(&path)?;
+            Ok(path)
+        } else {
+            Ok(self.latest_checkpoint())
+        }
     }
 
-    pub fn load_policy(&self) -> Result<LinearPolicy> {
+    pub fn load_policy(&self) -> Result<PolicyNet> {
         let latest = self.latest_checkpoint();
         if latest.exists() {
-            return LinearPolicy::load(&latest);
+            return PolicyNet::load(&latest);
         }
-        Ok(LinearPolicy::default())
+        Ok(PolicyNet::default())
     }
 }
 

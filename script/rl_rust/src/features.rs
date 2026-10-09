@@ -5,6 +5,86 @@ use formation_worker::game::{
 };
 
 pub const FEATURE_DIM: usize = 12;
+pub const POS_DIM: usize = 12;
+
+/// Features globales de position (tête value AlphaZero).
+pub fn position_features(
+    board: &Board,
+    player: i8,
+    last_move: Option<Move>,
+) -> [f64; POS_DIM] {
+    let opponent = 3 - player;
+    let moves = frontier_moves(board, last_move, player);
+    let opp_moves = frontier_moves(board, last_move, opponent);
+
+    let mut my_pieces = 0u32;
+    let mut opp_pieces = 0u32;
+    let center = (BOARD_SIZE as f64 - 1.0) / 2.0;
+    let mut my_center = 0.0;
+    let mut opp_center = 0.0;
+
+    for r in 0..BOARD_SIZE {
+        for c in 0..BOARD_SIZE {
+            match board[r][c] {
+                p if p == player => {
+                    my_pieces += 1;
+                    let d = ((r as f64 - center).powi(2) + (c as f64 - center).powi(2)).sqrt();
+                    my_center += 1.0 - d / (center * 2.0_f64.sqrt());
+                }
+                p if p == opponent => {
+                    opp_pieces += 1;
+                    let d = ((r as f64 - center).powi(2) + (c as f64 - center).powi(2)).sqrt();
+                    opp_center += 1.0 - d / (center * 2.0_f64.sqrt());
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let mut my_threats = 0.0;
+    let mut opp_threats = 0.0;
+    for &mv in &moves {
+        if is_winning_move(board, mv, player) {
+            my_threats += 1.0;
+        }
+    }
+    for &mv in &opp_moves {
+        if is_winning_move(board, mv, opponent) {
+            opp_threats += 1.0;
+        }
+    }
+
+    let empty = board.iter().flatten().filter(|&&x| x == 0).count();
+    let fill = 1.0 - (empty as f64 / (BOARD_SIZE * BOARD_SIZE) as f64);
+    let piece_diff = (my_pieces as f64 - opp_pieces as f64) / (BOARD_SIZE * BOARD_SIZE) as f64;
+    let mobility = moves.len() as f64 / (BOARD_SIZE * BOARD_SIZE) as f64;
+    let opp_mobility = opp_moves.len() as f64 / (BOARD_SIZE * BOARD_SIZE) as f64;
+    let player_sign = if player == 1 { 1.0 } else { -1.0 };
+
+    [
+        fill,
+        piece_diff,
+        my_center / (my_pieces.max(1) as f64),
+        opp_center / (opp_pieces.max(1) as f64),
+        mobility,
+        opp_mobility,
+        my_threats / 8.0,
+        opp_threats / 8.0,
+        (moves.len() as f64 / opp_moves.len().max(1) as f64).min(3.0) / 3.0,
+        player_sign,
+        if let Some(w) = check_winner(board) {
+            if w == player { 1.0 } else { -1.0 }
+        } else {
+            0.0
+        },
+        frontier_norm(board, last_move, player),
+    ]
+}
+
+fn frontier_norm(board: &Board, last_move: Option<Move>, player: i8) -> f64 {
+    let n = frontier_moves(board, last_move, player).len();
+    (n as f64 / (BOARD_SIZE * BOARD_SIZE) as f64).clamp(0.0, 1.0)
+}
 
 /// Features normalisées pour un coup candidat (vue du joueur `player`).
 pub fn move_features(

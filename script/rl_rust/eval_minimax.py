@@ -55,8 +55,15 @@ def _engine_from_request(data: dict) -> GameEngine:
     state = engine.state
     state.board = board
     state.current_player = int(data.get("current_player", 1))
-    state.last_move_position = _last_move(data)
+    lm = _last_move(data)
+    state.last_move_position = lm
     state.move_count = int(np.count_nonzero(state.board))
+    # Certains bots lisent le dernier coup dans l'historique plutôt que dans
+    # last_move_position : on le reconstitue (joué par l'adversaire du trait).
+    if lm is None:
+        state.action_history = []
+    else:
+        state.action_history = [(2 if state.current_player == 1 else 1, int(lm[0]), int(lm[1]))]
     winner = data.get("winner")
     state.is_terminal = bool(data.get("is_terminal", False)) or winner is not None
     state.winner = None if winner is None else int(winner)

@@ -7,7 +7,7 @@
 //! Toute anomalie est fatale : un coup absent ou illégal remontait auparavant comme une
 //! *nulle*, ce qui faisait passer un harnais cassé pour une défense parfaite.
 
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::time::Duration;
@@ -18,9 +18,10 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
+use crate::az_mcts::MctsAz;
 use crate::game_session::GameSession;
 use crate::mcts::MctsLite;
-use crate::policy::LinearPolicy;
+use crate::policy::PolicyNet;
 
 #[derive(Serialize)]
 struct MoveRequest {
@@ -49,6 +50,7 @@ impl MoveResponse {
     }
 }
 
+#[derive(Clone)]
 pub struct EvalConfig {
     pub games: usize,
     pub mcts_sims: u32,
@@ -57,18 +59,22 @@ pub struct EvalConfig {
     pub project_root: PathBuf,
     pub bot_id: String,
     pub timeout: Duration,
+    pub max_moves: u32,
+    pub use_az_mcts: bool,
 }
 
 impl Default for EvalConfig {
     fn default() -> Self {
         Self {
-            games: 20,
-            mcts_sims: 12,
+            games: 12,
+            mcts_sims: 16,
             python: "py".to_string(),
             script_path: PathBuf::from("script/rl_rust/eval_minimax.py"),
             project_root: PathBuf::from("."),
             bot_id: "level_5".to_string(),
             timeout: Duration::from_secs(600),
+            max_moves: 120,
+            use_az_mcts: true,
         }
     }
 }
@@ -77,15 +83,15 @@ fn board_to_json(board: &Board) -> Vec<Vec<i8>> {
     board.iter().map(|row| row.to_vec()).collect()
 }
 
-/// Le bot Python gardé ouvert entre les coups.
-struct MinimaxDaemon {
+/// Processus Python longue durée (`eval_minimax.py daemon`) — évite 1 spawn/coup.
+pub struct MinimaxBridge {
     child: Child,
-    stdin: ChildStdin,
+    stdin: BufWriter<ChildStdin>,
     stdout: BufReader<ChildStdout>,
 }
 
-impl MinimaxDaemon {
-    fn spawn(cfg: &EvalConfig) -> Result<Self> {
+impl MinimaxBridge {
+    pub fn spawn(cfg: &EvalConfig) -> Result<Self> {
         let script = if cfg.script_path.is_absolute() {
             cfg.script_path.clone()
         } else {
@@ -96,25 +102,27 @@ impl MinimaxDaemon {
             command.arg("-3");
         }
         let mut child = command
+            .arg("-u")
             .arg(&script)
             .arg("daemon")
             .current_dir(&cfg.project_root)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            // Hérité plutôt que pipé : un pipe stderr jamais lu bloquerait le daemon.
+            .stderr(Stdio::inherit())
             .spawn()
             .with_context(|| format!("lancement du daemon {script:?}"))?;
 
-        let stdin = child.stdin.take().expect("stdin pipé");
-        let stdout = BufReader::new(child.stdout.take().expect("stdout pipé"));
+        let stdin = child.stdin.take().context("stdin daemon")?;
+        let stdout = child.stdout.take().context("stdout daemon")?;
         Ok(Self {
             child,
-            stdin,
-            stdout,
+            stdin: BufWriter::new(stdin),
+            stdout: BufReader::new(stdout),
         })
     }
 
-    fn query(&mut self, cfg: &EvalConfig, session: &GameSession) -> Result<Move> {
+    pub fn choose_move(&mut self, cfg: &EvalConfig, session: &GameSession) -> Result<Option<Move>> {
         let req = MoveRequest {
             board: board_to_json(&session.board),
             current_player: session.current_player,
@@ -132,28 +140,33 @@ impl MinimaxDaemon {
         }
         let resp: MoveResponse = serde_json::from_str(line.trim())
             .with_context(|| format!("réponse illisible du daemon : {}", line.trim()))?;
-        resp.into_move()
+        resp.into_move().map(Some)
     }
 }
 
-impl Drop for MinimaxDaemon {
+impl Drop for MinimaxBridge {
     fn drop(&mut self) {
-        let _ = self.stdin.write_all(b"\n");
+        let _ = self.stdin.write_all(b"
+");
+        let _ = self.stdin.flush();
         let _ = self.child.kill();
         let _ = self.child.wait();
     }
 }
 
 pub fn evaluate_vs_minimax(
-    policy: &LinearPolicy,
+    policy: &PolicyNet,
     cfg: &EvalConfig,
+    bridge: &mut MinimaxBridge,
     seed: u64,
 ) -> Result<EvalResult> {
     let mut rng = StdRng::seed_from_u64(seed);
     let mcts = MctsLite {
         sims_per_move: cfg.mcts_sims,
     };
-    let mut daemon = MinimaxDaemon::spawn(cfg)?;
+    let az = MctsAz {
+        sims: cfg.mcts_sims,
+    };
 
     let mut rl_wins = 0u32;
     let mut bot_wins = 0u32;
@@ -168,31 +181,54 @@ pub fn evaluate_vs_minimax(
         let mut session = GameSession::new();
         let rl_player: i8 = if g % 2 == 0 { 1 } else { 2 };
 
-        while !session.is_terminal() && session.move_count < 100 {
+        while !session.is_terminal() && session.move_count < cfg.max_moves {
             let is_rl_turn = session.current_player == rl_player;
+            let side: &str = if is_rl_turn { "agent" } else { cfg.bot_id.as_str() };
             let mv = if is_rl_turn {
-                mcts
-                    .choose_move(policy, &session, &mut rng)
-                    .or_else(|| {
-                        policy.best_move(
-                            &session.board,
-                            &session.legal_moves(),
-                            session.current_player,
-                            session.last_move,
-                        )
-                    })
+                if cfg.use_az_mcts && cfg.mcts_sims > 0 {
+                    az.choose_move(policy, &session, &mut rng)
+                } else if cfg.mcts_sims > 0 {
+                    mcts
+                        .choose_move(policy, &session, &mut rng)
+                        .or_else(|| {
+                            policy.best_move(
+                                &session.board,
+                                &session.legal_moves(),
+                                session.current_player,
+                                session.last_move,
+                            )
+                        })
+                } else {
+                    policy.best_move(
+                        &session.board,
+                        &session.legal_moves(),
+                        session.current_player,
+                        session.last_move,
+                    )
+                }
             } else {
-                Some(daemon.query(cfg, &session)?)
+                bridge.choose_move(cfg, &session)?
             };
 
             let Some(chosen) = mv else {
-                anyhow::bail!("aucun coup proposé (partie {g}, coup {})", session.move_count);
+                // Plus aucun coup jouable : fin de partie légitime.
+                if session.legal_moves().is_empty() {
+                    break;
+                }
+                anyhow::bail!(
+                    "eval: {side} n'a proposé aucun coup (coup n°{})",
+                    session.move_count + 1
+                );
             };
+            // Un coup refusé est un bug de protocole (adversaire qui répond sur une
+            // autre position, par exemple), pas une fin de partie : compter une nulle
+            // ici masquerait la panne derrière un harnais silencieusement cassé.
             if !session.apply(chosen) {
                 anyhow::bail!(
-                    "coup illégal {:?} accepté par personne (partie {g}, coup {})",
+                    "eval: {side} a joué un coup illégal {:?} (coup n°{}), coups légaux {:?}",
                     chosen,
-                    session.move_count
+                    session.move_count + 1,
+                    session.legal_moves()
                 );
             }
         }
@@ -229,7 +265,7 @@ pub fn evaluate_vs_minimax(
     }
 
     if truncated > 0 {
-        tracing::warn!("{truncated} partie(s) coupée(s) à 100 demi-coups, comptées comme nulles");
+        tracing::warn!("{truncated} partie(s) coupée(s) à la limite de demi-coups, comptées comme nulles");
     }
 
     Ok(EvalResult {
@@ -268,41 +304,22 @@ pub struct EvalResult {
     pub rl_wins: u32,
     pub bot_wins: u32,
     pub draws: u32,
-    /// Parties arrêtées à la limite de 100 demi-coups faute de vainqueur.
+    /// Parties arrêtées à la limite de demi-coups (`max_moves`) faute de vainqueur.
     pub truncated: u32,
     pub win_rate: f64,
     /// Index 0 : réseau au premier coup, index 1 : réseau en second.
     pub seat: [SeatStats; 2],
 }
 
-pub fn resolve_paths(data_dir: &Path) -> (PathBuf, PathBuf) {
-    let rl_dir = data_dir
-        .parent()
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("script/rl_rust"));
-
+pub fn resolve_paths(_data_dir: &Path) -> (PathBuf, PathBuf) {
+    let rl_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let script = rl_dir.join("eval_minimax.py");
-
-    let mut root = rl_dir
+    let project_root = rl_dir
         .parent()
         .and_then(|script_dir| script_dir.parent())
         .map(|p| p.to_path_buf())
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| {
-            std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-        });
-
-    if !script.exists() {
-        if let Ok(cwd) = std::env::current_dir() {
-            let alt = cwd.join("script/rl_rust/eval_minimax.py");
-            if alt.exists() {
-                root = cwd;
-                return (alt, root);
-            }
-        }
-    }
-
-    (script, root)
+        .unwrap_or_else(|| rl_dir.clone());
+    (script, project_root)
 }
 
 #[allow(dead_code)]

@@ -11,8 +11,9 @@ class GameLogic:
     """
     Implémente les règles et la logique du jeu 4mation.
     
-    Note: Les règles sont actuellement basées sur un style Connect 4.
-    Adaptez cette classe selon les règles spécifiques de 4mation.
+    Premier coup libre ; ensuite, une case vide adjacente au dernier coup, ou, si
+    elles sont toutes occupées, une case adjacente à un pion adverse. Le premier
+    joueur qui aligne 4 pions gagne.
     """
     
     def __init__(self, board_width: int = 7, board_height: int = 7, win_length: int = 4):

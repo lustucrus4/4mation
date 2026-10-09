@@ -43,10 +43,11 @@ src/
     layout/             AppShell, NavBar
     auth/               AuthButton (bouton SSO)
     ui/                 Button, Card
-    game/               Board (plateau 7×7), WinBar (barre W/L)
-  pages/                Home, Play, Learn, Analyze, Profile, NotFound
+    game/               Board (plateau 7×7), WinBar (barre W/L), overlays de partie
+  learn/, review/       Schémas des leçons, revue de partie
+  pages/                Jouer (bots, en ligne), Apprendre (règles, leçons, puzzles,
+                        entraîneur, ouvertures), Analyser, Profil
 public/
-  .htaccess             Routage SPA (Hostinger / Apache)
   favicon.svg
 ```
 
@@ -57,10 +58,9 @@ public/
 
 ## Build & déploiement
 
-Le build produit un site statique dans `../4mation_dashboard_deploy`, synchronisé
-vers Hostinger. Le `.htaccess` redirige les routes client vers `index.html`
-(en laissant passer `solver.html` et les assets réels).
+Le build produit un site statique dans `../4mation_dashboard_deploy`, versionné et
+copié sur le VPS par le conteneur `nginx-sync`. Nginx redirige les routes client vers
+`index.html` (`try_files`), en laissant passer `solver.html` et les assets réels.
 
-> Refonte en cours — Phase 0 (fondations : socle React, design system, navigation,
-> SSO). Les fonctionnalités (jeu vs bots, comptes, analyse, apprentissage, jeu en
-> ligne) arrivent dans les phases suivantes.
+La CI (`.github/workflows/ci.yml`) lance `npm run check:diagrams` et `npm run build`
+à chaque push.

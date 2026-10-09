@@ -368,6 +368,22 @@ des dizaines de milliers en local). Le moteur `4mation-engine` est donc plus for
 
 local qu'en production : voir la note de déploiement du moteur dans `api/README.md`.
 
+Pour envoyer la base locale sur le VPS : `.\scripts\sync_tablebase_vps.ps1` (instantané
+cohérent, contrôle d'intégrité, vérification de l'espace disque, sauvegarde de l'ancienne
+base sur le VPS, redémarrage puis contrôle de `/api/health`). `-WhatIf` s'arrête avant
+l'envoi.
+
+### Variables de production (`deploy/.env`)
+
+Voir `deploy/.env.example`. Deux variables changent le comportement :
+
+- `SOLVER_WORKER_TOKEN` : jeton exigé par `/api/solver/work/*`. Sans lui, l'API refuse
+  les workers (503) au lieu d'accepter des résultats anonymes. Les workers (conteneur
+  `solver` et `scripts\run_local_worker.bat`) lisent la même variable.
+- `DEPLOY_REF` : branche ou étiquette git que les conteneurs déploient (défaut `master`).
+  Avec une étiquette (`git tag v2026.10.09 && git push origin v2026.10.09`), un push sur
+  `master` ne part plus en production sans décision.
+
 
 
 ### Procédure VPS (SSH)

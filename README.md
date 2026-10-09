@@ -54,7 +54,7 @@ Ce dossier est la **restructuration Lab211** du projet historique situé dans `.
 
 
 
-DNS A → `31.97.197.72` (VPS srv910901) — enregistrements `4mation` et `api-4mation` créés via Hostinger MCP.
+DNS A → `72.61.96.171` (VPS de production) — enregistrements `4mation` et `api-4mation` créés via Hostinger MCP.
 
 
 
@@ -342,7 +342,7 @@ python script/test_mcts_advisor.py
 
 |-------|--------|
 
-| DNS A `4mation` / `api-4mation` → 31.97.197.72 | ✅ Fait (Hostinger MCP) |
+| DNS A `4mation` / `api-4mation` → 72.61.96.171 | ✅ Fait (Hostinger MCP) |
 
 | Build frontend → `4mation_dashboard_deploy/` | ✅ Fait |
 
@@ -390,7 +390,7 @@ Voir `deploy/.env.example`. Deux variables changent le comportement :
 
 
 
-1. Cloner/copier le repo dans `/opt/4mation/src` sur le VPS `31.97.197.72`
+1. Cloner/copier le repo dans `/opt/4mation/src` sur le VPS `72.61.96.171`
 
 2. Exécuter `scripts/deploy_vps.sh` (ou étapes manuelles ci-dessous)
 

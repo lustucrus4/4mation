@@ -1,5 +1,5 @@
 #!/bin/bash
-# Déploiement manuel 4mation sur VPS Hostinger (31.97.197.72)
+# Déploiement manuel 4mation sur VPS Hostinger (72.61.96.171)
 # À exécuter sur le serveur après SSH
 
 set -euo pipefail

@@ -19,11 +19,14 @@
 #
 # Usage (PowerShell, depuis la racine du projet) :
 #   .\scripts\sync_tablebase_vps.ps1
-#   .\scripts\sync_tablebase_vps.ps1 -VpsHost root@31.97.197.72 -WhatIf
+#   .\scripts\sync_tablebase_vps.ps1 -VpsHost root@72.61.96.171 -WhatIf
+#   .\scripts\sync_tablebase_vps.ps1 -SshKey $HOME\.ssh\cursor_hostinger_ed25519
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [string]$VpsHost = "root@31.97.197.72",
+    [string]$VpsHost = "root@72.61.96.171",
+    # Cle privee passee a ssh et scp (-i) ; vide = cle par defaut / agent.
+    [string]$SshKey = "",
     [string]$LocalDb = "script\solver\data\tablebase.db",
     [string]$Snapshot = "$env:TEMP\4mation_tablebase_snapshot.db",
     [string]$RemoteTmp = "/opt/4mation/tablebase.db.upload",
@@ -34,6 +37,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-Location (Join-Path $PSScriptRoot "..")
+
+$sshOpts = @()
+if ($SshKey) {
+    if (-not (Test-Path $SshKey)) { throw "Cle SSH introuvable : $SshKey" }
+    $sshOpts = @("-i", $SshKey, "-o", "IdentitiesOnly=yes")
+}
 
 $python = if (Test-Path ".venv\Scripts\python.exe") { ".venv\Scripts\python.exe" } else { "python" }
 
@@ -61,7 +70,7 @@ Write-Host "   instantane : $Snapshot ($sizeGb Go)"
 
 Write-Host "== 2. Espace disque sur le VPS"
 $needKb = [math]::Ceiling((Get-Item $Snapshot).Length / 1KB * 1.1)
-$freeKb = ssh $VpsHost "mkdir -p /opt/4mation && df -Pk /opt/4mation /var/lib/docker | awk 'NR>1 {print `$4}' | sort -n | head -1"
+$freeKb = ssh @sshOpts $VpsHost "mkdir -p /opt/4mation && df -Pk /opt/4mation /var/lib/docker | awk 'NR>1 {print `$4}' | sort -n | head -1"
 if ([int64]$freeKb -lt $needKb) {
     throw "Espace insuffisant sur le VPS : $([math]::Round($freeKb/1MB,1)) Go libres, $([math]::Round($needKb/1MB,1)) Go necessaires"
 }
@@ -70,7 +79,7 @@ Write-Host "   $([math]::Round($freeKb/1MB,1)) Go libres"
 if (-not $PSCmdlet.ShouldProcess($VpsHost, "Remplacer la tablebase de production")) { return }
 
 Write-Host "== 3. Envoi ($sizeGb Go, peut etre long)"
-scp $Snapshot "${VpsHost}:$RemoteTmp"
+scp @sshOpts $Snapshot "${VpsHost}:$RemoteTmp"
 if ($LASTEXITCODE -ne 0) { throw "Echec de l'envoi scp" }
 
 Write-Host "== 4. Remplacement sur le VPS"
@@ -88,7 +97,7 @@ docker start $writers
 echo "ancienne base : `$DATA/tablebase.db.avant-sync-`$STAMP"
 "@
 $remote = $remote -replace "`r", ""
-$remote | ssh $VpsHost "sh -s"
+$remote | ssh @sshOpts $VpsHost "sh -s"
 if ($LASTEXITCODE -ne 0) { throw "Echec du remplacement sur le VPS (les conteneurs sont peut-etre arretes : docker start $writers)" }
 
 Write-Host "== 5. Controle de sante"

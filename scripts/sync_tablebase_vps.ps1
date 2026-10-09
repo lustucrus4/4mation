@@ -63,7 +63,12 @@ print(f"quick_check={row} positions={pos} opening_book={book}")
 sys.exit(0 if row == "ok" else 1)
 '@
 if (Test-Path $Snapshot) { Remove-Item $Snapshot }
-& $python -c $snapshotCode $LocalDb $Snapshot
+# Fichier plutot que -c : Windows PowerShell 5.1 retire les guillemets doubles
+# des arguments passes a un programme natif, ce qui cassait le code Python.
+$snapshotPy = Join-Path $env:TEMP "4mation_snapshot.py"
+Set-Content -Path $snapshotPy -Value $snapshotCode -Encoding ASCII
+& $python $snapshotPy $LocalDb $Snapshot
+Remove-Item $snapshotPy
 if ($LASTEXITCODE -ne 0) { throw "Instantane invalide (quick_check en echec)" }
 $sizeGb = [math]::Round((Get-Item $Snapshot).Length / 1GB, 2)
 Write-Host "   instantane : $Snapshot ($sizeGb Go)"

@@ -25,6 +25,13 @@ if not defined SOLVER_SOLVE_THREADS set "SOLVER_SOLVE_THREADS=2"
 
 set "PYTHONPATH=%CD%;%CD%\script"
 
+REM L'API refuse les workers sans jeton : definir SOLVER_WORKER_TOKEN (meme valeur que sur le VPS).
+if not defined SOLVER_WORKER_TOKEN (
+    echo [ERREUR] SOLVER_WORKER_TOKEN non defini : l'API refusera ce worker.
+    echo          set SOLVER_WORKER_TOKEN=...  puis relancez ce script.
+    exit /b 1
+)
+
 echo ========================================
 echo  4mation — Worker solveur distribue
 echo ========================================

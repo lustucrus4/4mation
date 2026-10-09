@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 import os
 from functools import wraps
 from typing import Any, Callable
@@ -13,15 +14,34 @@ from api.services.work_queue_service import get_work_queue_service
 solver_workers_bp = Blueprint("solver_workers", __name__)
 
 WORKER_TOKEN = os.environ.get("SOLVER_WORKER_TOKEN", "").strip()
+# Sans jeton, les routes d'écriture restent fermées : un appel anonyme pourrait sinon
+# injecter de faux résultats dans la tablebase, que les bots et l'analyse « prouvée »
+# lisent ensuite. Seul un poste de développement peut les rouvrir explicitement.
+ALLOW_NO_TOKEN = os.environ.get("SOLVER_ALLOW_NO_TOKEN", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
 
 
 def _require_worker_auth(handler: Callable) -> Callable:
     @wraps(handler)
     def wrapper(*args: Any, **kwargs: Any):
-        if WORKER_TOKEN:
-            token = request.headers.get("X-Solver-Worker-Token", "").strip()
-            if token != WORKER_TOKEN:
-                return jsonify({"success": False, "error": "Token worker invalide"}), 401
+        if not WORKER_TOKEN:
+            if ALLOW_NO_TOKEN:
+                return handler(*args, **kwargs)
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Workers solveur désactivés : SOLVER_WORKER_TOKEN non configuré",
+                    }
+                ),
+                503,
+            )
+        token = request.headers.get("X-Solver-Worker-Token", "").strip()
+        if not hmac.compare_digest(token.encode(), WORKER_TOKEN.encode()):
+            return jsonify({"success": False, "error": "Token worker invalide"}), 401
         return handler(*args, **kwargs)
 
     return wrapper

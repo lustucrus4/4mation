@@ -14,6 +14,9 @@ services:
 
     environment:
 
+      DEPLOY_REF: ${DEPLOY_REF:-master}
+      SOLVER_WORKER_TOKEN: ${SOLVER_WORKER_TOKEN:-}
+
       PYTHONPATH: /app:/app/script
 
       GUNICORN_WORKERS: "8"
@@ -50,10 +53,10 @@ services:
 
         sync_repo() {
           if [ -d /tmp/repo/.git ]; then
-            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+            cd /tmp/repo && git fetch --depth 1 origin "$${DEPLOY_REF:-master}" && git reset --hard FETCH_HEAD
           else
             apt-get update && apt-get install -y --no-install-recommends git curl rsync
-            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+            git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
           fi
           cp -a /tmp/repo/api /tmp/repo/script /app/
           rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/ || true
@@ -101,6 +104,8 @@ services:
 
     environment:
 
+      DEPLOY_REF: ${DEPLOY_REF:-master}
+
       PYTHONPATH: /app:/app/script
 
       DATABASE_URL: postgresql://4mation:${POSTGRES_PASSWORD:-4mation_dev}@postgres:5432/4mation
@@ -129,10 +134,10 @@ services:
 
         sync_repo() {
           if [ -d /tmp/repo/.git ]; then
-            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+            cd /tmp/repo && git fetch --depth 1 origin "$${DEPLOY_REF:-master}" && git reset --hard FETCH_HEAD
           else
             apt-get update && apt-get install -y --no-install-recommends git curl rsync
-            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+            git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
           fi
           cp -a /tmp/repo/api /tmp/repo/script /app/
         }
@@ -201,6 +206,8 @@ services:
 
     environment:
 
+      DEPLOY_REF: ${DEPLOY_REF:-master}
+
       PYTHONPATH: /app/script
 
       TABLEBASE_DB_PATH: /app/data/tablebase.db
@@ -225,10 +232,10 @@ services:
 
         sync_repo() {
           if [ -d /tmp/repo/.git ]; then
-            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+            cd /tmp/repo && git fetch --depth 1 origin "$${DEPLOY_REF:-master}" && git reset --hard FETCH_HEAD
           else
             apt-get update && apt-get install -y --no-install-recommends git
-            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+            git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
           fi
           cp -a /tmp/repo/script /app/
         }
@@ -256,6 +263,9 @@ services:
     working_dir: /app
 
     environment:
+
+      DEPLOY_REF: ${DEPLOY_REF:-master}
+      SOLVER_WORKER_TOKEN: ${SOLVER_WORKER_TOKEN:-}
 
       PYTHONPATH: /app/script
 
@@ -289,10 +299,10 @@ services:
 
         sync_repo() {
           if [ -d /tmp/repo/.git ]; then
-            cd /tmp/repo && git fetch --depth 1 origin master && git reset --hard origin/master
+            cd /tmp/repo && git fetch --depth 1 origin "$${DEPLOY_REF:-master}" && git reset --hard FETCH_HEAD
           else
             apt-get update && apt-get install -y --no-install-recommends git
-            git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+            git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
           fi
           cp -a /tmp/repo/script /app/
         }
@@ -347,6 +357,10 @@ services:
 
       - api
 
+    environment:
+
+      DEPLOY_REF: ${DEPLOY_REF:-master}
+
     command:
 
       - /bin/sh
@@ -363,7 +377,7 @@ services:
 
         rm -rf /tmp/repo
 
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+        git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
 
         rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/
 
@@ -521,6 +535,10 @@ services:
 
       - api
 
+    environment:
+
+      DEPLOY_REF: ${DEPLOY_REF:-master}
+
     command:
 
       - /bin/sh
@@ -539,7 +557,7 @@ services:
 
         rm -rf /tmp/repo
 
-        git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+        git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
 
         sed "s|CERT_PLACEHOLDER|$$CERT|g" /tmp/repo/deploy/nginx-4mation.conf.template > /etc/nginx/sites-available/4mation
 
@@ -577,6 +595,10 @@ services:
 
     restart: always
 
+    environment:
+
+      DEPLOY_REF: ${DEPLOY_REF:-master}
+
     command:
 
       - /bin/sh
@@ -591,7 +613,7 @@ services:
 
           rm -rf /tmp/repo
 
-          git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
 
           rsync -a --delete /tmp/repo/4mation_dashboard_deploy/ /var/www/4mation/
 

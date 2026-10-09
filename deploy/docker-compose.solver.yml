@@ -13,6 +13,8 @@ services:
       TABLEBASE_MAX_EMPTY: "49"
       SOLVER_API_URL: https://api-4mation.lab211.fr
       SOLVER_WORKERS: "2"
+      SOLVER_WORKER_TOKEN: ${SOLVER_WORKER_TOKEN:-}
+      DEPLOY_REF: ${DEPLOY_REF:-master}
     volumes:
       - 4mation-sessions:/app/data
     command:
@@ -24,7 +26,7 @@ services:
         mkdir -p /app/data
         while true; do
           rm -rf /tmp/repo
-          git clone --depth 1 https://github.com/lustucrus4/4mation.git /tmp/repo
+          git clone --depth 1 --branch "$${DEPLOY_REF:-master}" https://github.com/lustucrus4/4mation.git /tmp/repo
           cp -a /tmp/repo/script /app/
           if [ ! -f /app/data/tablebase.db ] && [ -f /app/script/solver/data/tablebase.db ]; then
             cp /app/script/solver/data/tablebase.db /app/data/tablebase.db

@@ -82,7 +82,12 @@ export default function OnlinePlayPage() {
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_280px] md:gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* Mobile : titre au-dessus du plateau */}
+      <header className="md:hidden">
+        <h1 className="text-2xl font-black text-accent">En ligne</h1>
+      </header>
+
       <div className="relative">
         <Board
           key={online.boardRoomId ?? online.phase}
@@ -126,18 +131,20 @@ export default function OnlinePlayPage() {
         ) : null}
 
         {!online.gameOverOverlay ? (
-          <p className="mt-4 text-center text-lg font-semibold text-accent">{online.message}</p>
+          <p className="mt-4 text-center text-lg font-semibold text-accent" aria-live="polite">
+            {online.message}
+          </p>
         ) : null}
         {online.error && (
           <p className="mt-2 text-center text-sm text-p1">{online.error}</p>
         )}
-        {!online.socketConnected && online.phase !== "connecting" && (
+        {!online.error && !online.socketConnected && online.phase !== "connecting" && (
           <p className="mt-2 text-center text-sm text-amber-300">
-            Déconnecté du serveur en ligne — vérifiez que l&apos;API realtime tourne.
+            Connexion au jeu en ligne perdue. Reconnexion en cours…
           </p>
         )}
         {online.state && yourColor != null && (
-          <p className="mt-1 text-center text-xs text-white/50">
+          <p className="mt-1 text-center text-xs text-white/60">
             Coup #{online.state.move_count}
             {yourColor === 1 ? " · Vous êtes rouge" : " · Vous êtes bleu"}
           </p>
@@ -145,16 +152,50 @@ export default function OnlinePlayPage() {
       </div>
 
       <aside className="space-y-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="hidden flex-wrap items-baseline justify-between gap-2 md:flex">
           <h1 className="text-2xl font-black text-accent">En ligne</h1>
-          <Link to="/play" className="text-sm text-white/50 hover:text-accent">
+          <Link to="/play" className="py-2 text-sm text-white/60 hover:text-accent">
             ← vs IA
           </Link>
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          <span className="w-full text-xs font-bold uppercase text-white/60">Matchmaking</span>
+          {online.canSearch ? (
+            <Button onClick={online.joinQueue}>Rechercher une partie</Button>
+          ) : null}
+          {online.phase === "queued" ? (
+            <Button variant="ghost" onClick={online.leaveQueue}>
+              Annuler la recherche
+            </Button>
+          ) : null}
+          {online.phase === "playing" && online.state && !online.state.is_terminal ? (
+            <>
+              <Button variant="ghost" onClick={online.resign}>
+                Abandonner
+              </Button>
+              {online.inPrivateSession ? (
+                <Button variant="ghost" onClick={online.leavePrivate}>
+                  Quitter la salle
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+          {online.phase === "finished" && !online.inPrivateSession ? (
+            <Button onClick={online.joinQueue}>Rejouer</Button>
+          ) : null}
+        </div>
+
+        {online.phase === "queued" && (
+          <p className="animate-pulse text-sm text-white/60">
+            Appariement par proximité d&apos;Elo…
+          </p>
+        )}
+
+
         {online.isGuest && !authenticated && (
           <Card>
-            <h2 className="text-sm font-bold uppercase tracking-wide text-white/50">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-white/60">
               Mode invité
             </h2>
             <p className="mt-2 text-sm text-white/70">
@@ -185,7 +226,7 @@ export default function OnlinePlayPage() {
                 Aléa
               </Button>
             </div>
-            <div className="mt-3 text-xs text-white/50">
+            <div className="mt-3 text-xs text-white/60">
               Connectez-vous pour enregistrer votre Elo : <AuthButton />
             </div>
           </Card>
@@ -205,7 +246,7 @@ export default function OnlinePlayPage() {
             )}
             {online.displayName && (
               <p
-                className={`text-xs text-white/50 ${!(online.isGuest && !authenticated) ? "mt-2" : ""}`}
+                className={`text-xs text-white/60 ${!(online.isGuest && !authenticated) ? "mt-2" : ""}`}
               >
                 Connecté : {online.displayName}
                 {online.socketConnected ? "" : " (hors ligne)"}
@@ -229,7 +270,7 @@ export default function OnlinePlayPage() {
         )}
 
         <Card>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-white/50">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-white/60">
             Partie privée
           </h2>
           <p className="mt-2 text-xs text-white/60">
@@ -252,7 +293,7 @@ export default function OnlinePlayPage() {
             {online.inPrivateSession && online.privateCode ? (
               <>
                 <PrivateCodeBadge code={online.privateCode} />
-                <span className="self-center text-xs text-white/50">Salle active</span>
+                <span className="self-center text-xs text-white/60">Salle active</span>
               </>
             ) : null}
           </div>
@@ -289,39 +330,6 @@ export default function OnlinePlayPage() {
           )}
         </Card>
 
-        <div className="flex flex-wrap gap-2">
-          <span className="w-full text-xs font-bold uppercase text-white/40">Matchmaking</span>
-          {online.canSearch ? (
-            <Button onClick={online.joinQueue}>Rechercher une partie</Button>
-          ) : null}
-          {online.phase === "queued" ? (
-            <Button variant="ghost" onClick={online.leaveQueue}>
-              Annuler la recherche
-            </Button>
-          ) : null}
-          {online.phase === "playing" && online.state && !online.state.is_terminal ? (
-            <>
-              <Button variant="ghost" onClick={online.resign}>
-                Abandonner
-              </Button>
-              {online.inPrivateSession ? (
-                <Button variant="ghost" onClick={online.leavePrivate}>
-                  Quitter la salle
-                </Button>
-              ) : null}
-            </>
-          ) : null}
-          {online.phase === "finished" && !online.inPrivateSession ? (
-            <Button onClick={online.joinQueue}>Rejouer</Button>
-          ) : null}
-        </div>
-
-        {online.phase === "queued" && (
-          <p className="animate-pulse text-sm text-white/50">
-            Appariement par proximité d&apos;Elo…
-          </p>
-        )}
-
         <Timeline history={online.state?.history ?? []} yourColor={yourColor} />
       </aside>
     </div>
@@ -338,13 +346,13 @@ function Timeline({
   if (!history.length) return null;
   return (
     <Card className="max-h-48 overflow-y-auto !p-3">
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">Historique</h2>
+      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">Historique</h2>
       <ol className="space-y-1 text-sm text-white/70">
         {history.map((e) => {
           const who = e.player === yourColor ? "Vous" : "Adversaire";
           return (
             <li key={e.index}>
-              <span className="text-white/40">#{e.index}</span> {who} : ({e.row + 1},{" "}
+              <span className="text-white/60">#{e.index}</span> {who} : ({e.row + 1},{" "}
               {e.col + 1})
             </li>
           );

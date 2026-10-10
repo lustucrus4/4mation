@@ -41,7 +41,7 @@ export default function MoveHistoryList({
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ background: classificationColor(m.classification) }}
             />
-            <span className="text-white/40">#{m.index}</span>
+            <span className="text-white/60">#{m.index}</span>
             <span className={m.player === 1 ? "text-p1" : "text-p2"}>
               {m.player === humanColor ? "Vous" : "Coach"}
             </span>
@@ -49,7 +49,7 @@ export default function MoveHistoryList({
               ({m.row + 1},{m.col + 1})
             </span>
             {m.displayPercent != null && (
-              <span className="ml-auto text-xs text-white/40">{m.displayPercent}%</span>
+              <span className="ml-auto text-xs text-white/60">{m.displayPercent}%</span>
             )}
           </button>
         </li>

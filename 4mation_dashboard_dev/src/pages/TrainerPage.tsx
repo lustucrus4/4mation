@@ -69,18 +69,29 @@ export default function TrainerPage() {
 
   const viewingPast = !review.isAtLive;
 
+  const actionButtons = (
+    <div className="flex flex-wrap justify-center gap-2 md:justify-start">
+      <Button onClick={handleNewGame} disabled={busy}>
+        Nouvelle partie
+      </Button>
+      <Button variant="ghost" onClick={() => void game.undo()} disabled={!game.canUndo}>
+        Annuler
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3 lg:hidden">
+      <header className="flex flex-wrap items-center justify-between gap-3 md:hidden">
         <div>
-          <Link to="/learn" className="text-sm text-white/50 hover:text-accent">
+          <Link to="/learn" className="inline-block py-2 text-sm text-white/60 hover:text-accent">
             ← Apprendre
           </Link>
           <h1 className="mt-1 text-2xl font-black text-accent">Entraîneur</h1>
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_280px] lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="relative space-y-4">
           <Board
             board={board}
@@ -114,6 +125,17 @@ export default function TrainerPage() {
             />
           ) : null}
 
+          <p className="text-center text-lg font-semibold text-accent" aria-live="polite">
+            {game.gameOverOverlay
+              ? null
+              : viewingPast
+                ? "Relecture de la partie"
+                : game.message}
+          </p>
+          {game.error && (
+            <p className="text-center text-sm text-p1">{game.error}</p>
+          )}
+
           <MoveNavigator
             moveIndex={review.viewMoveIndex}
             maxMove={liveCount}
@@ -122,8 +144,10 @@ export default function TrainerPage() {
             hideStart
           />
 
+          <div className="md:hidden">{actionButtons}</div>
+
           {viewingPast && (
-            <p className="text-center text-sm text-white/50">
+            <p className="text-center text-sm text-white/60">
               Relecture — ▶ ou ⏭ pour reprendre la partie sans la modifier. Jouez sur le plateau
               pour changer la ligne à partir de ce coup.
             </p>
@@ -142,13 +166,13 @@ export default function TrainerPage() {
                 </span>
                 {review.currentStored.isHuman &&
                   review.currentStored.displayPercent != null && (
-                    <span className="text-white/50">
+                    <span className="text-white/60">
                       {" "}
                       · {review.currentStored.displayPercent}% précision
                     </span>
                   )}
               </p>
-              <p className="mt-1 text-xs text-white/45">
+              <p className="mt-1 text-xs text-white/60">
                 Joué : {Math.round(review.currentStored.winRatePlayed * 100)} % · Meilleur :{" "}
                 {Math.round(review.currentStored.winRateBest * 100)} %
               </p>
@@ -182,35 +206,25 @@ export default function TrainerPage() {
             </p>
           )}
 
-          <p className="text-center text-lg font-semibold text-accent">
-            {game.gameOverOverlay
-              ? null
-              : viewingPast
-                ? "Relecture de la partie"
-                : game.message}
-          </p>
-          {game.error && (
-            <p className="text-center text-sm text-p1">{game.error}</p>
-          )}
         </div>
 
         <aside className="space-y-4">
-          <Link to="/learn" className="hidden text-sm text-white/50 hover:text-accent lg:inline">
+          <Link to="/learn" className="hidden py-2 text-sm text-white/60 hover:text-accent md:inline-block">
             ← Apprendre
           </Link>
-          <h1 className="hidden text-2xl font-black text-accent lg:block">Entraîneur</h1>
+          <h1 className="hidden text-2xl font-black text-accent md:block">Entraîneur</h1>
 
           <Card>
             <p className="text-sm text-white/70">
               Jouez contre le <strong className="text-white">coach</strong>. ◀ ▶ ⏭ pour parcourir
               les coups sans modifier la partie ; jouez sur le plateau pour corriger une ligne.
             </p>
-            <ul className="mt-2 space-y-1 text-xs text-white/50">
+            <ul className="mt-2 space-y-1 text-xs text-white/60">
               <li>
                 <span className="text-exact">Vert</span> — analyse exacte
               </li>
               <li>
-                <span className="text-accent">Accent</span> — estimation du moteur
+                <span className="text-accent">Turquoise</span> — estimation du moteur
               </li>
               <li>★ — meilleur coup suggéré</li>
             </ul>
@@ -219,12 +233,12 @@ export default function TrainerPage() {
             </div>
           </Card>
 
-          <Card className="max-h-[40vh] overflow-y-auto lg:max-h-[50vh]">
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/50">
+          <Card className="max-h-[40vh] overflow-y-auto md:max-h-[50vh]">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/60">
               Coups
             </h2>
             {review.historyMoves.length === 0 ? (
-              <p className="text-sm text-white/40">Aucun coup joué.</p>
+              <p className="text-sm text-white/60">Aucun coup joué.</p>
             ) : (
               <MoveHistoryList
                 moves={review.historyMoves}
@@ -235,14 +249,7 @@ export default function TrainerPage() {
             )}
           </Card>
 
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={handleNewGame} disabled={busy}>
-              Nouvelle partie
-            </Button>
-            <Button variant="ghost" onClick={() => void game.undo()} disabled={!game.canUndo}>
-              Annuler
-            </Button>
-          </div>
+          <div className="hidden md:block">{actionButtons}</div>
         </aside>
       </div>
     </div>

@@ -24,6 +24,20 @@ import {
   type LearnDiagram,
 } from "../components/learn/diagrams";
 
+/** Sommaire de la page (ancres des sections ci-dessous). */
+const SECTIONS = [
+  { id: "regle-1", label: "1. Le plateau" },
+  { id: "regle-2", label: "2. Objectif : aligner 4 pions" },
+  { id: "regle-3", label: "3. Alternance des tours" },
+  { id: "regle-4", label: "4. Premier coup libre" },
+  { id: "regle-5", label: "5. Règle de la frontière" },
+  { id: "regle-6", label: "6. Coup valide en milieu de partie" },
+  { id: "regle-7", label: "7. Règle de secours" },
+  { id: "regle-8", label: "8. Menaces et blocages" },
+  { id: "regle-9", label: "9. Pourquoi le centre domine" },
+  { id: "regle-10", label: "10. Fin de partie" },
+];
+
 /** Rend un schéma du catalogue `diagrams.ts`, plein format ou compact. */
 function Diagram({ diagram, compact }: { diagram: LearnDiagram; compact?: boolean }) {
   return <RuleDiagram {...diagram} compact={compact} />;
@@ -32,7 +46,7 @@ function Diagram({ diagram, compact }: { diagram: LearnDiagram; compact?: boolea
 export default function RulesPage() {
   return (
     <article className="mx-auto max-w-3xl space-y-8">
-      <Link to="/learn" className="text-sm text-white/50 hover:text-accent">
+      <Link to="/learn" className="inline-block py-2 text-sm text-white/60 hover:text-accent">
         ← Apprendre
       </Link>
 
@@ -43,7 +57,22 @@ export default function RulesPage() {
         </p>
       </header>
 
-      <Card>
+      <nav aria-label="Sommaire des règles">
+        <Card className="!p-4">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">Sommaire</h2>
+          <ol className="grid gap-x-4 sm:grid-cols-2">
+            {SECTIONS.map((sec) => (
+              <li key={sec.id}>
+                <a href={`#${sec.id}`} className="block py-2 text-sm text-white/80 hover:text-accent">
+                  {sec.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      </nav>
+
+      <Card id="regle-1" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">1. Le plateau</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Le 4mation se joue sur une grille carrée de <strong>7×7 cases</strong>. Deux joueurs
@@ -56,7 +85,7 @@ export default function RulesPage() {
         </div>
       </Card>
 
-      <Card>
+      <Card id="regle-2" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">2. Objectif : aligner 4 pions</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Vous gagnez dès que <strong>4 de vos pions</strong> forment une ligne continue. Il
@@ -78,7 +107,7 @@ export default function RulesPage() {
         </div>
       </Card>
 
-      <Card>
+      <Card id="regle-3" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">3. Alternance des tours</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Les joueurs jouent à tour de rôle. Le rouge commence. Chaque tour, vous posez
@@ -101,7 +130,7 @@ export default function RulesPage() {
         </ol>
       </Card>
 
-      <Card>
+      <Card id="regle-4" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">4. Premier coup libre</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Au <strong>premier coup</strong> de la partie, le plateau est vide : vous pouvez
@@ -111,12 +140,12 @@ export default function RulesPage() {
         <div className="mt-4 flex justify-center">
           <Diagram diagram={firstMoveDiagram} />
         </div>
-        <p className="mt-3 text-xs text-white/50">
+        <p className="mt-3 text-xs text-white/60">
           En pratique, on joue presque toujours au centre : la section 9 explique pourquoi.
         </p>
       </Card>
 
-      <Card>
+      <Card id="regle-5" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">5. Règle de la frontière</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           À partir du deuxième coup, vous devez poser sur l'une des{" "}
@@ -135,14 +164,14 @@ export default function RulesPage() {
         <div className="mt-5 flex justify-center">
           <Diagram compact diagram={cornerFrontierDiagram} />
         </div>
-        <p className="mt-3 text-xs text-white/50">
+        <p className="mt-3 text-xs text-white/60">
           La largeur de la frontière dépend de l'endroit du plateau : 8 réponses possibles
           après un coup au centre, 3 seulement après un coup en coin. C'est l'une des raisons
           pour lesquelles un coup de bord vous coûte cher.
         </p>
       </Card>
 
-      <Card>
+      <Card id="regle-6" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">6. Coup valide en milieu de partie</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Ici le bleu vient de jouer en (3,4). Seules les cases qui touchent{" "}
@@ -154,7 +183,7 @@ export default function RulesPage() {
         </div>
       </Card>
 
-      <Card>
+      <Card id="regle-7" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">7. Règle de secours</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Que faire quand les 8 voisins du dernier coup sont <strong>tous occupés</strong> ? La
@@ -166,13 +195,13 @@ export default function RulesPage() {
         <div className="mt-4 flex justify-center">
           <Diagram diagram={rescueRuleDiagram} />
         </div>
-        <p className="mt-3 text-xs text-white/50">
+        <p className="mt-3 text-xs text-white/60">
           Notez que la case (6,6) reste refusée : elle ne touche aucun pion bleu. La règle
           ouvre des cases, elle n'ouvre pas tout le plateau.
         </p>
       </Card>
 
-      <Card>
+      <Card id="regle-8" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">8. Menaces et blocages</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Trois pions alignés avec une 4<sup>e</sup> case libre constituent une{" "}
@@ -194,7 +223,7 @@ export default function RulesPage() {
           <Diagram compact diagram={immediateWinDiagram} />
           <Diagram compact diagram={ghostThreatDiagram} />
         </div>
-        <p className="mt-3 text-xs text-white/50">
+        <p className="mt-3 text-xs text-white/60">
           À gauche : un gain immédiat — la case ★ est jouable et termine l'alignement. À
           droite : trois pions alignés qui ne menacent rien du tout, parce que les deux cases
           de complétion sont hors frontière. C'est la <strong>menace fantôme</strong>, l'erreur
@@ -202,7 +231,7 @@ export default function RulesPage() {
         </p>
       </Card>
 
-      <Card>
+      <Card id="regle-9" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">9. Pourquoi le centre domine</h2>
         <p className="mt-2 text-sm leading-relaxed text-white/80">
           Toutes les cases ne se valent pas. Comptons les alignements de 4 qui passent par
@@ -216,13 +245,13 @@ export default function RulesPage() {
           <Diagram compact diagram={centerLinesDiagram} />
           <Diagram compact diagram={cornerLinesDiagram} />
         </div>
-        <p className="mt-3 text-xs text-white/50">
+        <p className="mt-3 text-xs text-white/60">
           Un coup de coin ne peut jamais figurer dans plus de 3 alignements de 4 ; le centre,
           dans 16. Sur 7×7, cela représente presque toute votre puissance d'attaque.
         </p>
       </Card>
 
-      <Card>
+      <Card id="regle-10" className="scroll-mt-20">
         <h2 className="text-lg font-bold text-accent">10. Fin de partie</h2>
         <ul className="mt-2 space-y-2 text-sm text-white/80">
           <li>
@@ -240,7 +269,7 @@ export default function RulesPage() {
         <div className="mt-4 flex justify-center">
           <Diagram diagram={drawDiagram} />
         </div>
-        <p className="mt-3 text-xs text-white/50">
+        <p className="mt-3 text-xs text-white/60">
           Le match nul est rare mais réel : cette position est pleine, et pourtant aucune suite
           de 4 n'existe dans aucune des quatre directions. Si vous ne voyez pas de gain, ne
           forcez pas — cherchez d'abord à bloquer.

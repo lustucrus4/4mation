@@ -1,5 +1,14 @@
+import { ApiError } from "./api";
+
 /** Messages d'erreur API lisibles côté UI. */
 export function parseApiErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err.status === 401) return "Session expirée — reconnectez-vous via le bouton Connexion.";
+    if (err.status === 503 && err.body.includes("Base de données indisponible")) {
+      return "Historique temporairement indisponible. Réessayez dans quelques secondes.";
+    }
+    return err.message || fallback;
+  }
   const raw = err instanceof Error ? err.message : String(err ?? "");
   if (!raw.trim()) return fallback;
 
@@ -9,7 +18,7 @@ export function parseApiErrorMessage(err: unknown, fallback: string): string {
       return "Session expirée — reconnectez-vous via le bouton Connexion.";
     }
     if (parsed.error === "Base de données indisponible") {
-      return "Historique temporairement indisponible (PostgreSQL). Réessayez dans quelques secondes.";
+      return "Historique temporairement indisponible. Réessayez dans quelques secondes.";
     }
     if (parsed.error) return parsed.error;
   } catch {
@@ -20,7 +29,7 @@ export function parseApiErrorMessage(err: unknown, fallback: string): string {
     return "Session expirée — reconnectez-vous via le bouton Connexion.";
   }
   if (raw.includes("Base de données indisponible") || raw.includes("503")) {
-    return "Historique temporairement indisponible (PostgreSQL). Réessayez dans quelques secondes.";
+    return "Historique temporairement indisponible. Réessayez dans quelques secondes.";
   }
 
   return fallback;

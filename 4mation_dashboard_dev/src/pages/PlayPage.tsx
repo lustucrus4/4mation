@@ -26,9 +26,36 @@ export default function PlayPage() {
 
   const board = state?.board ?? emptyBoard();
   const boardUi = boardInteractionProps(state ?? undefined);
+  const botOptions = game.bots.map((b) => ({
+    value: b.id,
+    label: b.name,
+    title: b.description,
+  }));
+  const eloBadge =
+    authenticated && profile?.rating ? (
+      <span className="rounded-full bg-accent/15 px-2.5 py-1 text-xs font-bold text-accent">
+        {profile.rating.elo} Elo
+      </span>
+    ) : null;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_280px] md:gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* Mobile : titre et choix de l'adversaire au-dessus du plateau */}
+      <header className="space-y-3 md:hidden">
+        <div className="flex items-baseline justify-between gap-2">
+          <h1 className="text-2xl font-black text-accent">Jouer</h1>
+          {eloBadge}
+        </div>
+        <Select
+          id="bot-mobile"
+          value={game.selectedBotId}
+          disabled={busy}
+          onChange={game.setSelectedBotId}
+          aria-label="Adversaire IA"
+          options={botOptions}
+        />
+      </header>
+
       <div className="relative">
         <Board
           board={board}
@@ -64,31 +91,28 @@ export default function PlayPage() {
           />
         ) : null}
 
-        <p className="mt-4 text-center text-lg font-semibold text-accent">
+        <p className="mt-4 text-center text-lg font-semibold text-accent" aria-live="polite">
           {game.gameOverOverlay ? null : game.message}
         </p>
         {game.error && (
           <p className="mt-2 text-center text-sm text-p1">{game.error}</p>
         )}
-        {state && (
-          <p className="mt-1 text-center text-xs text-white/50">
-            Coup #{state.move_count} — Joueur actif : {state.current_player}
+        {state && state.move_count > 0 && !state.is_terminal && (
+          <p className="mt-1 text-center text-xs text-white/60">
+            Coup {state.move_count} ·{" "}
+            {state.current_player === 1 ? "à vous (rouge)" : "à l'IA (bleu)"}
           </p>
         )}
       </div>
 
       <aside className="space-y-4">
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="hidden items-baseline justify-between gap-2 md:flex">
           <h1 className="text-2xl font-black text-accent">Jouer</h1>
-          {authenticated && profile?.rating && (
-            <span className="rounded-full bg-accent/15 px-2.5 py-1 text-xs font-bold text-accent">
-              {profile.rating.elo} Elo
-            </span>
-          )}
+          {eloBadge}
         </div>
 
-        <Card>
-          <label className="mb-1.5 block text-sm font-bold uppercase tracking-wide text-white/50" htmlFor="bot">
+        <Card className="hidden md:block">
+          <label className="mb-1.5 block text-sm font-bold uppercase tracking-wide text-white/60" htmlFor="bot">
             Adversaire IA
           </label>
           <Select
@@ -97,15 +121,11 @@ export default function PlayPage() {
             disabled={busy}
             onChange={game.setSelectedBotId}
             aria-label="Adversaire IA"
-            options={game.bots.map((b) => ({
-              value: b.id,
-              label: b.name,
-              title: b.description,
-            }))}
+            options={botOptions}
           />
-          <p className="mt-3 text-xs text-white/45">
+          <p className="mt-3 text-xs text-white/60">
             Mode classique sans aide. Pour vous entraîner avec les % et le coach, utilisez{" "}
-            <Link to="/learn/trainer" className="text-accent hover:underline">
+            <Link to="/learn/trainer" className="py-1 text-accent hover:underline">
               l&apos;entraîneur
             </Link>
             .
@@ -140,13 +160,13 @@ function Timeline({
   if (!history.length) return null;
   return (
     <Card className="max-h-48 overflow-y-auto !p-3">
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">Historique</h2>
+      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">Historique</h2>
       <ol className="space-y-1 text-sm text-white/70">
         {history.map((e) => {
           const who = e.player === 1 ? "Vous" : "IA";
           return (
             <li key={e.index}>
-              <span className="text-white/40">#{e.index}</span> {who} : ({e.row + 1}, {e.col + 1})
+              <span className="text-white/60">#{e.index}</span> {who} ({e.player === 1 ? "rouge" : "bleu"}) : ({e.row + 1}, {e.col + 1})
             </li>
           );
         })}

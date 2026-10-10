@@ -1,4 +1,4 @@
-import { apiFetch, getApiBase, getSessionId, setSessionId } from "./api";
+import { ApiError, apiFetch, friendlyApiMessage, getApiBase, getSessionId, setSessionId } from "./api";
 
 export interface UserRating {
   mode: string;
@@ -190,17 +190,22 @@ export async function fetchGameReviewStream(
   const sid = getSessionId();
   if (sid) headers.set("X-Session-Id", sid);
 
-  const res = await fetch(`${API_BASE}/api/me/games/${gameId}/review?stream=1`, {
-    credentials: "include",
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/me/games/${gameId}/review?stream=1`, {
+      credentials: "include",
+      headers,
+    });
+  } catch {
+    throw new ApiError(friendlyApiMessage(0, ""), 0, "");
+  }
 
   const newSid = res.headers.get("X-Session-Id");
   if (newSid) setSessionId(newSid);
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || `Erreur ${res.status}`);
+    throw new ApiError(friendlyApiMessage(res.status, text), res.status, text);
   }
 
   const reader = res.body?.getReader();

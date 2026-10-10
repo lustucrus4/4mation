@@ -1,7 +1,7 @@
 /**
  * Couche API typée du jeu 4mation (au-dessus de apiFetch).
  */
-import { apiFetch, getSessionId } from "./api";
+import { ApiError, apiFetch, getSessionId } from "./api";
 
 export type GameMode = "standard" | "learning";
 
@@ -168,5 +168,7 @@ export function listBots(): Promise<{ bots: Bot[] }> {
 
 /** Détecte une erreur « session perdue » côté serveur. */
 export function isSessionLost(err: unknown): boolean {
-  return err instanceof Error && /Session introuvable|Session requise/.test(err.message);
+  if (!(err instanceof Error)) return false;
+  const text = err instanceof ApiError ? `${err.message} ${err.body}` : err.message;
+  return /Session introuvable|Session requise/.test(text);
 }

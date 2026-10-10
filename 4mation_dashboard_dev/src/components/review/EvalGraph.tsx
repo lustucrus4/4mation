@@ -26,7 +26,7 @@ export default function EvalGraph({ graph, currentMove, onSelectMove }: EvalGrap
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-      <div className="mb-2 flex justify-between text-xs text-white/50">
+      <div className="mb-2 flex justify-between text-xs text-white/60">
         <span className="text-p1">Vous gagnez</span>
         <span>Probabilité de victoire</span>
         <span className="text-p2">IA gagne</span>
@@ -52,7 +52,7 @@ export default function EvalGraph({ graph, currentMove, onSelectMove }: EvalGrap
         />
         <circle cx={cx} cy={cy} r="2.5" fill="#ffd700" stroke="#1a1a2e" strokeWidth="0.8" />
       </svg>
-      <p className="mt-1 text-center text-xs text-white/45">
+      <p className="mt-1 text-center text-xs text-white/60">
         Coup {currentMove} / {maxIdx} · {Math.round(cur.win_rate_p1 * 100)} % pour vous
       </p>
     </div>

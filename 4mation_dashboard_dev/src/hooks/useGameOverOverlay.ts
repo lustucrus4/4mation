@@ -35,7 +35,8 @@ export function useGameOverOverlay(autoDismissMs = GAME_OVER_OVERLAY_MS) {
     (next: GameOverIntro) => {
       clearTimer();
       setIntro(next);
-      if (autoDismissMs > 0) {
+      // Partie enregistrée : on laisse la fenêtre ouverte pour ne pas faire rater « Analyser ».
+      if (autoDismissMs > 0 && !next.savedGameId) {
         timerRef.current = setTimeout(() => {
           if (!mountedRef.current) return;
           setIntro(null);

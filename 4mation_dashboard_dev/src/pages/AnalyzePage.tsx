@@ -6,6 +6,8 @@ import { useAccount } from "../hooks/useAccount";
 import { fetchGames } from "../lib/accountApi";
 import { parseApiErrorMessage } from "../lib/apiErrors";
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import AuthButton from "../components/auth/AuthButton";
 
 export default function AnalyzePage() {
   const { authenticated, authLoading, refresh } = useAccount();
@@ -39,24 +41,27 @@ export default function AnalyzePage() {
           Historique de vos parties enregistrées (IA et en ligne) — cliquez sur une partie pour la revue
           détaillée (précision, classification des coups, relecture).
         </p>
-        <p className="mt-2 text-sm">
-          <a href="/analyze/rl" className="font-semibold text-accent hover:underline">
-            Entraînement RL Rust →
-          </a>
-        </p>
       </header>
+
+      {authLoading && <p className="text-white/60">Chargement…</p>}
 
       {!authLoading && !authenticated && (
         <Card>
           <p className="text-white/70">
             Connectez-vous pour retrouver l&apos;historique de vos parties contre les bots et en ligne.
           </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <AuthButton />
+            <Link to="/play" className="py-2 text-sm text-accent hover:underline">
+              Jouer en invité →
+            </Link>
+          </div>
         </Card>
       )}
 
       {authenticated && (
         <Card>
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/50">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-white/60">
             Parties enregistrées
           </h2>
           {gamesQuery.isLoading ? (

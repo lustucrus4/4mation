@@ -46,6 +46,21 @@ const cellBase: CSSProperties = {
   position: "relative",
 };
 
+/**
+ * Taille max du plateau : 560 px, mais aussi bornée par la hauteur de l'écran
+ * (portable 1366×768, téléphone en paysage) pour garder le plateau et le message
+ * de tour visibles sans défiler. Plancher à 17rem pour rester jouable au doigt.
+ * Les navigateurs sans `dvh` ignorent ce style et retombent sur la classe max-w-[560px].
+ */
+const boardMaxWidth = "min(560px, max(17rem, calc(100dvh - 14rem)))";
+
+function cellLabel(r: number, c: number, value: number, canPlay: boolean): string {
+  const where = `Case ligne ${r + 1}, colonne ${c + 1}`;
+  if (value === 1) return `${where} : pion rouge`;
+  if (value === 2) return `${where} : pion bleu`;
+  return canPlay ? `${where} : vide, jouable` : `${where} : vide`;
+}
+
 export function emptyBoard(size = 7): BoardMatrix {
   return Array.from({ length: size }, () => Array.from({ length: size }, () => 0));
 }
@@ -69,8 +84,13 @@ export default function Board({
 
   return (
     <div
-      className="mx-auto grid aspect-square w-full max-w-[560px] grid-cols-7 gap-2 rounded-2xl border border-white/15 bg-white/5 p-3.5"
-      style={{ opacity: thinking ? 0.75 : 1, pointerEvents: thinking ? "none" : "auto" }}
+      className="mx-auto grid aspect-square w-full max-w-[560px] grid-cols-7 gap-1.5 rounded-2xl border border-white/15 bg-white/5 p-2 sm:gap-2 sm:p-3.5"
+      style={{
+        maxWidth: boardMaxWidth,
+        opacity: thinking ? 0.75 : 1,
+        pointerEvents: thinking ? "none" : "auto",
+      }}
+      role="group"
       aria-label="Plateau 7 par 7"
     >
       {board.map((rowArr, r) =>
@@ -127,16 +147,16 @@ export default function Board({
               disabled={!canPlay}
               onClick={canPlay ? () => onCellClick?.({ row: r, col: c }) : undefined}
               className={canPlay ? "grid place-items-center hover:scale-[1.06]" : ""}
-              aria-label={`Case ${r + 1},${c + 1}`}
+              aria-label={cellLabel(r, c, value, canPlay)}
             >
               {isSame(bestMove, r, c) && (
-                <span className="absolute right-1 top-0.5 text-xs text-gold drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]">
+                <span className="absolute right-0.5 top-0 text-xs text-gold sm:right-1 sm:top-0.5 drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]">
                   ★
                 </span>
               )}
               {rate !== undefined && (
                 <span
-                  className="text-[0.6rem] font-bold leading-none drop-shadow-[0_0_4px_rgba(0,0,0,0.85)]"
+                  className="text-[0.7rem] font-bold leading-none sm:text-xs drop-shadow-[0_0_4px_rgba(0,0,0,0.85)]"
                   style={{
                     color: ratesExact
                       ? provenLoss

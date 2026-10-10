@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/script
-      SESSION_DB_PATH: ${{ runner.temp }}/sessions.db
+      SESSION_DB_PATH: /tmp/sessions.db
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

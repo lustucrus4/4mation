@@ -9,7 +9,7 @@ interface LearnMaintenancePageProps {
 export default function LearnMaintenancePage({ title }: LearnMaintenancePageProps) {
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <Link to="/learn" className="text-sm text-white/50 hover:text-accent">
+      <Link to="/learn" className="text-sm text-white/60 hover:text-accent">
         ← Apprendre
       </Link>
 

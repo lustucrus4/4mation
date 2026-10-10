@@ -74,7 +74,7 @@ export default function GameOverOverlay({ intro, onDismiss, primaryAction, secon
           <button
             type="button"
             onClick={onDismiss}
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white"
             aria-label="Fermer"
           >
             <span className="text-xl leading-none" aria-hidden="true">
@@ -96,7 +96,7 @@ export default function GameOverOverlay({ intro, onDismiss, primaryAction, secon
           <p className="mt-2 text-sm text-white/60">{intro.subtitle}</p>
         ) : null}
 
-        <p className="mt-4 text-sm text-white/45">
+        <p className="mt-4 text-sm text-white/60">
           vs <span className="font-semibold text-white/75">{intro.opponentName}</span>
         </p>
 
@@ -108,13 +108,15 @@ export default function GameOverOverlay({ intro, onDismiss, primaryAction, secon
               {deltaSign}
               {delta}
             </p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">Elo</p>
+            <p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/60">Elo</p>
             <p className="mt-3 text-lg font-semibold text-accent tabular-nums">
               {intro.eloAfter} Elo
             </p>
           </div>
         ) : intro.isGuest ? (
-          <p className="mt-6 text-sm text-white/50">Elo non enregistré (mode invité)</p>
+          <p className="mt-6 text-sm text-white/60">
+            Mode invité : connectez-vous pour enregistrer vos parties et votre Elo.
+          </p>
         ) : null}
 
         {primaryAction || secondaryAction ? (
@@ -145,9 +147,12 @@ export default function GameOverOverlay({ intro, onDismiss, primaryAction, secon
           </div>
         ) : null}
 
-        <div className="game-over-progress mt-6 h-1 overflow-hidden rounded-full bg-white/10">
-          <div className={`h-full rounded-full ${meta.bar}`} />
-        </div>
+        {/* Barre de fermeture automatique : absente quand la partie est enregistrée (fenêtre gardée ouverte) */}
+        {!intro.savedGameId ? (
+          <div className="game-over-progress mt-6 h-1 overflow-hidden rounded-full bg-white/10">
+            <div className={`h-full rounded-full ${meta.bar}`} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

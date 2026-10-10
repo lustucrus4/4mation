@@ -19,7 +19,12 @@ export default function MoveNavigator({
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
       {!hideStart && (
-        <Button variant="ghost" onClick={() => onChange(0)} disabled={disabled || moveIndex === 0}>
+        <Button
+          variant="ghost"
+          onClick={() => onChange(0)}
+          disabled={disabled || moveIndex === 0}
+          aria-label="Début de la partie"
+        >
           ⏮
         </Button>
       )}
@@ -27,16 +32,18 @@ export default function MoveNavigator({
         variant="ghost"
         onClick={() => onChange(Math.max(0, moveIndex - 1))}
         disabled={disabled || moveIndex === 0}
+        aria-label="Coup précédent"
       >
         ◀
       </Button>
-      <span className="min-w-[5rem] text-center text-sm text-white/70">
+      <span className="min-w-[5rem] text-center text-sm text-white/70" aria-live="polite">
         {moveIndex} / {maxMove}
       </span>
       <Button
         variant="ghost"
         onClick={() => onChange(Math.min(maxMove, moveIndex + 1))}
         disabled={disabled || moveIndex >= maxMove}
+        aria-label="Coup suivant"
       >
         ▶
       </Button>
@@ -44,6 +51,7 @@ export default function MoveNavigator({
         variant="ghost"
         onClick={() => onChange(maxMove)}
         disabled={disabled || moveIndex >= maxMove}
+        aria-label="Dernier coup"
       >
         ⏭
       </Button>

@@ -75,8 +75,30 @@ export default function OpeningExplorerPage() {
       ? { row: data.best_move[0], col: data.best_move[1] }
       : null;
 
+  const navButtons = (
+    <div className="flex flex-wrap gap-2">
+      <Button variant="ghost" onClick={undo} disabled={busy || moves.length === 0}>
+        Retour
+      </Button>
+      <Button variant="ghost" onClick={reset} disabled={busy || moves.length === 0}>
+        Réinitialiser
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_280px] md:gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* Mobile : titre au-dessus du plateau */}
+      <header className="md:hidden">
+        <Link to="/learn" className="inline-block py-2 text-sm text-white/60 hover:text-accent">
+          ← Apprendre
+        </Link>
+        <h1 className="text-2xl font-black text-accent">Ouvertures</h1>
+        <p className="mt-1 text-sm text-white/70">
+          Jouez des coups pour explorer le livre : chaque case affiche son taux de victoire.
+        </p>
+      </header>
+
       <div>
         <Board
           board={board}
@@ -101,22 +123,23 @@ export default function OpeningExplorerPage() {
         )}
 
         <p className="mt-4 text-center text-sm text-white/60">
-          Coup #{data?.move_count ?? 0}
+          Coup {data?.move_count ?? 0}
           {data?.is_terminal && " — Partie terminée"}
         </p>
         {error && <p className="mt-2 text-center text-sm text-p1">{error}</p>}
+        <div className="mt-4 flex justify-center md:hidden">{navButtons}</div>
       </div>
 
       <aside className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Link to="/learn" className="text-sm text-white/50 hover:text-accent">
+        <div className="hidden md:block">
+          <Link to="/learn" className="inline-block py-2 text-sm text-white/60 hover:text-accent">
             ← Apprendre
           </Link>
+          <h1 className="text-2xl font-black text-accent">Ouvertures</h1>
         </div>
-        <h1 className="text-2xl font-black text-accent">Ouvertures</h1>
 
         <Card>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">
             Par où commencer
           </h2>
           <div className="flex justify-center">
@@ -124,21 +147,14 @@ export default function OpeningExplorerPage() {
           </div>
         </Card>
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="ghost" onClick={undo} disabled={busy || moves.length === 0}>
-            Retour
-          </Button>
-          <Button variant="ghost" onClick={reset} disabled={busy || moves.length === 0}>
-            Réinitialiser
-          </Button>
-        </div>
+        <div className="hidden md:block">{navButtons}</div>
 
         <Card>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/50">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/60">
             Continuations
           </h2>
           {(data?.continuations ?? []).length === 0 ? (
-            <p className="text-sm text-white/50">Aucune continuation.</p>
+            <p className="text-sm text-white/60">Aucune continuation.</p>
           ) : (
             <ul className="max-h-72 space-y-1.5 overflow-y-auto text-sm">
               {(data?.continuations ?? []).map((c) => {
@@ -147,13 +163,13 @@ export default function OpeningExplorerPage() {
                 return (
                   <li
                     key={`${c.move.row},${c.move.col}`}
-                    className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-1"
                   >
                     <button
                       type="button"
                       disabled={busy || !!data?.is_terminal}
                       onClick={() => playMove(c.move.row, c.move.col)}
-                      className="font-mono text-accent hover:underline disabled:opacity-50"
+                      className="min-h-10 px-1 font-mono text-accent hover:underline disabled:opacity-50"
                     >
                       ({c.move.row + 1},{c.move.col + 1})
                     </button>
@@ -169,7 +185,7 @@ export default function OpeningExplorerPage() {
         </Card>
 
         {data?.analysis_label && (
-          <p className="text-xs text-white/50">{data.analysis_label}</p>
+          <p className="text-xs text-white/60">{data.analysis_label}</p>
         )}
       </aside>
     </div>

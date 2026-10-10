@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Card from "../components/ui/Card";
 import GameHistoryList from "../components/account/GameHistoryList";
+import AuthButton from "../components/auth/AuthButton";
 import { useAccount } from "../hooks/useAccount";
 import { useEffect } from "react";
 
@@ -23,10 +24,13 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-black text-accent">Profil</h1>
         <Card>
           <p className="text-white/70">
-            Connectez-vous via le bouton en haut à droite pour enregistrer vos parties, suivre
-            votre Elo et consulter votre historique.
+            Connectez-vous pour enregistrer vos parties, suivre votre Elo et consulter votre
+            historique.
           </p>
-          <p className="mt-2 text-sm text-white/50">
+          <div className="mt-4">
+            <AuthButton />
+          </div>
+          <p className="mt-4 text-sm text-white/60">
             En mode invité, vous pouvez toujours jouer contre les bots sans sauvegarde.
           </p>
         </Card>
@@ -67,7 +71,7 @@ export default function ProfilePage() {
           )}
           {ratingOnline && (
             <div className="mt-4 border-t border-white/10 pt-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-white/40">En ligne</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-white/60">En ligne</p>
               <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <Stat label="Elo online" value={String(ratingOnline.elo)} accent />
                 <Stat label="Parties" value={String(ratingOnline.games_played)} />
@@ -79,7 +83,7 @@ export default function ProfilePage() {
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/50">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/60">
             Ratio victoires
           </h2>
           {rating && rating.games_played > 0 ? (
@@ -94,10 +98,10 @@ export default function ProfilePage() {
 
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-white/50">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-white/60">
             Dernières parties
           </h2>
-          <Link to="/analyze" className="text-sm text-accent hover:underline">
+          <Link to="/analyze" className="py-2 text-sm text-accent hover:underline">
             Tout voir →
           </Link>
         </div>
@@ -121,7 +125,7 @@ function Stat({
 }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-white/45">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-white/60">{label}</p>
       <p className={`mt-1 text-xl font-bold ${accent ? "text-accent" : "text-white"}`}>{value}</p>
     </div>
   );

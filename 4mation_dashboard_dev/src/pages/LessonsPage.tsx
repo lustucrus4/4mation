@@ -30,7 +30,7 @@ export default function LessonsPage() {
 
   return (
     <div className="space-y-6">
-      <Link to="/learn" className="text-sm text-white/50 hover:text-accent">
+      <Link to="/learn" className="inline-block py-2 text-sm text-white/60 hover:text-accent">
         ← Apprendre
       </Link>
       <header>
@@ -48,11 +48,12 @@ export default function LessonsPage() {
           return (
             <Link key={l.id} to={`/learn/lessons/${l.id}`} className="group">
               <Card className="flex h-full flex-col transition group-hover:border-accent/50">
-                <span className="text-xs font-bold uppercase text-white/40">{l.level}</span>
+                <span className="text-xs font-bold uppercase text-white/60">{l.level}</span>
                 <h2 className="mt-1 text-lg font-bold text-accent">{l.title}</h2>
                 <p className="mt-2 text-sm text-white/60">~{l.duration_min} min</p>
+                {/* Vignette masquée sur téléphone : la liste restait trop longue à parcourir */}
                 {diagram && (
-                  <div className="mt-auto flex justify-center pt-4">
+                  <div className="mt-auto hidden justify-center pt-4 sm:flex">
                     <RuleDiagram
                       compact
                       board={diagram.board as CellValue[][]}

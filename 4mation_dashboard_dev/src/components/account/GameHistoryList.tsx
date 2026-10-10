@@ -40,7 +40,7 @@ export default function GameHistoryList({
             ) : (
               <p className={`font-semibold ${resultClass(g.result)}`}>{resultLabel(g.result)}</p>
             )}
-            <p className="text-xs text-white/50">
+            <p className="text-xs text-white/60">
               {g.game_mode === "online"
                 ? `vs ${g.opponent_name ?? "joueur"} · ${g.move_count} coups`
                 : `Niveau ${g.bot_level ?? "?"} · ${g.move_count} coups`}
@@ -55,7 +55,7 @@ export default function GameHistoryList({
               </span>
             )}
             {g.elo_after != null && (
-              <p className="text-xs text-white/40">{g.elo_after} Elo</p>
+              <p className="text-xs text-white/60">{g.elo_after} Elo</p>
             )}
           </div>
         </li>

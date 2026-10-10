@@ -55,7 +55,7 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
 
   if (values.length < 2) {
 
-    return <p className="text-sm text-white/40">Pas assez de données</p>;
+    return <p className="text-sm text-white/60">Pas assez de données</p>;
 
   }
 
@@ -225,13 +225,13 @@ export default function RlTrainingPage() {
 
           {status.data_dir && (
 
-            <span className="mt-1 block text-xs text-white/40">Données : {status.data_dir}</span>
+            <span className="mt-1 block text-xs text-white/60">Données : {status.data_dir}</span>
 
           )}
 
           {status.checkpoint && (
 
-            <span className="mt-1 block text-xs text-white/40">Checkpoint : {status.checkpoint}</span>
+            <span className="mt-1 block text-xs text-white/60">Checkpoint : {status.checkpoint}</span>
 
           )}
 
@@ -291,7 +291,7 @@ export default function RlTrainingPage() {
 
           <table className="w-full min-w-[720px] text-left text-sm">
 
-            <thead className="bg-white/5 text-white/50">
+            <thead className="bg-white/5 text-white/60">
 
               <tr>
 
@@ -395,7 +395,7 @@ function StatCard({
 
     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
 
-      <p className="text-xs uppercase tracking-wide text-white/45">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-white/60">{label}</p>
 
       <p className={`mt-1 text-2xl font-bold ${accent ? "text-accent" : "text-white"}`}>{value}</p>
 
@@ -431,7 +431,7 @@ function ChartBlock({
 
       <h3 className="font-bold text-white/90">{title}</h3>
 
-      <p className="text-xs text-white/40">{subtitle}</p>
+      <p className="text-xs text-white/60">{subtitle}</p>
 
       <div className="mt-4">{children}</div>
 

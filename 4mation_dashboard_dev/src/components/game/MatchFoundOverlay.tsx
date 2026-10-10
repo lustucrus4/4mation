@@ -35,7 +35,7 @@ export default function MatchFoundOverlay({ intro }: MatchFoundOverlayProps) {
             >
               {intro.youName}
             </p>
-            <p className="mt-1 text-xs text-white/45">Vous</p>
+            <p className="mt-1 text-xs text-white/60">Vous</p>
           </div>
 
           <span className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-black tracking-widest text-accent">
@@ -48,7 +48,7 @@ export default function MatchFoundOverlay({ intro }: MatchFoundOverlayProps) {
             >
               {intro.opponentName}
             </p>
-            <p className="mt-1 text-xs text-white/45">{intro.opponentElo} Elo</p>
+            <p className="mt-1 text-xs text-white/60">{intro.opponentElo} Elo</p>
           </div>
         </div>
 

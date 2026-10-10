@@ -6,6 +6,7 @@ import RuleDiagram from "../components/learn/RuleDiagram";
 import { puzzleUniqueWinDiagram } from "../components/learn/diagrams";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import Select from "../components/ui/Select";
 import { useGameOverOverlay } from "../hooks/useGameOverOverlay";
 import {
   checkPackPuzzle,
@@ -203,8 +204,62 @@ export default function PuzzlePage() {
         }
       : null;
 
+  const sideToMove = puzzle?.player_to_move === 2 ? "bleu" : "rouge";
+
+  const difficultyButtons = (
+    <div className="flex flex-wrap gap-2">
+      {(["easy", "medium", "hard"] as const).map((d) => (
+        <button
+          key={d}
+          type="button"
+          onClick={() => setDifficulty(d)}
+          aria-pressed={difficulty === d}
+          className={`min-h-10 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+            difficulty === d
+              ? "bg-accent text-black"
+              : "bg-white/10 text-white/70 hover:bg-white/20"
+          }`}
+        >
+          {DIFFICULTY_LABELS[d]}
+        </button>
+      ))}
+    </div>
+  );
+
+  const actionButtons = (
+    <div className="flex flex-wrap gap-2">
+      <Button onClick={resetPuzzle} disabled={busy || !puzzle}>
+        Recommencer
+      </Button>
+      {filtered.length > 1 && puzzle && (
+        <Button variant="secondary" disabled={busy} onClick={goToNextPuzzle}>
+          Puzzle suivant
+        </Button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_280px] md:gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* Mobile : titre, niveau et choix du puzzle au-dessus du plateau */}
+      <header className="space-y-2 md:hidden">
+        <Link to="/learn" className="inline-block py-2 text-sm text-white/60 hover:text-accent">
+          ← Apprendre
+        </Link>
+        <h1 className="text-2xl font-black text-accent">Puzzles</h1>
+        {difficultyButtons}
+        {filtered.length ? (
+          <Select
+            id="puzzle-mobile"
+            value={puzzle?.id ?? ""}
+            disabled={busy}
+            onChange={(id) => void loadPuzzle(id)}
+            aria-label="Choisir un puzzle"
+            options={filtered.map((p) => ({ value: p.id, label: p.title }))}
+          />
+        ) : null}
+      </header>
+
       <div className="relative">
         <Board
           board={board}
@@ -233,13 +288,13 @@ export default function PuzzlePage() {
           />
         ) : null}
 
-        <p className="mt-4 text-center text-lg font-semibold text-accent">
+        <p className="mt-4 text-center text-lg font-semibold text-accent" aria-live="polite">
           {gameOverOverlay
             ? null
             : puzzle
               ? solved
                 ? feedback
-                : `Joueur 1 — trouvez la séquence gagnante (${currentStep + 1}/${totalSteps})`
+                : `Vous jouez ${sideToMove} : trouvez le coup gagnant (${currentStep + 1}/${totalSteps})`
               : "Chargement…"}
         </p>
         {wrongMove && !solved && (
@@ -251,20 +306,23 @@ export default function PuzzlePage() {
           </p>
         )}
         {error && <p className="mt-2 text-center text-sm text-p1">{error}</p>}
+        <div className="mt-4 flex justify-center md:hidden">{actionButtons}</div>
       </div>
 
       <aside className="space-y-4">
-        <Link to="/learn" className="text-sm text-white/50 hover:text-accent">
-          ← Apprendre
-        </Link>
-        <h1 className="text-2xl font-black text-accent">Puzzles</h1>
-        <p className="text-sm text-white/60">
-          Trouvez la suite de coups qui force la victoire. L&apos;adversaire répond automatiquement
-          entre chaque coup.
-        </p>
+        <div className="hidden space-y-4 md:block">
+          <Link to="/learn" className="inline-block py-2 text-sm text-white/60 hover:text-accent">
+            ← Apprendre
+          </Link>
+          <h1 className="text-2xl font-black text-accent">Puzzles</h1>
+          <p className="text-sm text-white/70">
+            Trouvez la suite de coups qui force la victoire. L&apos;adversaire répond automatiquement
+            entre chaque coup.
+          </p>
+        </div>
 
         <Card>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">
             Le but
           </h2>
           <div className="flex justify-center">
@@ -272,30 +330,15 @@ export default function PuzzlePage() {
           </div>
         </Card>
 
-        <Card>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
+        <Card className="hidden md:block">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">
             Difficulté
           </h2>
-          <div className="flex flex-wrap gap-2">
-            {(["easy", "medium", "hard"] as const).map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDifficulty(d)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  difficulty === d
-                    ? "bg-accent text-black"
-                    : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                {DIFFICULTY_LABELS[d]}
-              </button>
-            ))}
-          </div>
+          {difficultyButtons}
         </Card>
 
-        <Card>
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
+        <Card className="hidden md:block">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">
             Sélection
           </h2>
           {filtered.length ? (
@@ -306,7 +349,7 @@ export default function PuzzlePage() {
                     type="button"
                     disabled={busy}
                     onClick={() => void loadPuzzle(p.id)}
-                    className={`w-full rounded px-2 py-1 text-left transition ${
+                    className={`min-h-10 w-full rounded px-2 py-2 text-left transition ${
                       puzzle?.id === p.id
                         ? "bg-accent/20 text-accent"
                         : "text-white/70 hover:bg-white/10"
@@ -318,13 +361,13 @@ export default function PuzzlePage() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-white/50">Aucun puzzle disponible.</p>
+            <p className="text-sm text-white/60">Aucun puzzle disponible.</p>
           )}
         </Card>
 
         {puzzle && (
           <Card>
-            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/50">
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-white/60">
               Indice
             </h2>
             <ul className="space-y-1 text-sm text-white/70">
@@ -336,20 +379,7 @@ export default function PuzzlePage() {
           </Card>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={resetPuzzle} disabled={busy || !puzzle}>
-            Recommencer
-          </Button>
-          {filtered.length > 1 && puzzle && (
-            <Button
-              variant="secondary"
-              disabled={busy}
-              onClick={goToNextPuzzle}
-            >
-              Puzzle suivant
-            </Button>
-          )}
-        </div>
+        <div className="hidden md:block">{actionButtons}</div>
       </aside>
     </div>
   );

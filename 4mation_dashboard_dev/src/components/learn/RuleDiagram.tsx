@@ -132,7 +132,7 @@ export default function RuleDiagram({
                     <span
                       className={[
                         "absolute inset-0 grid place-items-center font-bold text-white",
-                        compact ? "text-[10px] leading-none" : "text-sm",
+                        compact ? "text-[11px] leading-none" : "text-sm",
                       ].join(" ")}
                       style={{ textShadow: "0 1px 2px rgba(0,0,0,0.85)" }}
                     >

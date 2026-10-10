@@ -37,12 +37,31 @@ body,
   min-height: 100%;
 }
 
+html {
+  /* Couleur de fond du canevas : évite le blanc au rebond du défilement mobile */
+  background-color: var(--color-night);
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
   color: #fff;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   background-attachment: fixed;
+  /* Filet de sécurité : aucun élément ne doit faire défiler la page à l'horizontale */
+  overflow-x: clip;
+}
+
+/* Bouton SSO Lab211 (monté par le SDK) : cible tactile confortable */
+.lab211-slot .lab211-auth-btn {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 /* Surbrillance accessible au clavier */
@@ -92,4 +111,16 @@ body {
 
 .animate-progress-indeterminate {
   animation: progressIndeterminate 1.4s ease-in-out infinite;
+}
+
+/* Respecte le réglage système « réduire les animations » */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

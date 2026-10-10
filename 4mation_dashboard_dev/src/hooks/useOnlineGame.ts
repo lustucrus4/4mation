@@ -479,12 +479,9 @@ export function useOnlineGame() {
         if (!mounted.current) return;
         setSocketConnected(false);
         setPhase("idle");
-        const detail = err?.message?.trim();
-        setError(
-          detail
-            ? `Impossible de joindre le serveur en ligne (${detail}).`
-            : "Impossible de joindre le serveur en ligne."
-        );
+        // Le détail technique (« xhr post error »…) reste dans la console, pas à l'écran.
+        if (err) console.warn("[4mation] connexion temps réel :", err.message);
+        setError("Impossible de joindre le serveur de jeu en ligne. Nouvelle tentative en cours…");
         setMessage("");
       };
 

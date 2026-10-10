@@ -15,9 +15,27 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Deque, Dict, List, Optional, Tuple
 
-from solver.db_schema import connect, init_db
+from solver.db_schema import board_from_blob, connect, init_db
 
 logger = logging.getLogger(__name__)
+
+
+def _queued_board(row: sqlite3.Row) -> Optional[Any]:
+    """Plateau d'une ligne de work_queue : JSON, ou BLOB compacté si le JSON est vide.
+
+    Le solveur Rust remplit board_blob et laisse board_json à '' : sans ce repli, les
+    workers recevaient un plateau vide et échouaient sur chaque position.
+    """
+    raw = row["board_json"]
+    if raw:
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            return raw
+    blob = row["board_blob"]
+    if blob:
+        return board_from_blob(bytes(blob))
+    return None
 
 DEFAULT_DB = (
     Path(__file__).resolve().parent.parent.parent / "script" / "solver" / "data" / "tablebase.db"
@@ -90,7 +108,7 @@ class WorkQueueService:
 
                 rows = conn.execute(
                     """
-                    SELECT hash, board_json, player, last_move_row, last_move_col
+                    SELECT hash, board_json, board_blob, player, last_move_row, last_move_col
                     FROM work_queue
                     WHERE status = 'pending'
                     ORDER BY created_at ASC
@@ -119,10 +137,7 @@ class WorkQueueService:
                             "row": int(row["last_move_row"]),
                             "col": int(row["last_move_col"]),
                         }
-                    try:
-                        board = json.loads(row["board_json"])
-                    except (json.JSONDecodeError, TypeError):
-                        board = row["board_json"]
+                    board = _queued_board(row)
                     claimed.append(
                         {
                             "hash": row["hash"],
@@ -175,12 +190,12 @@ class WorkQueueService:
                 conn.execute("BEGIN IMMEDIATE")
 
                 row = conn.execute(
-                    "SELECT board_json, player, last_move_row, last_move_col FROM work_queue WHERE hash = ?",
+                    "SELECT board_json, board_blob, player, last_move_row, last_move_col FROM work_queue WHERE hash = ?",
                     (hash_key,),
                 ).fetchone()
 
                 if board_json is None and row is not None:
-                    board_json = row["board_json"]
+                    board_json = _queued_board(row)
                 if player is None and row is not None:
                     player = row["player"]
                 if last_move is None and row is not None:
@@ -320,12 +335,12 @@ class WorkQueueService:
                     depth_remaining = int(payload.get("depth_remaining") or 0)
 
                     row = conn.execute(
-                        "SELECT board_json, player, last_move_row, last_move_col FROM work_queue WHERE hash = ?",
+                        "SELECT board_json, board_blob, player, last_move_row, last_move_col FROM work_queue WHERE hash = ?",
                         (hash_key,),
                     ).fetchone()
 
                     if board_json is None and row is not None:
-                        board_json = row["board_json"]
+                        board_json = _queued_board(row)
                     if player is None and row is not None:
                         player = row["player"]
                     if last_move is None and row is not None:
